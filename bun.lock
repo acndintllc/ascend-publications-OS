@@ -6,6 +6,9 @@
       "name": "tanstack_start_ts",
       "dependencies": {
         "@cloudflare/vite-plugin": "^1.25.5",
+        "@fontsource-variable/fraunces": "^5.2.9",
+        "@fontsource-variable/inter-tight": "^5.2.7",
+        "@fontsource/source-serif-4": "^5.2.9",
         "@hookform/resolvers": "^5.2.2",
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -230,6 +233,12 @@
     "@floating-ui/react-dom": ["@floating-ui/react-dom@2.1.8", "", { "dependencies": { "@floating-ui/dom": "^1.7.6" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-cC52bHwM/n/CxS87FH0yWdngEZrjdtLW/qVruo68qg+prK7ZQ4YGdut2GyDVpoGeAYe/h899rVeOVm6Oi40k2A=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
+
+    "@fontsource-variable/fraunces": ["@fontsource-variable/fraunces@5.2.9", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource-variable/fraunces/-/fraunces-5.2.9.tgz", {}, "sha512-Y6IjunlN9Ni723np+GIgAaKzCDBrPRrqNi01TZxHs5wtHYROWFM9W6yiT+/gGwSjWIRD18oX17kD/BRWekc/Lw=="],
+
+    "@fontsource-variable/inter-tight": ["@fontsource-variable/inter-tight@5.2.7", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource-variable/inter-tight/-/inter-tight-5.2.7.tgz", {}, "sha512-uU0qW9vlzVQQv8GVrhn8SlNl2A44C0CE9IC6N9P0D9mwhmJcg8UF/fxvmdRayDPlMAnYqxlXtYENDIeZyVvxkg=="],
+
+    "@fontsource/source-serif-4": ["@fontsource/source-serif-4@5.2.9", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@fontsource/source-serif-4/-/source-serif-4-5.2.9.tgz", {}, "sha512-er/Pym9emsEVJNf947umJ4kXarXfsiN6CN7kTYinefKRaHLwiquiiHOZvKvxWgkV8JMCf3pV3g0NcsPFpVCH9w=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@5.2.2", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA=="],
 
