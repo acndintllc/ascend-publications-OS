@@ -1,0 +1,104 @@
+/* ============================================================
+   ASCEND MEDIA — TIER 2 SEMANTIC PUBLISHING TOKENS
+   PTL-006 implementation. 57 tokens. Cap: 60.
+   Rule: every value resolves to a TIER 1 primitive via var().
+   Components bind ONLY to these tokens, never to TIER 1.
+   ============================================================ */
+
+:root {
+  /* 2.1 Chapter */
+  --am-chapter-bg: var(--am-color-ink-0);
+  --am-chapter-ink: var(--am-color-ink-900);
+  --am-chapter-measure: var(--am-measure-prose);
+  --am-chapter-rhythm: var(--am-silence-chapter);
+
+  /* 2.2 Chapter Opener */
+  --am-chapter-opener-display-family: var(--am-font-display);
+  --am-chapter-opener-display-size: var(--am-type-900);
+  --am-chapter-opener-display-leading: var(--am-leading-tight);
+  --am-chapter-opener-display-tracking: var(--am-tracking-tight);
+  --am-chapter-opener-rule-color: var(--am-color-accent-500);
+
+  /* 2.3 Section */
+  --am-section-title-family: var(--am-font-display);
+  --am-section-title-size: var(--am-type-600);
+  --am-section-title-weight: var(--am-weight-semibold);
+  --am-section-silence: var(--am-silence-lg);
+
+  /* 2.4 Body */
+  --am-body-family: var(--am-font-body);
+  --am-body-size: var(--am-type-300);
+  --am-body-leading: var(--am-leading-prose);
+  --am-body-measure: var(--am-measure-prose);
+  --am-body-ink: var(--am-color-ink-800);
+
+  /* 2.5 Dialogue */
+  --am-dialogue-indent: var(--am-space-6);
+  --am-dialogue-leading: var(--am-leading-relaxed);
+  --am-dialogue-ink: var(--am-color-ink-900);
+
+  /* 2.6 Pull Quote */
+  --am-pullquote-family: var(--am-font-display);
+  --am-pullquote-size: var(--am-type-500);
+  --am-pullquote-leading: var(--am-leading-snug);
+  --am-pullquote-accent: var(--am-color-accent-600);
+  --am-pullquote-silence: var(--am-silence-md);
+
+  /* 2.7 Sidebar */
+  --am-sidebar-bg: var(--am-color-ink-50);
+  --am-sidebar-ink: var(--am-color-ink-800);
+  --am-sidebar-radius: var(--am-radius-md);
+  --am-sidebar-pad: var(--am-space-6);
+
+  /* 2.8 Footnote */
+  --am-footnote-size: var(--am-type-200);
+  --am-footnote-ink: var(--am-color-ink-600);
+  --am-footnote-leading: var(--am-leading-normal);
+
+  /* 2.9 Endnote */
+  --am-endnote-size: var(--am-type-200);
+  --am-endnote-rule: var(--am-color-ink-300);
+
+  /* 2.10 Source Note */
+  --am-sourcenote-size: var(--am-type-100);
+  --am-sourcenote-track: var(--am-tracking-wide);
+  --am-sourcenote-ink: var(--am-color-ink-500);
+
+  /* 2.11 Citation Block */
+  --am-citation-family: var(--am-font-mono);
+  --am-citation-size: var(--am-type-200);
+  --am-citation-bg: var(--am-color-cool-50);
+
+  /* 2.12 VERA Note */
+  --am-vera-accent: var(--am-color-info-500);
+  --am-vera-bg: var(--am-color-cool-50);
+  --am-vera-label: var(--am-tracking-widest);
+
+  /* 2.13 Research Note */
+  --am-research-accent: var(--am-color-cool-500);
+  --am-research-bg: var(--am-color-cool-50);
+
+  /* 2.14 Callout */
+  --am-callout-accent: var(--am-color-accent-500);
+  --am-callout-bg: var(--am-color-accent-50);
+  --am-callout-radius: var(--am-radius-md);
+
+  /* 2.15 Scene Break */
+  --am-scenebreak-glyph-color: var(--am-color-ink-400);
+  --am-scenebreak-silence: var(--am-silence-md);
+
+  /* 2.16 Appendix */
+  --am-appendix-bg: var(--am-color-ink-50);
+  --am-appendix-ink: var(--am-color-ink-800);
+
+  /* 2.17 Glossary */
+  --am-glossary-term-weight: var(--am-weight-semibold);
+  --am-glossary-def-ink: var(--am-color-ink-700);
+
+  /* 2.18 Report Block (Operational primary) */
+  --am-report-family: var(--am-font-ui);
+  --am-report-size: var(--am-type-300);
+  --am-report-rule: var(--am-color-ink-200);
+  --am-report-accent: var(--am-color-cool-500);
+}
+/* ===== END TIER 2 SEMANTIC TOKENS ===== */
