@@ -10,6 +10,15 @@ import {
 
 import appCss from "../styles.css?url";
 
+// ASCEND TIER 1 — Self-hosted WOFF2 font primitives (Stack 1: Editorial Authority)
+import "@fontsource-variable/fraunces/index.css";
+import "@fontsource-variable/fraunces/wght-italic.css";
+import "@fontsource/source-serif-4/400.css";
+import "@fontsource/source-serif-4/400-italic.css";
+import "@fontsource/source-serif-4/600.css";
+import "@fontsource/source-serif-4/700.css";
+import "@fontsource-variable/inter-tight/index.css";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

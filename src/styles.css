@@ -2,6 +2,176 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* ============================================================
+   ASCEND MEDIA — TIER 1 PRIMITIVES (PTL-004 Phase 1A)
+   Stack 1 "Editorial Authority" — locked
+   Raw primitives only. No semantic publishing tokens.
+   Naming convention: --am-{category}-{role}-{variant}
+   ============================================================ */
+
+:root {
+  /* ---------- FONT FAMILY PRIMITIVES ---------- */
+  --am-font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
+  --am-font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --am-font-ui: "Inter Tight Variable", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --am-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---------- TYPE SCALE PRIMITIVES (1.250 Major Third) ---------- */
+  --am-type-100: 0.640rem;
+  --am-type-200: 0.800rem;
+  --am-type-300: 1.000rem;
+  --am-type-400: 1.250rem;
+  --am-type-500: 1.563rem;
+  --am-type-600: 1.953rem;
+  --am-type-700: 2.441rem;
+  --am-type-800: 3.052rem;
+  --am-type-900: 3.815rem;
+  --am-type-1000: 4.768rem;
+
+  --am-leading-tight: 1.15;
+  --am-leading-snug: 1.3;
+  --am-leading-normal: 1.5;
+  --am-leading-relaxed: 1.65;
+  --am-leading-prose: 1.75;
+  --am-leading-loose: 1.9;
+
+  --am-tracking-tighter: -0.04em;
+  --am-tracking-tight: -0.02em;
+  --am-tracking-normal: 0em;
+  --am-tracking-wide: 0.02em;
+  --am-tracking-wider: 0.06em;
+  --am-tracking-widest: 0.12em;
+
+  --am-weight-light: 300;
+  --am-weight-regular: 400;
+  --am-weight-medium: 500;
+  --am-weight-semibold: 600;
+  --am-weight-bold: 700;
+  --am-weight-black: 900;
+
+  /* Fraunces variable-font axis primitives */
+  --am-opsz-caption: 9;
+  --am-opsz-text: 14;
+  --am-opsz-subhead: 36;
+  --am-opsz-display: 96;
+  --am-opsz-poster: 144;
+  --am-soft-crisp: 0;
+  --am-soft-balanced: 50;
+  --am-soft-soft: 100;
+  --am-wonk-off: 0;
+  --am-wonk-on: 1;
+
+  /* ---------- SPACING PRIMITIVES (0.5rem base) ---------- */
+  --am-space-0: 0;
+  --am-space-1: 0.125rem;
+  --am-space-2: 0.25rem;
+  --am-space-3: 0.5rem;
+  --am-space-4: 0.75rem;
+  --am-space-5: 1rem;
+  --am-space-6: 1.5rem;
+  --am-space-7: 2rem;
+  --am-space-8: 3rem;
+  --am-space-9: 4rem;
+  --am-space-10: 6rem;
+  --am-space-11: 8rem;
+  --am-space-12: 12rem;
+
+  /* Silence primitives (non-collapsible pacing) */
+  --am-silence-sm: 1.5rem;
+  --am-silence-md: 3rem;
+  --am-silence-lg: 6rem;
+  --am-silence-chapter: 12rem;
+
+  /* ---------- COLOR PRIMITIVES (OKLCH) ---------- */
+  --am-color-ink-0:   oklch(0.995 0.002 95);
+  --am-color-ink-50:  oklch(0.975 0.004 85);
+  --am-color-ink-100: oklch(0.945 0.006 80);
+  --am-color-ink-200: oklch(0.885 0.008 80);
+  --am-color-ink-300: oklch(0.795 0.010 80);
+  --am-color-ink-400: oklch(0.660 0.012 80);
+  --am-color-ink-500: oklch(0.520 0.014 80);
+  --am-color-ink-600: oklch(0.405 0.014 80);
+  --am-color-ink-700: oklch(0.305 0.012 80);
+  --am-color-ink-800: oklch(0.215 0.010 80);
+  --am-color-ink-900: oklch(0.140 0.008 80);
+  --am-color-ink-950: oklch(0.085 0.006 80);
+
+  --am-color-accent-50:  oklch(0.965 0.020 40);
+  --am-color-accent-100: oklch(0.920 0.040 40);
+  --am-color-accent-200: oklch(0.860 0.080 40);
+  --am-color-accent-300: oklch(0.780 0.120 40);
+  --am-color-accent-400: oklch(0.690 0.150 40);
+  --am-color-accent-500: oklch(0.585 0.170 40);
+  --am-color-accent-600: oklch(0.495 0.160 40);
+  --am-color-accent-700: oklch(0.405 0.140 40);
+  --am-color-accent-800: oklch(0.315 0.110 40);
+  --am-color-accent-900: oklch(0.230 0.080 40);
+
+  --am-color-cool-50:  oklch(0.965 0.015 260);
+  --am-color-cool-100: oklch(0.920 0.030 260);
+  --am-color-cool-300: oklch(0.755 0.090 260);
+  --am-color-cool-500: oklch(0.540 0.140 260);
+  --am-color-cool-700: oklch(0.375 0.110 260);
+  --am-color-cool-900: oklch(0.215 0.070 260);
+
+  --am-color-success-500: oklch(0.620 0.150 150);
+  --am-color-warning-500: oklch(0.760 0.150 80);
+  --am-color-danger-500:  oklch(0.580 0.220 27);
+  --am-color-info-500:    oklch(0.620 0.130 230);
+
+  /* ---------- MOTION PRIMITIVES ---------- */
+  --am-duration-instant: 0ms;
+  --am-duration-1: 80ms;
+  --am-duration-2: 140ms;
+  --am-duration-3: 220ms;
+  --am-duration-4: 360ms;
+  --am-duration-5: 560ms;
+  --am-duration-6: 880ms;
+  --am-duration-cinematic: 1400ms;
+
+  --am-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --am-ease-entrance: cubic-bezier(0, 0, 0.2, 1);
+  --am-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --am-ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+  --am-ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---------- LAYOUT MEASURE PRIMITIVES ---------- */
+  --am-measure-narrow: 48ch;
+  --am-measure-prose: 66ch;
+  --am-measure-wide: 78ch;
+  --am-measure-full: 92ch;
+
+  --am-width-xs: 20rem;
+  --am-width-sm: 30rem;
+  --am-width-md: 42rem;
+  --am-width-lg: 56rem;
+  --am-width-xl: 72rem;
+  --am-width-2xl: 88rem;
+  --am-width-page: 120rem;
+
+  --am-baseline: 0.5rem;
+
+  --am-radius-none: 0;
+  --am-radius-xs: 0.125rem;
+  --am-radius-sm: 0.25rem;
+  --am-radius-md: 0.5rem;
+  --am-radius-lg: 0.75rem;
+  --am-radius-xl: 1rem;
+  --am-radius-pill: 9999px;
+
+  --am-border-hair: 0.5px;
+  --am-border-thin: 1px;
+  --am-border-medium: 2px;
+  --am-border-thick: 4px;
+
+  --am-z-base: 0;
+  --am-z-raised: 10;
+  --am-z-overlay: 100;
+  --am-z-modal: 1000;
+  --am-z-toast: 10000;
+}
+/* ===== END TIER 1 PRIMITIVES ===== */
+
 @custom-variant dark (&:is(.dark *));
 
 /*
