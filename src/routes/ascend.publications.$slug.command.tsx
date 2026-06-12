@@ -201,7 +201,20 @@ function CommandCenter() {
             ))}
           </tbody>
         </table>
+        <div style={{ marginBlockStart: "var(--am-space-4)" }}>
+          <strong style={{ fontFamily: "var(--am-font-ui)" }}>Credential Secrets</strong>
+          <ul style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+            {vendorSecrets.length === 0 && <li style={{ color: "var(--am-color-ink-700)" }}>No vendors to validate.</li>}
+            {vendorSecrets.map((s: any) => (
+              <li key={s.vendor_id}>
+                <code>{s.rotation_target}</code> — {s.platform}/{s.label}: {s.configured ? "✓ configured" : "✗ MISSING"}
+                {!s.conventional && <> · expected <code>{s.expected_credential_ref}</code></>}
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
+
 
       {/* Submissions */}
       <section style={card}>
