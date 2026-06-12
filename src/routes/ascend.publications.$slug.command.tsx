@@ -163,7 +163,7 @@ function CommandCenter() {
         <div style={h}>ISBN Registry</div>
         <IsbnForm slug={slug} busy={busy} onAdd={(d) => wrap(() => assignIsbn({ data: d }))} />
         <table style={{ width: "100%", borderCollapse: "collapse", marginBlockStart: "var(--am-space-3)" }}>
-          <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th></tr></thead>
+          <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th><th align="left">Transition</th></tr></thead>
           <tbody>
             {isbns.length === 0 && <tr><td colSpan={6} style={{ padding: 8, color: "var(--am-color-ink-700)" }}>No ISBNs assigned.</td></tr>}
             {isbns.map((r: any) => {
