@@ -60,7 +60,7 @@ function LibraryRoute() {
           </h1>
         </header>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {entries.map(({ slug, doc }) => (
+          {entries.map(({ slug, doc, report }) => (
             <li
               key={slug}
               style={{
