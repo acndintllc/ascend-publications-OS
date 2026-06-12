@@ -12,6 +12,7 @@ import {
 import { listIsbns, listSubmissions, listVendors } from "./registry-extra.server";
 import { listQueue } from "./queue.server";
 import { listArtifacts } from "./runner.server";
+import { reportVendorSecrets, type VendorSecretReport } from "./vendor-secrets.server";
 
 export interface PublicationAudit {
   slug: string;
