@@ -146,12 +146,16 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
   }
 
   // Vendor presence per platform with submissions
+  const vendorSecrets = reportVendorSecrets(vendors);
   if (submissions.length > 0) {
     const platforms = new Set(submissions.map((s) => s.platform));
     for (const p of platforms) {
       const v = vendors.find((v) => v.platform === p && v.enabled);
       if (!v) warnings.push(`No enabled vendor configured for ${p}`);
-      else if (!v.credential_ref) warnings.push(`Vendor ${v.label} missing credential reference`);
+      else {
+        const sec = vendorSecrets.find((s) => s.vendor_id === v.id);
+        if (!sec?.configured) blockers.push(`Vendor "${v.label}" (${p}) credential secret missing: set ${sec?.rotation_target ?? "credential_ref"}`);
+      }
     }
   } else {
     warnings.push("No submissions queued — create at least one per target platform");
@@ -162,11 +166,16 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
     blockers.push(`Publication status "${record.status}" not at ready/published`);
   }
 
+  const haveEpub = activeArtifacts.some((a) => a.kind === "epub");
+  const haveKindle = activeArtifacts.some((a) => a.kind === "kindle");
+  const havePdf = activeArtifacts.some((a) => a.kind === "pdf");
+
   return {
     slug,
     readiness,
     blockers: Array.from(new Set([...(readiness?.blockers ?? []), ...blockers])),
     warnings: Array.from(new Set([...(readiness?.recommendations ?? []), ...warnings])),
+    vendorSecrets,
     facts: {
       hasRecord: true,
       hasMetadata: !!metaRow,
@@ -174,11 +183,16 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
       activeAssetCount: assets.filter((a) => a.is_active).length,
       artifactCount: artifacts.length,
       activeArtifactCount: activeArtifacts.length,
+      hasEpubArtifact: haveEpub,
+      hasKindleArtifact: haveKindle,
+      hasPdfArtifact: havePdf,
       queueRows: queue.length,
       submissionRows: submissions.length,
       isbnCount: isbns.length,
       vendorCount: vendors.length,
+      vendorsConfigured: vendorSecrets.filter((s) => s.configured).length,
       targetsMissingIsbn,
     },
   };
 }
+
