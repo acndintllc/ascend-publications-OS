@@ -1,9 +1,11 @@
-/* PTL-021 Phase 9A — server-only persistence helpers.
-   Uses supabaseAdmin (service role, bypasses RLS) because Phase 9A
-   intentionally defers permissions. Role gating lands in Phase 9D. */
+/* PTL-021 Phase 9A + PTL-022 Phase 9E/9F — server-only persistence helpers.
+   Uses supabaseAdmin (service role, bypasses RLS). Phase 9D adds role gating. */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { PublicationStatus } from "./status";
 import { canTransition } from "./status";
+import type { AssetRecord } from "./assets";
+import type { WorkflowEvent, WorkflowEventType } from "./events";
+
 
 export interface DbRecord {
   slug: string;
