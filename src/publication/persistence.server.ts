@@ -201,7 +201,7 @@ export async function deactivateAsset(id: string): Promise<AssetRecord> {
 export async function recordEvent(input: {
   slug: string;
   event_type: WorkflowEventType | string;
-  payload?: Record<string, unknown>;
+  payload?: import("./events").EventPayload;
   actor?: string | null;
 }): Promise<void> {
   const { error } = await supabaseAdmin
