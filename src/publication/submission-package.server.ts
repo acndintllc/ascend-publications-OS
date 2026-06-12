@@ -13,13 +13,15 @@ import { listArtifacts } from "./runner.server";
 const BUCKET = "publication-assets";
 const SIGNED_TTL = 60 * 60 * 24 * 7;
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+
 export interface SubmissionPackage {
   slug: string;
   platform: DistributionTarget;
   ready: boolean;
   issues: AdapterIssue[];
   manifest: {
-    metadata: Record<string, unknown> | null;
+    metadata: JsonValue;
     serialized: { filename: string; mediaType: string; body: string };
     isbn: { isbn: string; format: string } | null;
     artifacts: Array<{
@@ -30,6 +32,7 @@ export interface SubmissionPackage {
     cover: { url: string; signed_url: string | null } | null;
   };
 }
+
 
 
 export async function buildSubmissionPackage(slug: string, platform: DistributionTarget): Promise<SubmissionPackage> {
