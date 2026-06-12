@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AscendProofRouteImport } from './routes/ascend.proof'
 import { Route as AscendLibraryRouteImport } from './routes/ascend.library'
 import { Route as AscendReaderSlugRouteImport } from './routes/ascend.reader.$slug'
+import { Route as ApiPublicRenderKindleRouteImport } from './routes/api/public/render.kindle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const AscendReaderSlugRoute = AscendReaderSlugRouteImport.update({
   path: '/ascend/reader/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicRenderKindleRoute = ApiPublicRenderKindleRouteImport.update({
+  id: '/api/public/render/kindle',
+  path: '/api/public/render/kindle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
+  '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
+  '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,18 +61,30 @@ export interface FileRoutesById {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
+  '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ascend/library' | '/ascend/proof' | '/ascend/reader/$slug'
+  fullPaths:
+    | '/'
+    | '/ascend/library'
+    | '/ascend/proof'
+    | '/ascend/reader/$slug'
+    | '/api/public/render/kindle'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ascend/library' | '/ascend/proof' | '/ascend/reader/$slug'
+  to:
+    | '/'
+    | '/ascend/library'
+    | '/ascend/proof'
+    | '/ascend/reader/$slug'
+    | '/api/public/render/kindle'
   id:
     | '__root__'
     | '/'
     | '/ascend/library'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
+    | '/api/public/render/kindle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -72,6 +92,7 @@ export interface RootRouteChildren {
   AscendLibraryRoute: typeof AscendLibraryRoute
   AscendProofRoute: typeof AscendProofRoute
   AscendReaderSlugRoute: typeof AscendReaderSlugRoute
+  ApiPublicRenderKindleRoute: typeof ApiPublicRenderKindleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -104,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AscendReaderSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/render/kindle': {
+      id: '/api/public/render/kindle'
+      path: '/api/public/render/kindle'
+      fullPath: '/api/public/render/kindle'
+      preLoaderRoute: typeof ApiPublicRenderKindleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -112,7 +140,18 @@ const rootRouteChildren: RootRouteChildren = {
   AscendLibraryRoute: AscendLibraryRoute,
   AscendProofRoute: AscendProofRoute,
   AscendReaderSlugRoute: AscendReaderSlugRoute,
+  ApiPublicRenderKindleRoute: ApiPublicRenderKindleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
