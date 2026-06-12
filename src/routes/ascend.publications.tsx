@@ -203,7 +203,7 @@ function PublicationsRoute() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {["Title", "Profile", "Status", "Version", "Issues", "Export readiness", "Distribution", "VERA"].map((h) => (
+              {["Title", "Profile", "Status", "Version", "Issues", "Export readiness", "Distribution", "VERA", "Assets"].map((h) => (
                 <th key={h} style={{ ...cell, textAlign: "left", fontWeight: 600 }}>{h}</th>
               ))}
             </tr>
