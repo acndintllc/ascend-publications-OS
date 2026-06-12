@@ -97,7 +97,13 @@ function splitCsv(s: string): string[] {
 }
 
 function PublicationDetailRoute() {
-  const { detail, slug } = Route.useLoaderData() as { detail: DetailData; slug: string };
+  const { detail, slug, assets: initialAssets, events: initialEvents } = Route.useLoaderData() as {
+    detail: DetailData;
+    slug: string;
+    assets: AssetRecord[];
+    events: Awaited<ReturnType<typeof listPublicationEvents>>;
+  };
+
   const router = useRouter();
   const [pending, setPending] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
