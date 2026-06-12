@@ -1,8 +1,10 @@
-/* /ascend/reader/$slug — parametric reader (Phase 3C).
+/* /ascend/reader/$slug — parametric reader (Phase 3C + 4A).
    Loads a manuscript from the build-bundled library, renders through
-   the ACA pipeline with a runtime mode switcher. */
+   the ACA pipeline with a runtime mode switcher. PDF mode supports
+   ?mode=pdf deep link + browser-print path (PTL-014 Phase 4A). */
 import * as React from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { z } from "zod";
 import { Chapter } from "@/components/ascend/primitives";
 import { getManuscript } from "@/manuscript/library";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
@@ -11,7 +13,12 @@ import type { ACADocument } from "@/manuscript/schema/aca";
 const MODES = ["web-reader", "cinematic", "operational", "pdf", "ebook", "kindle"] as const;
 type Mode = (typeof MODES)[number];
 
+const searchSchema = z.object({
+  mode: z.enum(MODES).optional(),
+});
+
 export const Route = createFileRoute("/ascend/reader/$slug")({
+  validateSearch: searchSchema,
   loader: ({ params }) => {
     const entry = getManuscript(params.slug);
     if (!entry) throw notFound();
@@ -47,11 +54,25 @@ export const Route = createFileRoute("/ascend/reader/$slug")({
 
 function ReaderRoute() {
   const { doc } = Route.useLoaderData() as { doc: ACADocument; slug: string };
-  const [mode, setMode] = React.useState<Mode>(doc.frontmatter.mode);
+  const search = Route.useSearch();
+  const [mode, setMode] = React.useState<Mode>(search.mode ?? doc.frontmatter.mode);
+
+  const handlePrint = React.useCallback(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    root.classList.add("am-print-root");
+    const cleanup = () => {
+      root.classList.remove("am-print-root");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+  }, []);
 
   return (
     <div data-mode={mode} style={{ minHeight: "100dvh", background: "var(--am-chapter-bg)" }}>
       <nav
+        data-am="reader-nav"
         style={{
           position: "sticky",
           top: 0,
@@ -97,6 +118,24 @@ function ReaderRoute() {
             {m}
           </button>
         ))}
+        {mode === "pdf" ? (
+          <button
+            onClick={handlePrint}
+            style={{
+              padding: "var(--am-space-2) var(--am-space-4)",
+              borderRadius: "var(--am-radius-pill)",
+              border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+              background: "var(--am-color-accent-500)",
+              color: "var(--am-color-ink-0)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              letterSpacing: "var(--am-tracking-wide)",
+            }}
+          >
+            Print / Save PDF
+          </button>
+        ) : null}
         {doc.enrichment ? (
           <span
             style={{
