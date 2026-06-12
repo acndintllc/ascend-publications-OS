@@ -19,7 +19,7 @@ export interface SubmissionPackage {
   ready: boolean;
   issues: AdapterIssue[];
   manifest: {
-    metadata: unknown;
+    metadata: Record<string, unknown> | null;
     serialized: { filename: string; mediaType: string; body: string };
     isbn: { isbn: string; format: string } | null;
     artifacts: Array<{
@@ -30,6 +30,7 @@ export interface SubmissionPackage {
     cover: { url: string; signed_url: string | null } | null;
   };
 }
+
 
 export async function buildSubmissionPackage(slug: string, platform: DistributionTarget): Promise<SubmissionPackage> {
   const [record, metaRow, assets, isbns, artifacts] = await Promise.all([
