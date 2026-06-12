@@ -15,6 +15,8 @@ export const SUBMISSION_STATE_LABELS: Record<SubmissionState, string> = {
   withdrawn: "Withdrawn",
 };
 
+import type { JsonValue } from "./vendors";
+
 export interface SubmissionRow {
   id: string;
   slug: string;
@@ -24,7 +26,7 @@ export interface SubmissionRow {
   isbn: string | null;
   status: SubmissionState | string;
   submitted_at: string | null;
-  response_payload: Record<string, unknown>;
+  response_payload: { [k: string]: JsonValue };
   notes: string | null;
   created_at: string;
   updated_at: string;

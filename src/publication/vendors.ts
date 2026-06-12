@@ -1,14 +1,19 @@
 /* PTL-025 Phase 14D — Vendor vocabulary. Pure module. */
 import type { DistributionTarget } from "./metadata";
 
+export type JsonValue =
+  | string | number | boolean | null
+  | JsonValue[]
+  | { [k: string]: JsonValue };
+
 export interface VendorRow {
   id: string;
   platform: DistributionTarget | string;
   account_id: string | null;
   label: string;
-  settings: Record<string, unknown>;
+  settings: { [k: string]: JsonValue };
   credential_ref: string | null;
-  submission_prefs: Record<string, unknown>;
+  submission_prefs: { [k: string]: JsonValue };
   enabled: boolean;
   created_at: string;
   updated_at: string;
