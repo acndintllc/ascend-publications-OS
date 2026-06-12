@@ -184,7 +184,6 @@ function CommandCenter() {
               );
             })}
           </tbody>
-          <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th><th align="left">Transition</th></tr></thead>
         </table>
       </section>
 
