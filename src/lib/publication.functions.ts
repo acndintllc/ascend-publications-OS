@@ -497,9 +497,9 @@ export const upsertVendor = createServerFn({ method: "POST" })
       platform: z.string(),
       account_id: z.string().nullable().optional(),
       label: z.string().min(1),
-      settings: z.record(z.string(), z.unknown()).optional(),
+      settings: z.record(z.string(), z.any()).optional(),
       credential_ref: z.string().nullable().optional(),
-      submission_prefs: z.record(z.string(), z.unknown()).optional(),
+      submission_prefs: z.record(z.string(), z.any()).optional(),
       enabled: z.boolean().optional(),
     }).parse(d),
   )
@@ -555,7 +555,7 @@ export const updateSubmission = createServerFn({ method: "POST" })
       slug: z.string(),
       status: z.enum(["pending","submitted","accepted","rejected","published","withdrawn"]).optional(),
       notes: z.string().nullable().optional(),
-      response_payload: z.record(z.string(), z.unknown()).optional(),
+      response_payload: z.record(z.string(), z.any()).optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {

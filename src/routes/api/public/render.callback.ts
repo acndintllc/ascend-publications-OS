@@ -15,7 +15,7 @@ const callbackSchema = z.object({
   byte_size: z.number().int().nonnegative(),
   media_type: z.string().min(1),
   source_queue_id: z.string().uuid().nullable().optional(),
-  validation: z.record(z.string(), z.unknown()).optional(),
+  validation: z.record(z.string(), z.any()).optional(),
   runner_id: z.string().optional(),
 });
 
