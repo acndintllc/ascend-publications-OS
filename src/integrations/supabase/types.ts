@@ -208,6 +208,39 @@ export type Database = {
           },
         ]
       }
+      publication_isbns: {
+        Row: {
+          assigned_at: string
+          edition: string
+          format: string
+          id: string
+          isbn: string
+          notes: string | null
+          slug: string
+          status: string
+        }
+        Insert: {
+          assigned_at?: string
+          edition?: string
+          format: string
+          id?: string
+          isbn: string
+          notes?: string | null
+          slug: string
+          status?: string
+        }
+        Update: {
+          assigned_at?: string
+          edition?: string
+          format?: string
+          id?: string
+          isbn?: string
+          notes?: string | null
+          slug?: string
+          status?: string
+        }
+        Relationships: []
+      }
       publication_metadata: {
         Row: {
           categories: string[]
@@ -303,6 +336,98 @@ export type Database = {
           title?: string
           version?: string
           volume?: number | null
+        }
+        Relationships: []
+      }
+      publication_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          isbn: string | null
+          notes: string | null
+          platform: string
+          queue_id: string | null
+          response_payload: Json
+          slug: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          notes?: string | null
+          platform: string
+          queue_id?: string | null
+          response_payload?: Json
+          slug: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          notes?: string | null
+          platform?: string
+          queue_id?: string | null
+          response_payload?: Json
+          slug?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_submissions_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "publication_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_vendors: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          credential_ref: string | null
+          enabled: boolean
+          id: string
+          label: string
+          platform: string
+          settings: Json
+          submission_prefs: Json
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          credential_ref?: string | null
+          enabled?: boolean
+          id?: string
+          label: string
+          platform: string
+          settings?: Json
+          submission_prefs?: Json
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          credential_ref?: string | null
+          enabled?: boolean
+          id?: string
+          label?: string
+          platform?: string
+          settings?: Json
+          submission_prefs?: Json
+          updated_at?: string
         }
         Relationships: []
       }
