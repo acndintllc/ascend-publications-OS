@@ -142,7 +142,7 @@ async function emitArtifact(input: {
   filename: string;
   bytes: Uint8Array;
   mediaType: string;
-  validation: Record<string, unknown>;
+  validation: ArtifactValidation;
   sourceQueueId?: string | null;
   actor?: string;
 }): Promise<ArtifactRow> {
