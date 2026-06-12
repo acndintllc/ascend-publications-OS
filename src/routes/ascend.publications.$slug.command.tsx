@@ -81,8 +81,9 @@ const btn: React.CSSProperties = {
 
 function CommandCenter() {
   const router = useRouter();
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, slug } =
-    Route.useLoaderData();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ld = Route.useLoaderData() as any;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
