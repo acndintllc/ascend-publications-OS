@@ -1,4 +1,4 @@
-/* ASCEND Canonical AST (ACA) — schema (PTL-008 §3, Phase 3B)
+/* ASCEND Canonical AST (ACA) — schema (PTL-008 §3, Phase 3B+3D)
    Pure types + Zod schema. No render logic, no IO. */
 import { z } from "zod";
 
@@ -19,13 +19,14 @@ export type ACAInline =
   | { kind: "strong"; children: ACAInline[] }
   | { kind: "code"; value: string }
   | { kind: "link"; href: string; children: ACAInline[] }
-  | { kind: "footnote-ref"; id: string };
+  | { kind: "footnote-ref"; id: string }
+  | { kind: "citation-ref"; key: string; resolved?: BibEntry };
 
 /* Block-level nodes — one per TIER-2 publishing role */
 export type ACABlock =
   | { kind: "chapter-opener"; eyebrow?: string; title: ACAInline[] }
   | { kind: "section"; title?: ACAInline[]; children: ACABlock[] }
-  | { kind: "body"; children: ACAInline[] }
+  | { kind: "body"; children: ACAInline[]; vera?: VeraNote }
   | { kind: "dialogue"; speaker?: string; children: ACAInline[] }
   | { kind: "pullquote"; cite?: string; children: ACAInline[] }
   | { kind: "sidebar"; title?: string; children: ACABlock[] }
@@ -35,8 +36,37 @@ export type ACABlock =
   | { kind: "scene-break" }
   | { kind: "footnote"; id: string; children: ACAInline[] };
 
+export interface BibEntry {
+  key: string;
+  author?: string;
+  year?: string;
+  title?: string;
+  source?: string;
+  raw?: string;
+}
+
+export interface VeraNote {
+  id: string;
+  voice: string;
+  body: string;
+}
+
+export interface ReadingStats {
+  words: number;
+  characters: number;
+  readingMinutes: number;
+  paragraphs: number;
+}
+
+export interface ACAEnrichment {
+  stats: ReadingStats;
+  bibliography: BibEntry[];
+  vera: VeraNote[];
+}
+
 export interface ACADocument {
   frontmatter: ACAFrontmatter;
   blocks: ACABlock[];
   footnotes: Extract<ACABlock, { kind: "footnote" }>[];
+  enrichment?: ACAEnrichment;
 }
