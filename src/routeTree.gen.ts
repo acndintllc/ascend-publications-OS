@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AscendProofRouteImport } from './routes/ascend.proof'
+import { Route as AscendLiveRouteImport } from './routes/ascend.live'
 import { Route as AscendLibraryRouteImport } from './routes/ascend.library'
 import { Route as AscendValidateSlugRouteImport } from './routes/ascend.validate.$slug'
 import { Route as AscendReaderSlugRouteImport } from './routes/ascend.reader.$slug'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const AscendProofRoute = AscendProofRouteImport.update({
   id: '/ascend/proof',
   path: '/ascend/proof',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AscendLiveRoute = AscendLiveRouteImport.update({
+  id: '/ascend/live',
+  path: '/ascend/live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AscendLibraryRoute = AscendLibraryRouteImport.update({
@@ -50,6 +56,7 @@ const ApiPublicRenderKindleRoute = ApiPublicRenderKindleRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ascend/library': typeof AscendLibraryRoute
+  '/ascend/live': typeof AscendLiveRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AscendValidateSlugRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ascend/library': typeof AscendLibraryRoute
+  '/ascend/live': typeof AscendLiveRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AscendValidateSlugRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ascend/library': typeof AscendLibraryRoute
+  '/ascend/live': typeof AscendLiveRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AscendValidateSlugRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/ascend/library'
+    | '/ascend/live'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/ascend/library'
+    | '/ascend/live'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/ascend/library'
+    | '/ascend/live'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AscendLibraryRoute: typeof AscendLibraryRoute
+  AscendLiveRoute: typeof AscendLiveRoute
   AscendProofRoute: typeof AscendProofRoute
   AscendReaderSlugRoute: typeof AscendReaderSlugRoute
   AscendValidateSlugRoute: typeof AscendValidateSlugRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/ascend/proof'
       fullPath: '/ascend/proof'
       preLoaderRoute: typeof AscendProofRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ascend/live': {
+      id: '/ascend/live'
+      path: '/ascend/live'
+      fullPath: '/ascend/live'
+      preLoaderRoute: typeof AscendLiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ascend/library': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AscendLibraryRoute: AscendLibraryRoute,
+  AscendLiveRoute: AscendLiveRoute,
   AscendProofRoute: AscendProofRoute,
   AscendReaderSlugRoute: AscendReaderSlugRoute,
   AscendValidateSlugRoute: AscendValidateSlugRoute,
