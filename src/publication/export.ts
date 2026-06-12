@@ -52,7 +52,7 @@ export function planExports(record: PublicationRecord, enriched: EnrichResult): 
     if (errorIssues.length > 0) {
       blockers.push(`${errorIssues.length} validation error(s) — see /ascend/validate/${record.slug}`);
     }
-    const warnIssues = enriched.report.issues.filter((i) => i.severity === "warn");
+    const warnIssues = enriched.report.issues.filter((i) => i.severity === "warning");
     if (warnIssues.length > 0) {
       warnings.push(`${warnIssues.length} validation warning(s)`);
     }
