@@ -18,10 +18,15 @@ import {
   updateSubmission,
   generatePublicationArtifacts,
   runReferencePdfRunner,
+  runReferenceKfxRunner,
+  buildPublicationSubmissionPackage,
+  reportVendorSecretsFn,
+  transitionIsbn,
 } from "@/lib/publication.functions";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
 import { SUBMISSION_STATES } from "@/publication/submissions";
+import { nextIsbnStates } from "@/publication/isbn-workflow";
 
 export const Route = createFileRoute("/ascend/publications/$slug/command")({
   head: ({ params }) => ({
@@ -31,7 +36,7 @@ export const Route = createFileRoute("/ascend/publications/$slug/command")({
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -39,11 +44,13 @@ export const Route = createFileRoute("/ascend/publications/$slug/command")({
       listIsbns({ data: { slug: params.slug } }),
       listSubmissions({ data: { slug: params.slug } }),
       listVendors(),
+      reportVendorSecretsFn(),
     ]);
-    return { audit, assets, artifacts, queue, isbns, submissions, vendors, slug: params.slug };
+    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug: params.slug };
   },
   component: CommandCenter,
 });
+
 
 const card: React.CSSProperties = {
   border: "1px solid var(--am-color-ink-200)",
@@ -85,7 +92,7 @@ function CommandCenter() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, slug } = ld;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
@@ -156,16 +163,30 @@ function CommandCenter() {
         <div style={h}>ISBN Registry</div>
         <IsbnForm slug={slug} busy={busy} onAdd={(d) => wrap(() => assignIsbn({ data: d }))} />
         <table style={{ width: "100%", borderCollapse: "collapse", marginBlockStart: "var(--am-space-3)" }}>
-          <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th></tr></thead>
+          <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th><th align="left">Transition</th></tr></thead>
           <tbody>
-            {isbns.length === 0 && <tr><td colSpan={5} style={{ padding: 8, color: "var(--am-color-ink-700)" }}>No ISBNs assigned.</td></tr>}
-            {isbns.map((r: any) => (
-              <tr key={r.id}><td>{r.isbn}</td><td>{r.format}</td><td>{r.edition}</td><td>{r.status}</td>
-              <td>{new Date(r.assigned_at).toISOString().slice(0,10)}</td></tr>
-            ))}
+            {isbns.length === 0 && <tr><td colSpan={6} style={{ padding: 8, color: "var(--am-color-ink-700)" }}>No ISBNs assigned.</td></tr>}
+            {isbns.map((r: any) => {
+              const nexts = nextIsbnStates(r.status);
+              return (
+                <tr key={r.id}>
+                  <td>{r.isbn}</td><td>{r.format}</td><td>{r.edition}</td><td>{r.status}</td>
+                  <td>{new Date(r.assigned_at).toISOString().slice(0,10)}</td>
+                  <td>
+                    {nexts.length === 0 ? "—" : nexts.map((n) => (
+                      <button key={n} style={{ ...btn, padding: "2px 8px", marginInlineEnd: 4 }} disabled={busy}
+                        onClick={() => wrap(() => transitionIsbn({ data: { id: r.id, slug, next: n } }))}>
+                        → {n}
+                      </button>
+                    ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
+
 
       {/* Vendors */}
       <section style={card}>
@@ -180,7 +201,20 @@ function CommandCenter() {
             ))}
           </tbody>
         </table>
+        <div style={{ marginBlockStart: "var(--am-space-4)" }}>
+          <strong style={{ fontFamily: "var(--am-font-ui)" }}>Credential Secrets</strong>
+          <ul style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+            {vendorSecrets.length === 0 && <li style={{ color: "var(--am-color-ink-700)" }}>No vendors to validate.</li>}
+            {vendorSecrets.map((s: any) => (
+              <li key={s.vendor_id}>
+                <code>{s.rotation_target}</code> — {s.platform}/{s.label}: {s.configured ? "✓ configured" : "✗ MISSING"}
+                {!s.conventional && <> · expected <code>{s.expected_credential_ref}</code></>}
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
+
 
       {/* Submissions */}
       <section style={card}>
@@ -223,17 +257,39 @@ function CommandCenter() {
             Run reference PDF runner
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runReferenceKfxRunner({ data: { slug, mode: "ok" } });
+            alert(`KFX runner: ${r.ok ? "OK" : "FAIL"} (status ${r.callback_status})\n${r.signed_url ?? ""}`);
+          })}>
+            Run reference KFX runner
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
             const modes = ["invalid_signature", "missing_artifact", "failed_generation"] as const;
             const results: string[] = [];
             for (const m of modes) {
               const r = await runReferencePdfRunner({ data: { slug, mode: m } });
-              results.push(`${m}: status ${r.callback_status} ok=${r.ok}`);
+              results.push(`pdf/${m}: status ${r.callback_status} ok=${r.ok}`);
+            }
+            for (const m of modes) {
+              const r = await runReferenceKfxRunner({ data: { slug, mode: m } });
+              results.push(`kfx/${m}: status ${r.callback_status} ok=${r.ok}`);
             }
             alert("Failure paths:\n" + results.join("\n"));
           })}>
             Run failure simulations
           </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const targets = SUPPORTED_VENDOR_PLATFORMS;
+            const results: string[] = [];
+            for (const t of targets) {
+              const pkg = await buildPublicationSubmissionPackage({ data: { slug, platform: t } });
+              results.push(`${t}: ${pkg.ready ? "READY" : "BLOCKED"} (${pkg.issues.filter((i: any) => i.level === "error").length} errors)`);
+            }
+            alert("Submission packages:\n" + results.join("\n"));
+          })}>
+            Validate submission packages
+          </button>
         </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--am-space-5)", marginBlockStart: "var(--am-space-4)" }}>
           <div>
             <strong>Active artifacts ({artifacts.rows.filter((r: any) => r.is_active).length})</strong>

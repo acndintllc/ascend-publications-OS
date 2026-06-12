@@ -606,3 +606,78 @@ export const auditPublicationFn = createServerFn({ method: "GET" })
     const { auditPublication } = await import("@/publication/audit.server");
     return auditPublication(data.slug);
   });
+
+/* ─── PTL-027 Phase 16A — Reference external KFX runner ───────────── */
+
+export const runReferenceKfxRunner = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      sourceQueueId: z.string().uuid().nullable().optional(),
+      mode: runnerModeEnum.optional(),
+      actor: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const req = getRequest();
+    const origin = new URL(req.url).origin;
+    const { runReferenceKfx } = await import("@/publication/reference-runner-kfx.server");
+    return runReferenceKfx({
+      slug: data.slug,
+      origin,
+      sourceQueueId: data.sourceQueueId ?? null,
+      mode: data.mode ?? "ok",
+      actor: data.actor,
+    });
+  });
+
+/* ─── PTL-027 Phase 16B — Submission package builder ──────────────── */
+
+export const buildPublicationSubmissionPackage = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string(), platform: z.string() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { buildSubmissionPackage } = await import("@/publication/submission-package.server");
+    return buildSubmissionPackage(data.slug, data.platform as never);
+  });
+
+/* ─── PTL-027 Phase 16C — Vendor secret report ────────────────────── */
+
+export const reportVendorSecretsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const r = await import("@/publication/registry-extra.server");
+  const { reportVendorSecrets } = await import("@/publication/vendor-secrets.server");
+  const vendors = await r.listVendors();
+  return reportVendorSecrets(vendors);
+});
+
+/* ─── PTL-027 Phase 16D — ISBN lifecycle transition ───────────────── */
+
+export const transitionIsbn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      slug: z.string(),
+      next: z.enum(["reserved","assigned","registered","retired"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    const { canTransitionIsbn } = await import("@/publication/isbn-workflow");
+    const all = await r.listIsbns(data.slug);
+    const current = all.find((x) => x.id === data.id);
+    if (!current) throw new Error("ISBN not found");
+    if (!canTransitionIsbn(current.status, data.next)) {
+      throw new Error(`Illegal ISBN transition: ${current.status} → ${data.next}`);
+    }
+    const row = await r.updateIsbn(data.id, { status: data.next } as never);
+    const p = await import("@/publication/persistence.server");
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "metadata.updated",
+      payload: { isbn: row.isbn, action: "isbn.transition", from: current.status, to: data.next },
+    });
+    return row;
+  });
+
