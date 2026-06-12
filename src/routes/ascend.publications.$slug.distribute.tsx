@@ -11,6 +11,8 @@ import {
   enqueueDistribution,
   updateDistributionEntry,
   removeDistributionEntry,
+  generatePublicationArtifacts,
+  listPublicationArtifacts,
 } from "@/lib/publication.functions";
 import { getManuscript } from "@/manuscript/library";
 import { enrich } from "@/manuscript/pipeline";
@@ -22,6 +24,7 @@ import { buildPackage, buildStorePackage } from "@/publication/packager";
 import { validateAllExports } from "@/publication/validate-exports";
 import type { AssetRecord } from "@/publication/assets";
 import type { QueueRow } from "@/publication/queue";
+import type { ArtifactRow } from "@/publication/runner.server";
 
 export const Route = createFileRoute("/ascend/publications/$slug/distribute")({
   head: ({ params }) => ({
@@ -31,12 +34,13 @@ export const Route = createFileRoute("/ascend/publications/$slug/distribute")({
     ],
   }),
   loader: async ({ params }) => {
-    const [pub, assets, queue] = await Promise.all([
+    const [pub, assets, queue, artifacts] = await Promise.all([
       getPublication({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listDistributionQueue({ data: { slug: params.slug } }),
+      listPublicationArtifacts({ data: { slug: params.slug } }),
     ]);
-    return { pub, assets, queue, slug: params.slug };
+    return { pub, assets, queue, artifacts, slug: params.slug };
   },
   component: DistributeRoute,
 });
