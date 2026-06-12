@@ -52,7 +52,16 @@ export const Route = createFileRoute("/ascend/publications")({
   }),
   loader: async () => {
     await seedFromLibrary();
-    const rows = await listPublications();
+    const [rows, allAssets] = await Promise.all([
+      listPublications(),
+      listAllPublicationAssets(),
+    ]);
+    const assetsBySlug = new Map<string, AssetRecord[]>();
+    for (const a of allAssets) {
+      const arr = assetsBySlug.get(a.slug) ?? [];
+      arr.push(a);
+      assetsBySlug.set(a.slug, arr);
+    }
     const out: Row[] = rows.map((entry) => {
       const r = entry.record;
       const lib = getManuscript(r.slug);
@@ -91,6 +100,7 @@ export const Route = createFileRoute("/ascend/publications")({
           })
         : undefined;
       const metadata = parsed?.success ? parsed.data : null;
+      const readiness = scoreAssets(r.profile, assetsBySlug.get(r.slug) ?? []);
       return {
         slug: r.slug,
         title: r.title,
@@ -105,10 +115,14 @@ export const Route = createFileRoute("/ascend/publications")({
         adapters: metadata ? adaptForAllTargets(metadata) : [],
         issueCount: enriched?.report.issues.length ?? 0,
         veraKinds: entry.vera?.enabled_kinds ?? [],
+        assetsReady: readiness.ready,
+        assetsScorePct: Math.round(readiness.score * 100),
+        assetsMissing: readiness.missingRequired,
       };
     });
     return { rows: out };
   },
+
   component: PublicationsRoute,
 });
 
