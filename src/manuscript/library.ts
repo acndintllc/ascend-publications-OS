@@ -1,8 +1,10 @@
-/* Manuscript library (Phase 3C + 3D + 6A).
-   Bundles manuscripts/<slug>/{manuscript.md, citations.bib, vera.json}
-   at build time via Vite import.meta.glob, runs enrichment, and
-   retains failed manuscripts so the library UI can report them. */
+/* Manuscript library (Phase 3C + 3D + 6A + 6B).
+   Bundles manuscripts/<slug>/{manuscript.md|.docx, citations.bib,
+   vera.json} at build time via Vite import.meta.glob, runs
+   enrichment, and retains failed manuscripts so the library UI
+   can report them. */
 import { parseManuscript } from "./ingest/markdown";
+import { parseDocx } from "./ingest/docx";
 import { parseBib, resolveCitations } from "./enrich/citations";
 import { computeReadingStats } from "./enrich/reading-stats";
 import { attachVera, type VeraSidecar } from "./enrich/vera";
