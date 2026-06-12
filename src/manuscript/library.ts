@@ -28,6 +28,12 @@ const veraSources = import.meta.glob("/manuscripts/*/vera.json", {
   eager: true,
 }) as Record<string, VeraSidecar>;
 
+const docxSources = import.meta.glob("/manuscripts/*/manuscript.docx", {
+  query: "?arraybuffer",
+  import: "default",
+  eager: true,
+}) as Record<string, ArrayBuffer>;
+
 const slugOf = (p: string) => /\/manuscripts\/([^/]+)\//.exec(p)?.[1];
 const indexBy = <T>(src: Record<string, T>) => {
   const out = new Map<string, T>();
