@@ -76,6 +76,34 @@ function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
       return (
         <Body key={key} style={{ marginBlockEnd: "var(--am-space-5)" }}>
           {renderInline(b.children)}
+          {b.vera ? (
+            <aside
+              data-am="vera-note"
+              style={{
+                marginBlockStart: "var(--am-space-5)",
+                padding: "var(--am-space-5)",
+                background: "var(--am-vera-bg)",
+                borderInlineStart: "var(--am-border-thick) solid var(--am-vera-accent)",
+                borderRadius: "var(--am-radius-sm)",
+                fontFamily: "var(--am-font-ui)",
+                fontSize: "var(--am-type-200)",
+                color: "var(--am-color-ink-700)",
+              }}
+            >
+              <div
+                style={{
+                  letterSpacing: "var(--am-vera-label)",
+                  textTransform: "uppercase",
+                  color: "var(--am-vera-accent)",
+                  fontSize: "var(--am-sourcenote-size)",
+                  marginBlockEnd: "var(--am-space-3)",
+                }}
+              >
+                {b.vera.voice} · {b.vera.id}
+              </div>
+              {b.vera.body}
+            </aside>
+          ) : null}
         </Body>
       );
     case "dialogue":
@@ -116,6 +144,7 @@ function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
 }
 
 export function RenderManuscript({ doc }: { doc: ACADocument }) {
+  const bib = doc.enrichment?.bibliography ?? [];
   return (
     <>
       {doc.blocks.map((b, i) => renderBlock(b, i))}
@@ -127,6 +156,27 @@ export function RenderManuscript({ doc }: { doc: ACADocument }) {
               {renderInline(f.children)}{" "}
               <a href={`#fnref-${f.id}`}>↩</a>
             </Footnote>
+          ))}
+        </Section>
+      ) : null}
+      {bib.length > 0 ? (
+        <Section title="Bibliography">
+          {bib.map((e) => (
+            <p
+              key={e.key}
+              id={`bib-${e.key}`}
+              style={{
+                fontFamily: "var(--am-font-body)",
+                fontSize: "var(--am-footnote-size)",
+                color: "var(--am-footnote-ink)",
+                lineHeight: "var(--am-footnote-leading)",
+                margin: 0,
+                marginBlockEnd: "var(--am-space-4)",
+              }}
+            >
+              <strong style={{ marginInlineEnd: "var(--am-space-3)" }}>[{e.key}]</strong>
+              {[e.author, e.year && `(${e.year})`, e.title, e.source].filter(Boolean).join(". ")}
+            </p>
           ))}
         </Section>
       ) : null}
