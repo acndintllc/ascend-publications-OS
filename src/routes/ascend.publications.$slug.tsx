@@ -525,7 +525,171 @@ function PublicationDetailRoute() {
             </p>
           )}
         </section>
+
+        <AssetsSection
+          slug={slug}
+          profileId={record.profile}
+          initial={initialAssets}
+          onChange={() => router.invalidate()}
+        />
+
+        <EventsSection initial={initialEvents} />
       </div>
     </main>
   );
 }
+
+/* ─── Assets section ─────────────────────────────────────────────── */
+
+function AssetsSection({
+  slug, profileId, initial, onChange,
+}: {
+  slug: string;
+  profileId: string;
+  initial: AssetRecord[];
+  onChange: () => void;
+}) {
+  const [assets, setAssets] = React.useState<AssetRecord[]>(initial);
+  const [kind, setKind] = React.useState<AssetKind>("front-cover");
+  const [url, setUrl] = React.useState("");
+  const [label, setLabel] = React.useState("");
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => setAssets(initial), [initial]);
+
+  const readiness = scoreAssets(profileId, assets);
+  const activeByKind = new Map<string, AssetRecord>();
+  for (const a of assets) if (a.is_active) activeByKind.set(a.kind, a);
+
+  const upload = async () => {
+    if (!url) return setErr("URL required");
+    setBusy("upload");
+    setErr(null);
+    try {
+      const res = await uploadPublicationAsset({
+        data: { slug, kind, url, label: label || null },
+      });
+      setAssets((prev) => [res.asset, ...prev.map((a) => a.id === res.replaced?.id ? { ...a, is_active: false } : a)]);
+      setUrl(""); setLabel("");
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally { setBusy(null); }
+  };
+
+  const deactivate = async (id: string) => {
+    setBusy(`deact:${id}`);
+    try {
+      await deactivatePublicationAsset({ data: { slug, id } });
+      setAssets((prev) => prev.map((a) => a.id === id ? { ...a, is_active: false } : a));
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally { setBusy(null); }
+  };
+
+  return (
+    <section style={sectionStyle}>
+      <h2 style={{ fontFamily: "var(--am-font-display)", marginTop: 0 }}>Assets</h2>
+      <div style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)", marginBlockEnd: "var(--am-space-4)" }}>
+        Readiness: <strong>{Math.round(readiness.score * 100)}%</strong> required
+        {" · "}
+        <strong>{Math.round(readiness.scoreWithRecommended * 100)}%</strong> with recommended
+        {readiness.missingRequired.length > 0 && (
+          <div style={{ color: "#b91c1c" }}>
+            Missing required: {readiness.missingRequired.map((k) => ASSET_LABELS[k]).join(", ")}
+          </div>
+        )}
+        {readiness.missingRecommended.length > 0 && (
+          <div style={{ color: "var(--am-color-ink-500)" }}>
+            Missing recommended: {readiness.missingRecommended.map((k) => ASSET_LABELS[k]).join(", ")}
+          </div>
+        )}
+      </div>
+
+      <div style={{ ...fieldRow, gridTemplateColumns: "160px 1fr 1fr auto" }}>
+        <select value={kind} onChange={(e) => setKind(e.target.value as AssetKind)} style={inputStyle}>
+          {ASSET_KINDS.map((k) => (
+            <option key={k} value={k}>{ASSET_LABELS[k]}</option>
+          ))}
+        </select>
+        <input style={inputStyle} placeholder="https://… image URL" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <input style={inputStyle} placeholder="label (optional)" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <button
+          onClick={upload}
+          disabled={busy === "upload"}
+          style={{ ...inputStyle, width: "auto", cursor: "pointer", background: "var(--am-color-accent-500)", color: "var(--am-color-ink-0)", borderColor: "var(--am-color-accent-500)" }}
+        >
+          {busy === "upload" ? "Saving…" : (activeByKind.has(kind) ? "Replace" : "Upload")}
+        </button>
+      </div>
+
+      {err && <div style={{ color: "#b91c1c", fontFamily: "var(--am-font-ui)", marginBlockEnd: "var(--am-space-3)" }}>✗ {err}</div>}
+
+      <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>
+        <thead>
+          <tr>
+            {["Kind", "Version", "Active", "URL", "Uploaded", ""].map((h) => (
+              <th key={h} style={{ textAlign: "left", padding: 6, borderBlockEnd: "1px solid var(--am-color-ink-200)" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {assets.length === 0 && (
+            <tr><td colSpan={6} style={{ padding: 12, color: "var(--am-color-ink-500)" }}>No assets yet.</td></tr>
+          )}
+          {assets.map((a) => (
+            <tr key={a.id} style={{ opacity: a.is_active ? 1 : 0.55 }}>
+              <td style={{ padding: 6 }}>{ASSET_LABELS[a.kind as AssetKind] ?? a.kind}{a.label && <div style={{ color: "var(--am-color-ink-500)" }}>{a.label}</div>}</td>
+              <td style={{ padding: 6 }}>v{a.version}</td>
+              <td style={{ padding: 6 }}>{a.is_active ? "✓" : "—"}</td>
+              <td style={{ padding: 6, wordBreak: "break-all" }}><a href={a.url} target="_blank" rel="noreferrer">{a.url}</a></td>
+              <td style={{ padding: 6 }}>{new Date(a.uploaded_at).toLocaleString()}</td>
+              <td style={{ padding: 6 }}>
+                {a.is_active && (
+                  <button onClick={() => deactivate(a.id)} disabled={busy === `deact:${a.id}`} style={{ cursor: "pointer" }}>
+                    deactivate
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+/* ─── Events section ─────────────────────────────────────────────── */
+
+function EventsSection({ initial }: { initial: Awaited<ReturnType<typeof listPublicationEvents>> }) {
+  return (
+    <section style={sectionStyle}>
+      <h2 style={{ fontFamily: "var(--am-font-display)", marginTop: 0 }}>Workflow Events</h2>
+      {initial.length === 0 ? (
+        <p style={{ fontFamily: "var(--am-font-ui)", color: "var(--am-color-ink-500)" }}>No events yet.</p>
+      ) : (
+        <ol style={{ listStyle: "none", padding: 0, margin: 0, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>
+          {initial.map((e) => (
+            <li key={e.id} style={{ padding: "var(--am-space-2) 0", borderBlockEnd: "1px solid var(--am-color-ink-200)" }}>
+              <div>
+                <strong>{EVENT_LABELS[e.event_type as keyof typeof EVENT_LABELS] ?? e.event_type}</strong>
+                <span style={{ color: "var(--am-color-ink-500)", marginInlineStart: 8 }}>
+                  {new Date(e.created_at).toLocaleString()}
+                  {e.actor ? ` · ${e.actor}` : ""}
+                </span>
+              </div>
+              {e.payload && Object.keys(e.payload).length > 0 && (
+                <pre style={{ margin: "4px 0 0", fontSize: 11, color: "var(--am-color-ink-500)", whiteSpace: "pre-wrap" }}>
+                  {JSON.stringify(e.payload, null, 0)}
+                </pre>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
