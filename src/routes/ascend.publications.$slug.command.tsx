@@ -18,10 +18,15 @@ import {
   updateSubmission,
   generatePublicationArtifacts,
   runReferencePdfRunner,
+  runReferenceKfxRunner,
+  buildPublicationSubmissionPackage,
+  reportVendorSecretsFn,
+  transitionIsbn,
 } from "@/lib/publication.functions";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
 import { SUBMISSION_STATES } from "@/publication/submissions";
+import { nextIsbnStates } from "@/publication/isbn-workflow";
 
 export const Route = createFileRoute("/ascend/publications/$slug/command")({
   head: ({ params }) => ({
