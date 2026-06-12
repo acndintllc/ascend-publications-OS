@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      publication_assets: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string | null
+          slug: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string | null
+          slug: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          slug?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_assets_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "publication_records"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      publication_metadata: {
+        Row: {
+          categories: string[]
+          contributors: string[]
+          description: string
+          isbn: string | null
+          keywords: string[]
+          publisher: string
+          reading_level: string | null
+          rights: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          categories?: string[]
+          contributors?: string[]
+          description?: string
+          isbn?: string | null
+          keywords?: string[]
+          publisher?: string
+          reading_level?: string | null
+          rights?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          categories?: string[]
+          contributors?: string[]
+          description?: string
+          isbn?: string | null
+          keywords?: string[]
+          publisher?: string
+          reading_level?: string | null
+          rights?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_metadata_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: true
+            referencedRelation: "publication_records"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      publication_records: {
+        Row: {
+          audience: string | null
+          author: string
+          created_at: string
+          language: string
+          last_updated: string
+          profile: string
+          publication_date: string | null
+          series: string | null
+          slug: string
+          status: Database["public"]["Enums"]["publication_status"]
+          subtitle: string | null
+          title: string
+          version: string
+          volume: number | null
+        }
+        Insert: {
+          audience?: string | null
+          author: string
+          created_at?: string
+          language?: string
+          last_updated?: string
+          profile?: string
+          publication_date?: string | null
+          series?: string | null
+          slug: string
+          status?: Database["public"]["Enums"]["publication_status"]
+          subtitle?: string | null
+          title: string
+          version?: string
+          volume?: number | null
+        }
+        Update: {
+          audience?: string | null
+          author?: string
+          created_at?: string
+          language?: string
+          last_updated?: string
+          profile?: string
+          publication_date?: string | null
+          series?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["publication_status"]
+          subtitle?: string | null
+          title?: string
+          version?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      publication_vera_config: {
+        Row: {
+          config: Json
+          default_voice: string | null
+          enabled_kinds: string[]
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          default_voice?: string | null
+          enabled_kinds?: string[]
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          default_voice?: string | null
+          enabled_kinds?: string[]
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_vera_config_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: true
+            referencedRelation: "publication_records"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      publication_versions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          slug: string
+          status: Database["public"]["Enums"]["publication_status"]
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          slug: string
+          status: Database["public"]["Enums"]["publication_status"]
+          version: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["publication_status"]
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_versions_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "publication_records"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +222,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      publication_status:
+        | "draft"
+        | "editing"
+        | "review"
+        | "formatting"
+        | "ready"
+        | "published"
+        | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +356,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      publication_status: [
+        "draft",
+        "editing",
+        "review",
+        "formatting",
+        "ready",
+        "published",
+        "archived",
+      ],
+    },
   },
 } as const
