@@ -7,7 +7,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   listPublications,
   seedFromLibrary,
+  listAllPublicationAssets,
 } from "@/lib/publication.functions";
+import { scoreAssets, type AssetRecord } from "@/publication/assets";
+
 import { planExports, type ExportPlan } from "@/publication/export";
 import {
   adaptForAllTargets,
