@@ -59,7 +59,7 @@ const cell: React.CSSProperties = {
 };
 
 function PublicationsRoute() {
-  const { rows } = Route.useLoaderData() as ReturnType<typeof Route.useLoaderData>;
+  const { rows } = Route.useLoaderData() as { rows: Row[] };
   return (
     <main
       style={{
