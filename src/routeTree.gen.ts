@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AscendProofRouteImport } from './routes/ascend.proof'
 import { Route as AscendLibraryRouteImport } from './routes/ascend.library'
+import { Route as AscendValidateSlugRouteImport } from './routes/ascend.validate.$slug'
 import { Route as AscendReaderSlugRouteImport } from './routes/ascend.reader.$slug'
 import { Route as ApiPublicRenderKindleRouteImport } from './routes/api/public/render.kindle'
 
@@ -30,6 +31,11 @@ const AscendLibraryRoute = AscendLibraryRouteImport.update({
   path: '/ascend/library',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AscendValidateSlugRoute = AscendValidateSlugRouteImport.update({
+  id: '/ascend/validate/$slug',
+  path: '/ascend/validate/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AscendReaderSlugRoute = AscendReaderSlugRouteImport.update({
   id: '/ascend/reader/$slug',
   path: '/ascend/reader/$slug',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
+  '/ascend/validate/$slug': typeof AscendValidateSlugRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
+  '/ascend/validate/$slug': typeof AscendValidateSlugRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
 }
 export interface FileRoutesById {
@@ -61,6 +69,7 @@ export interface FileRoutesById {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
+  '/ascend/validate/$slug': typeof AscendValidateSlugRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
 }
 export interface FileRouteTypes {
@@ -70,6 +79,7 @@ export interface FileRouteTypes {
     | '/ascend/library'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
+    | '/ascend/validate/$slug'
     | '/api/public/render/kindle'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -77,6 +87,7 @@ export interface FileRouteTypes {
     | '/ascend/library'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
+    | '/ascend/validate/$slug'
     | '/api/public/render/kindle'
   id:
     | '__root__'
@@ -84,6 +95,7 @@ export interface FileRouteTypes {
     | '/ascend/library'
     | '/ascend/proof'
     | '/ascend/reader/$slug'
+    | '/ascend/validate/$slug'
     | '/api/public/render/kindle'
   fileRoutesById: FileRoutesById
 }
@@ -92,6 +104,7 @@ export interface RootRouteChildren {
   AscendLibraryRoute: typeof AscendLibraryRoute
   AscendProofRoute: typeof AscendProofRoute
   AscendReaderSlugRoute: typeof AscendReaderSlugRoute
+  AscendValidateSlugRoute: typeof AscendValidateSlugRoute
   ApiPublicRenderKindleRoute: typeof ApiPublicRenderKindleRoute
 }
 
@@ -118,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AscendLibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ascend/validate/$slug': {
+      id: '/ascend/validate/$slug'
+      path: '/ascend/validate/$slug'
+      fullPath: '/ascend/validate/$slug'
+      preLoaderRoute: typeof AscendValidateSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ascend/reader/$slug': {
       id: '/ascend/reader/$slug'
       path: '/ascend/reader/$slug'
@@ -140,8 +160,19 @@ const rootRouteChildren: RootRouteChildren = {
   AscendLibraryRoute: AscendLibraryRoute,
   AscendProofRoute: AscendProofRoute,
   AscendReaderSlugRoute: AscendReaderSlugRoute,
+  AscendValidateSlugRoute: AscendValidateSlugRoute,
   ApiPublicRenderKindleRoute: ApiPublicRenderKindleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

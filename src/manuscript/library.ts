@@ -1,11 +1,13 @@
-/* Manuscript library (Phase 3C + 3D).
+/* Manuscript library (Phase 3C + 3D + 6A).
    Bundles manuscripts/<slug>/{manuscript.md, citations.bib, vera.json}
-   at build time via Vite import.meta.glob, then runs enrichment. */
+   at build time via Vite import.meta.glob, runs enrichment, and
+   retains failed manuscripts so the library UI can report them. */
 import { parseManuscript } from "./ingest/markdown";
 import { parseBib, resolveCitations } from "./enrich/citations";
 import { computeReadingStats } from "./enrich/reading-stats";
 import { attachVera, type VeraSidecar } from "./enrich/vera";
-import type { ACADocument } from "./schema/aca";
+import { validateManuscript, type ValidationReport } from "./validate";
+import type { ACADocument, BibEntry } from "./schema/aca";
 
 const mdSources = import.meta.glob("/manuscripts/*/manuscript.md", {
   query: "?raw",
@@ -40,36 +42,65 @@ const veraIndex = indexBy(veraSources);
 export interface LibraryEntry {
   slug: string;
   doc: ACADocument;
+  bib: BibEntry[];
+  veraSidecar?: VeraSidecar;
+  report: ValidationReport;
 }
 
-const cache: LibraryEntry[] = Object.entries(mdSources)
-  .map(([path, raw]) => {
+export interface LibraryFailure {
+  slug: string;
+  error: string;
+}
+
+interface LibraryState {
+  entries: LibraryEntry[];
+  failures: LibraryFailure[];
+}
+
+const state: LibraryState = (() => {
+  const entries: LibraryEntry[] = [];
+  const failures: LibraryFailure[] = [];
+
+  for (const [path, raw] of Object.entries(mdSources)) {
     const slug = slugOf(path);
-    if (!slug) return null;
-    const parsed = parseManuscript(raw);
+    if (!slug) continue;
+    try {
+      const parsed = parseManuscript(raw);
+      const bib = bibIndex.get(slug) ? parseBib(bibIndex.get(slug)!) : [];
+      const { blocks: bibBlocks, used } = resolveCitations(parsed.blocks, bib);
 
-    const bib = bibIndex.get(slug) ? parseBib(bibIndex.get(slug)!) : [];
-    const { blocks: bibBlocks, used } = resolveCitations(parsed.blocks, bib);
+      const sidecar = veraIndex.get(slug);
+      const { blocks: veraBlocks, notes: veraNotes } = attachVera(bibBlocks, sidecar);
 
-    const sidecar = veraIndex.get(slug);
-    const { blocks: veraBlocks, notes: veraNotes } = attachVera(bibBlocks, sidecar);
+      const stats = computeReadingStats(veraBlocks);
+      const doc: ACADocument = {
+        ...parsed,
+        blocks: veraBlocks,
+        enrichment: { stats, bibliography: used, vera: veraNotes },
+      };
+      const report = validateManuscript(doc, bib, sidecar);
+      entries.push({ slug, doc, bib, veraSidecar: sidecar, report });
+    } catch (err) {
+      failures.push({
+        slug,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 
-    const stats = computeReadingStats(veraBlocks);
-
-    const doc: ACADocument = {
-      ...parsed,
-      blocks: veraBlocks,
-      enrichment: { stats, bibliography: used, vera: veraNotes },
-    };
-    return { slug, doc };
-  })
-  .filter((x): x is LibraryEntry => x !== null)
-  .sort((a, b) => a.doc.frontmatter.title.localeCompare(b.doc.frontmatter.title));
+  entries.sort((a, b) => a.doc.frontmatter.title.localeCompare(b.doc.frontmatter.title));
+  failures.sort((a, b) => a.slug.localeCompare(b.slug));
+  return { entries, failures };
+})();
 
 export function listManuscripts(): LibraryEntry[] {
-  return cache;
+  return state.entries;
+}
+
+export function listFailures(): LibraryFailure[] {
+  return state.failures;
 }
 
 export function getManuscript(slug: string): LibraryEntry | undefined {
-  return cache.find((e) => e.slug === slug);
+  return state.entries.find((e) => e.slug === slug);
 }
