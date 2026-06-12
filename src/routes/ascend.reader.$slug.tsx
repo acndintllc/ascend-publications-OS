@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Chapter } from "@/components/ascend/primitives";
 import { getManuscript } from "@/manuscript/library";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
+import { buildEpub } from "@/manuscript/package/epub-zip";
 import type { ACADocument } from "@/manuscript/schema/aca";
 
 const MODES = ["web-reader", "cinematic", "operational", "pdf", "ebook", "kindle"] as const;
