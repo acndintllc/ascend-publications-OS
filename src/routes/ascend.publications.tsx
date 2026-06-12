@@ -267,6 +267,17 @@ function PublicationsRoute() {
                   <td style={cell}>
                     {row.veraKinds.length === 0 ? "—" : `${row.veraKinds.length} kinds`}
                   </td>
+                  <td style={cell}>
+                    <div style={{ color: row.assetsReady ? "inherit" : "#b91c1c" }}>
+                      {row.assetsScorePct}% {row.assetsReady ? "✓" : ""}
+                    </div>
+                    {row.assetsMissing.length > 0 && (
+                      <div style={{ color: "var(--am-color-ink-500)" }}>
+                        missing: {row.assetsMissing.join(", ")}
+                      </div>
+                    )}
+                  </td>
+
                 </tr>
               );
             })}
