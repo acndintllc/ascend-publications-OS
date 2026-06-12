@@ -21,6 +21,12 @@ const SIGNED_TTL = 60 * 60 * 24 * 7; // 7 days
 
 export type ArtifactKind = "epub" | "kindle" | "pdf-source" | "package" | "store-package";
 
+export type ArtifactValidationValue =
+  | string | number | boolean | null
+  | ArtifactValidationValue[]
+  | { [key: string]: ArtifactValidationValue };
+export type ArtifactValidation = { [key: string]: ArtifactValidationValue };
+
 export interface ArtifactRow {
   id: string;
   slug: string;
@@ -34,7 +40,7 @@ export interface ArtifactRow {
   byte_size: number;
   media_type: string;
   status: "pending" | "generated" | "validated" | "failed" | "superseded";
-  validation: Record<string, unknown>;
+  validation: ArtifactValidation;
   source_queue_id: string | null;
   generated_by: string | null;
   generated_at: string;
