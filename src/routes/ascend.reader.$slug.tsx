@@ -70,6 +70,7 @@ function ReaderRoute() {
     slug: string;
     allowedVeraKinds?: string[];
   };
+  const search = Route.useSearch();
   const [mode, setMode] = React.useState<Mode>(search.mode ?? doc.frontmatter.mode);
 
   const handlePrint = React.useCallback(() => {
