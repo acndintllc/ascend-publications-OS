@@ -58,6 +58,28 @@ function LibraryRoute() {
           >
             Manuscripts
           </h1>
+          <p
+            style={{
+              fontFamily: "var(--am-font-ui)",
+              color: "var(--am-color-ink-600)",
+              marginBlockStart: "var(--am-space-4)",
+              marginBlockEnd: 0,
+            }}
+          >
+            <Link
+              to="/ascend/live"
+              style={{
+                color: "var(--am-color-accent-600)",
+                textDecoration: "none",
+                letterSpacing: "var(--am-tracking-wide)",
+              }}
+            >
+              → Live preview
+            </Link>
+            <span style={{ marginInlineStart: "var(--am-space-3)", color: "var(--am-color-ink-500)" }}>
+              Drop a .md or .docx to render without redeploying.
+            </span>
+          </p>
         </header>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {entries.map(({ slug, doc, report }) => (
