@@ -165,7 +165,8 @@ export async function runExternalKindlegen(input: ExternalKindlegenInput): Promi
     });
     cbStatus = cb.status;
     const t = await cb.text();
-    try { parsedBody = JSON.parse(t); } catch { parsedBody = t; }
+    try { parsedBody = JSON.parse(t) as unknown; } catch { parsedBody = t; }
+    const safeBody = (typeof parsedBody === "string" ? parsedBody : JSON.stringify(parsedBody ?? null));
     if (!cb.ok) {
       return {
         ok: false, provider: PROVIDER_ID, kind: "kindle", warnings,
