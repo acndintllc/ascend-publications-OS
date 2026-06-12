@@ -116,7 +116,7 @@ function CommandCenter() {
           {readinessPct}% {ready ? "· READY" : "· not ready"}
         </div>
         <div style={{ marginBlockStart: "var(--am-space-3)" }}>
-          {audit.readiness?.signals.map((s) => (
+          {audit.readiness?.signals.map((s: any) => (
             <span key={s.id} style={{ ...pill, background: s.score === 1 ? "var(--am-color-surface-2)" : "transparent" }}>
               {s.label}: {Math.round(s.score * 100)}%
             </span>
@@ -125,13 +125,13 @@ function CommandCenter() {
         {audit.blockers.length > 0 && (
           <div style={{ marginBlockStart: "var(--am-space-4)" }}>
             <strong style={{ color: "var(--am-color-warn, #b00020)" }}>Blockers ({audit.blockers.length})</strong>
-            <ul>{audit.blockers.map((b, i) => <li key={i} style={{ fontFamily: "var(--am-font-ui)" }}>{b}</li>)}</ul>
+            <ul>{audit.blockers.map((b: any, i: number) => <li key={i} style={{ fontFamily: "var(--am-font-ui)" }}>{b}</li>)}</ul>
           </div>
         )}
         {audit.warnings.length > 0 && (
           <details style={{ marginBlockStart: "var(--am-space-3)" }}>
             <summary>Recommendations ({audit.warnings.length})</summary>
-            <ul>{audit.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+            <ul>{audit.warnings.map((w: any, i: number) => <li key={i}>{w}</li>)}</ul>
           </details>
         )}
       </section>
@@ -157,7 +157,7 @@ function CommandCenter() {
           <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th></tr></thead>
           <tbody>
             {isbns.length === 0 && <tr><td colSpan={5} style={{ padding: 8, color: "var(--am-color-ink-700)" }}>No ISBNs assigned.</td></tr>}
-            {isbns.map((r) => (
+            {isbns.map((r: any) => (
               <tr key={r.id}><td>{r.isbn}</td><td>{r.format}</td><td>{r.edition}</td><td>{r.status}</td>
               <td>{new Date(r.assigned_at).toISOString().slice(0,10)}</td></tr>
             ))}
@@ -173,7 +173,7 @@ function CommandCenter() {
           <thead><tr><th align="left">Platform</th><th align="left">Label</th><th align="left">Account</th><th align="left">Credential Ref</th><th align="left">Enabled</th></tr></thead>
           <tbody>
             {vendors.length === 0 && <tr><td colSpan={5} style={{ padding: 8 }}>No vendors configured.</td></tr>}
-            {vendors.map((v) => (
+            {vendors.map((v: any) => (
               <tr key={v.id}><td>{v.platform}</td><td>{v.label}</td><td>{v.account_id ?? "—"}</td><td>{v.credential_ref ?? "—"}</td><td>{v.enabled ? "✓" : "—"}</td></tr>
             ))}
           </tbody>
@@ -188,7 +188,7 @@ function CommandCenter() {
           <thead><tr><th align="left">Platform</th><th align="left">Status</th><th align="left">ISBN</th><th align="left">Submitted</th><th></th></tr></thead>
           <tbody>
             {submissions.length === 0 && <tr><td colSpan={5} style={{ padding: 8 }}>No submissions.</td></tr>}
-            {submissions.map((s) => (
+            {submissions.map((s: any) => (
               <tr key={s.id}>
                 <td>{s.platform}</td>
                 <td>
@@ -215,9 +215,9 @@ function CommandCenter() {
         </button>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--am-space-5)", marginBlockStart: "var(--am-space-4)" }}>
           <div>
-            <strong>Active artifacts ({artifacts.rows.filter((r) => r.is_active).length})</strong>
+            <strong>Active artifacts ({artifacts.rows.filter((r: any) => r.is_active).length})</strong>
             <ul style={{ fontFamily: "var(--am-font-ui)" }}>
-              {artifacts.rows.filter((r) => r.is_active).map((a) => (
+              {artifacts.rows.filter((r: any) => r.is_active).map((a: any) => (
                 <li key={a.id}>{a.kind}{a.target ? `/${a.target}` : ""} v{a.version} · {(a.byte_size/1024).toFixed(1)}KB</li>
               ))}
             </ul>
@@ -225,12 +225,12 @@ function CommandCenter() {
           <div>
             <strong>Distribution queue ({queue.length})</strong>
             <ul style={{ fontFamily: "var(--am-font-ui)" }}>
-              {queue.map((q) => <li key={q.id}>{q.target} · {q.state}</li>)}
+              {queue.map((q: any) => <li key={q.id}>{q.target} · {q.state}</li>)}
             </ul>
           </div>
         </div>
         <div style={{ marginBlockStart: "var(--am-space-3)", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)", color: "var(--am-color-ink-700)" }}>
-          Assets registered: {assets.length} ({assets.filter((a) => a.is_active).length} active)
+          Assets registered: {assets.length} ({assets.filter((a: any) => a.is_active).length} active)
         </div>
       </section>
     </main>
@@ -294,7 +294,7 @@ function SubmissionForm(props: {
       </select>
       <select value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
         <option value="">— vendor (optional) —</option>
-        {matching.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+        {matching.map((v: any) => <option key={v.id} value={v.id}>{v.label}</option>)}
       </select>
       <input placeholder="ISBN (optional)" value={isbn} onChange={(e) => setIsbn(e.target.value)} />
       <button style={btn} disabled={props.busy}>Create submission</button>
