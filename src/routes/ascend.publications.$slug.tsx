@@ -35,12 +35,17 @@ export const Route = createFileRoute("/ascend/publications/$slug")({
   }),
   loader: async ({ params }) => {
     try {
-      const detail = await getPublication({ data: { slug: params.slug } });
-      return { detail, slug: params.slug };
+      const [detail, assets, events] = await Promise.all([
+        getPublication({ data: { slug: params.slug } }),
+        listPublicationAssets({ data: { slug: params.slug } }),
+        listPublicationEvents({ data: { slug: params.slug, limit: 50 } }),
+      ]);
+      return { detail, assets, events, slug: params.slug };
     } catch {
       throw notFound();
     }
   },
+
   notFoundComponent: () => (
     <main style={{ padding: "var(--am-silence-md)", fontFamily: "var(--am-font-ui)" }}>
       <p>Publication not found.</p>
