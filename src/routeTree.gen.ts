@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AscendPublicationsRouteImport } from './routes/ascend.publications'
 import { Route as AscendProofRouteImport } from './routes/ascend.proof'
 import { Route as AscendLiveRouteImport } from './routes/ascend.live'
 import { Route as AscendLibraryRouteImport } from './routes/ascend.library'
@@ -20,6 +21,11 @@ import { Route as ApiPublicRenderKindleRouteImport } from './routes/api/public/r
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AscendPublicationsRoute = AscendPublicationsRouteImport.update({
+  id: '/ascend/publications',
+  path: '/ascend/publications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AscendProofRoute = AscendProofRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/live': typeof AscendLiveRoute
   '/ascend/proof': typeof AscendProofRoute
+  '/ascend/publications': typeof AscendPublicationsRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AscendValidateSlugRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/live': typeof AscendLiveRoute
   '/ascend/proof': typeof AscendProofRoute
+  '/ascend/publications': typeof AscendPublicationsRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AscendValidateSlugRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/ascend/library': typeof AscendLibraryRoute
   '/ascend/live': typeof AscendLiveRoute
   '/ascend/proof': typeof AscendProofRoute
+  '/ascend/publications': typeof AscendPublicationsRoute
   '/ascend/reader/$slug': typeof AscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AscendValidateSlugRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/ascend/library'
     | '/ascend/live'
     | '/ascend/proof'
+    | '/ascend/publications'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
     | '/api/public/render/kindle'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/ascend/library'
     | '/ascend/live'
     | '/ascend/proof'
+    | '/ascend/publications'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
     | '/api/public/render/kindle'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/ascend/library'
     | '/ascend/live'
     | '/ascend/proof'
+    | '/ascend/publications'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
     | '/api/public/render/kindle'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AscendLibraryRoute: typeof AscendLibraryRoute
   AscendLiveRoute: typeof AscendLiveRoute
   AscendProofRoute: typeof AscendProofRoute
+  AscendPublicationsRoute: typeof AscendPublicationsRoute
   AscendReaderSlugRoute: typeof AscendReaderSlugRoute
   AscendValidateSlugRoute: typeof AscendValidateSlugRoute
   ApiPublicRenderKindleRoute: typeof ApiPublicRenderKindleRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ascend/publications': {
+      id: '/ascend/publications'
+      path: '/ascend/publications'
+      fullPath: '/ascend/publications'
+      preLoaderRoute: typeof AscendPublicationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ascend/proof': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AscendLibraryRoute: AscendLibraryRoute,
   AscendLiveRoute: AscendLiveRoute,
   AscendProofRoute: AscendProofRoute,
+  AscendPublicationsRoute: AscendPublicationsRoute,
   AscendReaderSlugRoute: AscendReaderSlugRoute,
   AscendValidateSlugRoute: AscendValidateSlugRoute,
   ApiPublicRenderKindleRoute: ApiPublicRenderKindleRoute,

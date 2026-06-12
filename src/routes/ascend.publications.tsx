@@ -4,10 +4,21 @@
    minimal styling, reuses TIER-2 tokens. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { listRegistry, describe } from "@/publication/registry";
-import { planExports } from "@/publication/export";
-import { adaptForAllTargets } from "@/publication/metadata";
+import { planExports, type ExportPlan } from "@/publication/export";
+import { adaptForAllTargets, type AdapterResult, type PublicationMetadata } from "@/publication/metadata";
+import type { PublicationProfile } from "@/publication/profiles";
+import type { PublicationRecord } from "@/publication/status";
 import { getManuscript } from "@/manuscript/library";
 import { enrich } from "@/manuscript/pipeline";
+
+interface Row {
+  record: PublicationRecord;
+  metadata: PublicationMetadata;
+  profile: PublicationProfile | undefined;
+  plan: ExportPlan | undefined;
+  adapters: AdapterResult<PublicationMetadata>[];
+  issueCount: number;
+}
 
 export const Route = createFileRoute("/ascend/publications")({
   head: () => ({
