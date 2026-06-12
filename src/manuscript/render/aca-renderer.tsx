@@ -45,6 +45,19 @@ function renderInline(nodes: ACAInline[]): React.ReactNode {
             </a>
           </sup>
         );
+      case "citation-ref":
+        return (
+          <sup key={i}>
+            <a
+              href={`#bib-${n.key}`}
+              title={n.resolved ? `${n.resolved.author ?? ""} ${n.resolved.year ?? ""}`.trim() : n.key}
+              style={{ color: "var(--am-callout-accent)" }}
+            >
+              [{n.resolved?.author?.split(",")[0] ?? n.key}
+              {n.resolved?.year ? ` ${n.resolved.year}` : ""}]
+            </a>
+          </sup>
+        );
     }
   });
 }
