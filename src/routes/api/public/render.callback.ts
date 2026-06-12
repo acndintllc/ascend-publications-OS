@@ -23,7 +23,7 @@ const callbackSchema = z.object({
 function verify(sig: string | null, body: string): boolean {
   const secret = process.env.ASCEND_RUNNER_SECRET;
   if (!secret || !sig) return false;
-  const expected = createHmac("sha256", secret).update(body).digest("hex");
+  const expected = createHmac("sha256", secret).update(body, "utf8").digest("hex");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);

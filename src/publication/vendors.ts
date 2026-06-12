@@ -15,7 +15,7 @@ export interface VendorRow {
 }
 
 export const SUPPORTED_VENDOR_PLATFORMS: DistributionTarget[] = [
-  "amazon-kdp",
+  "kdp",
   "apple-books",
   "kobo",
   "draft2digital",

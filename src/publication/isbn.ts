@@ -27,7 +27,7 @@ export const ISBN_REQUIRED_TARGETS: DistributionTarget[] = [
 
 /** Platforms that accept but don't require ISBN. */
 export const ISBN_OPTIONAL_TARGETS: DistributionTarget[] = [
-  "amazon-kdp",
+  "kdp",
   "kobo",
   "draft2digital",
 ];
