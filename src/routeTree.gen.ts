@@ -18,6 +18,7 @@ import { Route as AscendValidateSlugRouteImport } from './routes/ascend.validate
 import { Route as AscendReaderSlugRouteImport } from './routes/ascend.reader.$slug'
 import { Route as AscendPublicationsSlugRouteImport } from './routes/ascend.publications.$slug'
 import { Route as AscendPublicationsSlugDistributeRouteImport } from './routes/ascend.publications.$slug.distribute'
+import { Route as AscendPublicationsSlugCommandRouteImport } from './routes/ascend.publications.$slug.command'
 import { Route as ApiPublicRenderPdfRouteImport } from './routes/api/public/render.pdf'
 import { Route as ApiPublicRenderKindleRouteImport } from './routes/api/public/render.kindle'
 import { Route as ApiPublicRenderCallbackRouteImport } from './routes/api/public/render.callback'
@@ -68,6 +69,12 @@ const AscendPublicationsSlugDistributeRoute =
     path: '/distribute',
     getParentRoute: () => AscendPublicationsSlugRoute,
   } as any)
+const AscendPublicationsSlugCommandRoute =
+  AscendPublicationsSlugCommandRouteImport.update({
+    id: '/command',
+    path: '/command',
+    getParentRoute: () => AscendPublicationsSlugRoute,
+  } as any)
 const ApiPublicRenderPdfRoute = ApiPublicRenderPdfRouteImport.update({
   id: '/api/public/render/pdf',
   path: '/api/public/render/pdf',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/api/public/render/callback': typeof ApiPublicRenderCallbackRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
   '/api/public/render/pdf': typeof ApiPublicRenderPdfRoute
+  '/ascend/publications/$slug/command': typeof AscendPublicationsSlugCommandRoute
   '/ascend/publications/$slug/distribute': typeof AscendPublicationsSlugDistributeRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
   '/api/public/render/callback': typeof ApiPublicRenderCallbackRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
   '/api/public/render/pdf': typeof ApiPublicRenderPdfRoute
+  '/ascend/publications/$slug/command': typeof AscendPublicationsSlugCommandRoute
   '/ascend/publications/$slug/distribute': typeof AscendPublicationsSlugDistributeRoute
 }
 export interface FileRoutesById {
@@ -125,6 +134,7 @@ export interface FileRoutesById {
   '/api/public/render/callback': typeof ApiPublicRenderCallbackRoute
   '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
   '/api/public/render/pdf': typeof ApiPublicRenderPdfRoute
+  '/ascend/publications/$slug/command': typeof AscendPublicationsSlugCommandRoute
   '/ascend/publications/$slug/distribute': typeof AscendPublicationsSlugDistributeRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/api/public/render/callback'
     | '/api/public/render/kindle'
     | '/api/public/render/pdf'
+    | '/ascend/publications/$slug/command'
     | '/ascend/publications/$slug/distribute'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/api/public/render/callback'
     | '/api/public/render/kindle'
     | '/api/public/render/pdf'
+    | '/ascend/publications/$slug/command'
     | '/ascend/publications/$slug/distribute'
   id:
     | '__root__'
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
     | '/api/public/render/callback'
     | '/api/public/render/kindle'
     | '/api/public/render/pdf'
+    | '/ascend/publications/$slug/command'
     | '/ascend/publications/$slug/distribute'
   fileRoutesById: FileRoutesById
 }
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AscendPublicationsSlugDistributeRouteImport
       parentRoute: typeof AscendPublicationsSlugRoute
     }
+    '/ascend/publications/$slug/command': {
+      id: '/ascend/publications/$slug/command'
+      path: '/command'
+      fullPath: '/ascend/publications/$slug/command'
+      preLoaderRoute: typeof AscendPublicationsSlugCommandRouteImport
+      parentRoute: typeof AscendPublicationsSlugRoute
+    }
     '/api/public/render/pdf': {
       id: '/api/public/render/pdf'
       path: '/api/public/render/pdf'
@@ -275,11 +295,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AscendPublicationsSlugRouteChildren {
+  AscendPublicationsSlugCommandRoute: typeof AscendPublicationsSlugCommandRoute
   AscendPublicationsSlugDistributeRoute: typeof AscendPublicationsSlugDistributeRoute
 }
 
 const AscendPublicationsSlugRouteChildren: AscendPublicationsSlugRouteChildren =
   {
+    AscendPublicationsSlugCommandRoute: AscendPublicationsSlugCommandRoute,
     AscendPublicationsSlugDistributeRoute:
       AscendPublicationsSlugDistributeRoute,
   }
@@ -315,3 +337,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
