@@ -7,7 +7,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   listPublications,
   seedFromLibrary,
+  listAllPublicationAssets,
 } from "@/lib/publication.functions";
+import { scoreAssets, type AssetRecord } from "@/publication/assets";
+
 import { planExports, type ExportPlan } from "@/publication/export";
 import {
   adaptForAllTargets,
@@ -34,7 +37,11 @@ interface Row {
   adapters: AdapterResult<PublicationMetadata>[];
   issueCount: number;
   veraKinds: string[];
+  assetsReady: boolean;
+  assetsScorePct: number;
+  assetsMissing: string[];
 }
+
 
 export const Route = createFileRoute("/ascend/publications")({
   head: () => ({
@@ -45,7 +52,16 @@ export const Route = createFileRoute("/ascend/publications")({
   }),
   loader: async () => {
     await seedFromLibrary();
-    const rows = await listPublications();
+    const [rows, allAssets] = await Promise.all([
+      listPublications(),
+      listAllPublicationAssets(),
+    ]);
+    const assetsBySlug = new Map<string, AssetRecord[]>();
+    for (const a of allAssets) {
+      const arr = assetsBySlug.get(a.slug) ?? [];
+      arr.push(a);
+      assetsBySlug.set(a.slug, arr);
+    }
     const out: Row[] = rows.map((entry) => {
       const r = entry.record;
       const lib = getManuscript(r.slug);
@@ -84,6 +100,7 @@ export const Route = createFileRoute("/ascend/publications")({
           })
         : undefined;
       const metadata = parsed?.success ? parsed.data : null;
+      const readiness = scoreAssets(r.profile, assetsBySlug.get(r.slug) ?? []);
       return {
         slug: r.slug,
         title: r.title,
@@ -98,10 +115,14 @@ export const Route = createFileRoute("/ascend/publications")({
         adapters: metadata ? adaptForAllTargets(metadata) : [],
         issueCount: enriched?.report.issues.length ?? 0,
         veraKinds: entry.vera?.enabled_kinds ?? [],
+        assetsReady: readiness.ready,
+        assetsScorePct: Math.round(readiness.score * 100),
+        assetsMissing: readiness.missingRequired,
       };
     });
     return { rows: out };
   },
+
   component: PublicationsRoute,
 });
 
@@ -182,7 +203,7 @@ function PublicationsRoute() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {["Title", "Profile", "Status", "Version", "Issues", "Export readiness", "Distribution", "VERA"].map((h) => (
+              {["Title", "Profile", "Status", "Version", "Issues", "Export readiness", "Distribution", "VERA", "Assets"].map((h) => (
                 <th key={h} style={{ ...cell, textAlign: "left", fontWeight: 600 }}>{h}</th>
               ))}
             </tr>
@@ -246,6 +267,17 @@ function PublicationsRoute() {
                   <td style={cell}>
                     {row.veraKinds.length === 0 ? "—" : `${row.veraKinds.length} kinds`}
                   </td>
+                  <td style={cell}>
+                    <div style={{ color: row.assetsReady ? "inherit" : "#b91c1c" }}>
+                      {row.assetsScorePct}% {row.assetsReady ? "✓" : ""}
+                    </div>
+                    {row.assetsMissing.length > 0 && (
+                      <div style={{ color: "var(--am-color-ink-500)" }}>
+                        missing: {row.assetsMissing.join(", ")}
+                      </div>
+                    )}
+                  </td>
+
                 </tr>
               );
             })}

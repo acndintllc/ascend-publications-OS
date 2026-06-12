@@ -87,10 +87,17 @@ export const seedFromLibrary = createServerFn({ method: "POST" }).handler(async 
       enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
       default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
     });
+    await persistence.recordEvent({
+      slug: entry.slug,
+      event_type: "publication.created",
+      payload: { profile: profileId, source: "library-seed" },
+      actor: "system",
+    });
     inserted++;
   }
   return { inserted };
 });
+
 
 export const listPublications = createServerFn({ method: "GET" }).handler(async () => {
   const p = await import("@/publication/persistence.server");
@@ -121,7 +128,17 @@ export const updatePublicationRecord = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => recordPatch.parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
+    const before = await p.getRecord(data.slug);
     await p.upsertRecord(data);
+    const profileChanged =
+      data.profile !== undefined && before && before.profile !== data.profile;
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: profileChanged ? "profile.changed" : "metadata.updated",
+      payload: profileChanged
+        ? { from: before?.profile, to: data.profile }
+        : { fields: Object.keys(data).filter((k) => k !== "slug") },
+    });
     return { ok: true };
   });
 
@@ -130,6 +147,11 @@ export const updatePublicationMetadata = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
     await p.upsertMetadata(data);
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "metadata.updated",
+      payload: { fields: Object.keys(data).filter((k) => k !== "slug") },
+    });
     return { ok: true };
   });
 
@@ -138,6 +160,11 @@ export const updatePublicationVera = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
     await p.upsertVeraConfig(data);
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "vera.updated",
+      payload: { enabled_kinds: data.enabled_kinds, default_voice: data.default_voice },
+    });
     return { ok: true };
   });
 
@@ -147,6 +174,84 @@ export const transitionPublicationStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
+    const before = await p.getRecord(data.slug);
     await p.transitionStatus(data.slug, data.next as PublicationStatus, data.notes);
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "status.changed",
+      payload: { from: before?.status, to: data.next, notes: data.notes ?? null },
+    });
     return { ok: true };
   });
+
+/* ─── 9E: asset server fns ───────────────────────────────────────── */
+
+const assetUploadSchema = z.object({
+  slug: z.string(),
+  kind: z.string(),
+  url: z.string().url(),
+  label: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+export const listPublicationAssets = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    return p.listAssets(data.slug);
+  });
+
+export const listAllPublicationAssets = createServerFn({ method: "GET" }).handler(async () => {
+  const p = await import("@/publication/persistence.server");
+  return p.listAllAssets();
+});
+
+export const uploadPublicationAsset = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => assetUploadSchema.parse(d))
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    const { asset, replaced } = await p.uploadAsset(data);
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: replaced ? "asset.replaced" : "asset.uploaded",
+      payload: {
+        kind: data.kind,
+        version: asset.version,
+        url: data.url,
+        replaced_id: replaced?.id ?? null,
+      },
+    });
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "readiness.recomputed",
+      payload: { trigger: replaced ? "asset.replaced" : "asset.uploaded" },
+    });
+    return { asset, replaced };
+  });
+
+export const deactivatePublicationAsset = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string(), id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    const asset = await p.deactivateAsset(data.id);
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "asset.deactivated",
+      payload: { id: data.id, kind: asset.kind, version: asset.version },
+    });
+    return { asset };
+  });
+
+/* ─── 9F: event log server fn ────────────────────────────────────── */
+
+export const listPublicationEvents = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string; limit?: number }) =>
+    z.object({ slug: z.string(), limit: z.number().int().positive().max(200).optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    return p.listEvents(data.slug, data.limit ?? 50);
+  });
+
