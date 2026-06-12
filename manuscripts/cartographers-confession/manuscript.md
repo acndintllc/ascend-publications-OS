@@ -1,10 +1,9 @@
-/* In-source manuscript specimen (Phase 3B).
-   Lives as a string so it bundles without a build-time MDX/loader plugin. */
-export const specimenManuscript = `---
+---
 title: The Cartographer's Confession
 slug: cartographers-confession
 mode: web-reader
 authors: [V. Halliday]
+eyebrow: Chapter One
 ---
 
 :::chapter-opener eyebrow="Chapter One"
@@ -57,4 +56,3 @@ Survey Society Quarterly, 12(3), 88–104.
 :::
 
 [^1]: The county did, in fact, complain — but only six years later.
-`;
