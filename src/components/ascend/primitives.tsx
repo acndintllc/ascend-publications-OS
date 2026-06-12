@@ -185,7 +185,7 @@ export function PullQuote({ cite, children, style, ...rest }: { cite?: string } 
   );
 }
 
-export function Sidebar({ title, children, style, ...rest }: { title?: React.ReactNode } & React.HTMLAttributes<HTMLAsideElement>) {
+export function Sidebar({ title, children, style, ...rest }: { title?: React.ReactNode } & React.HTMLAttributes<HTMLElement>) {
   return (
     <aside
       data-am="sidebar"
