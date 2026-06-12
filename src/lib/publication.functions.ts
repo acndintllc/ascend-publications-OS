@@ -255,3 +255,99 @@ export const listPublicationEvents = createServerFn({ method: "GET" })
     return p.listEvents(data.slug, data.limit ?? 50);
   });
 
+
+/* ─── Phase 10A: storage-backed asset uploads ───────────────────── */
+
+export const createAssetUploadUrl = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string(), kind: z.string(), filename: z.string().min(1) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const s = await import("@/publication/storage.server");
+    return s.createSignedUpload(data);
+  });
+
+/* ─── Phase 10C: distribution queue ─────────────────────────────── */
+
+const queueState = z.enum([
+  "queued","processing","blocked","ready","submitted","failed",
+]);
+
+export const listDistributionQueue = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug?: string }) =>
+    z.object({ slug: z.string().optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const q = await import("@/publication/queue.server");
+    return q.listQueue(data.slug);
+  });
+
+export const enqueueDistribution = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      target: z.string(),
+      blockers: z.array(z.string()).optional(),
+      notes: z.string().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const q = await import("@/publication/queue.server");
+    const p = await import("@/publication/persistence.server");
+    const row = await q.enqueue({
+      slug: data.slug,
+      target: data.target,
+      state: (data.blockers?.length ?? 0) > 0 ? "blocked" : "queued",
+      blockers: data.blockers ?? [],
+      notes: data.notes ?? null,
+    });
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "export.requested",
+      payload: { target: data.target, queue_id: row.id, state: row.state },
+    });
+    return row;
+  });
+
+export const updateDistributionEntry = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      slug: z.string(),
+      state: queueState.optional(),
+      blockers: z.array(z.string()).optional(),
+      artifact_url: z.string().url().nullable().optional(),
+      notes: z.string().nullable().optional(),
+      submitted: z.boolean().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const q = await import("@/publication/queue.server");
+    const p = await import("@/publication/persistence.server");
+    const patch: Record<string, unknown> = {};
+    if (data.state) patch.state = data.state;
+    if (data.blockers) patch.blockers = data.blockers;
+    if (data.artifact_url !== undefined) patch.artifact_url = data.artifact_url;
+    if (data.notes !== undefined) patch.notes = data.notes;
+    if (data.submitted) {
+      patch.state = "submitted";
+      patch.submitted_at = new Date().toISOString();
+    }
+    const row = await q.updateQueue(data.id, patch as never);
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "export.requested",
+      payload: { queue_id: row.id, state: row.state, transition: true },
+    });
+    return row;
+  });
+
+export const removeDistributionEntry = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const q = await import("@/publication/queue.server");
+    await q.deleteQueueEntry(data.id);
+    return { ok: true };
+  });
