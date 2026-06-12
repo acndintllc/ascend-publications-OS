@@ -1,8 +1,9 @@
 /* ============================================================
-   ASCEND TIER 3 — pdf overlay (PTL-007 §4.4)
+   ASCEND TIER 3 — pdf overlay (PTL-007 §4.4, Phase 4A)
    Print-ready manuscript. Pairs with build-time OKLCH→CMYK
    flattening (R-PDF-2) and static weight ladder (R-PDF-1).
-   This CSS layer handles structural/page tokens only.
+   This CSS layer handles structural/page tokens + a screen
+   preview ("page sheet") + print rules that strip chrome.
    ============================================================ */
 
 [data-mode="pdf"],
@@ -28,14 +29,61 @@
   --am-pullquote-size: var(--am-type-400);
 }
 
-@media print {
+/* Screen preview — render the reader as a stack of paper sheets
+   so authors can see roughly what the printed PDF will look like. */
+@media screen {
+  [data-mode="pdf"] {
+    background: var(--am-color-ink-100);
+    padding-block: var(--am-space-7);
+  }
   [data-mode="pdf"] .am-chapter,
-  [data-mode="pdf"] [data-am-chapter] {
+  [data-mode="pdf"] [data-am="chapter"] {
+    max-width: 8.5in;
+    margin-inline: auto;
+    margin-block: var(--am-space-6);
+    padding-block: 1in;
+    background: var(--am-color-ink-0);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      0 12px 32px -8px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* Print path — what `window.print()` actually emits. The reader
+   route opts into this via the `am-print-root` class on <html>. */
+@media print {
+  @page {
+    size: Letter;
+    margin: 0.75in;
+  }
+  html.am-print-root body * {
+    visibility: hidden;
+  }
+  html.am-print-root [data-am="chapter"],
+  html.am-print-root [data-am="chapter"] * {
+    visibility: visible;
+  }
+  html.am-print-root [data-am="chapter"] {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    background: white;
+    max-width: none;
+  }
+  [data-mode="pdf"] [data-am="chapter-opener"] {
     page-break-before: always;
     break-before: page;
   }
-  [data-mode="pdf"] .am-scene-break,
-  [data-mode="pdf"] [data-am-scene-break] {
+  [data-mode="pdf"] [data-am="scene-break"],
+  [data-mode="pdf"] .am-scene-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  [data-mode="pdf"] [data-am="pullquote"],
+  [data-mode="pdf"] [data-am="sidebar"],
+  [data-mode="pdf"] [data-am="callout"] {
     page-break-inside: avoid;
     break-inside: avoid;
   }
