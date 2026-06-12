@@ -156,7 +156,7 @@ export async function runExternalKindlegen(input: ExternalKindlegenInput): Promi
   const url = `${input.origin.replace(/\/+$/, "")}/api/public/render/callback`;
 
   let cbStatus = 0;
-  let parsedBody: unknown = null;
+  let safeBody = "";
   try {
     const cb = await fetch(url, {
       method: "POST",
@@ -165,8 +165,7 @@ export async function runExternalKindlegen(input: ExternalKindlegenInput): Promi
     });
     cbStatus = cb.status;
     const t = await cb.text();
-    try { parsedBody = JSON.parse(t) as unknown; } catch { parsedBody = t; }
-    const safeBody = (typeof parsedBody === "string" ? parsedBody : JSON.stringify(parsedBody ?? null));
+    try { safeBody = JSON.stringify(JSON.parse(t)); } catch { safeBody = t; }
     if (!cb.ok) {
       return {
         ok: false, provider: PROVIDER_ID, kind: "kindle", warnings,
