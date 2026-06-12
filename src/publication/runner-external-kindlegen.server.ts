@@ -193,6 +193,6 @@ export async function runExternalKindlegen(input: ExternalKindlegenInput): Promi
     callback_status: cbStatus,
     artifact_path: storagePath,
     signed_url: signed?.signedUrl ?? null,
-    validation: { callback_body: parsedBody, bytes: kfxBytes.byteLength },
+    validation: { callback_body: safeBody, bytes: kfxBytes.byteLength },
   };
 }
