@@ -681,3 +681,57 @@ export const transitionIsbn = createServerFn({ method: "POST" })
     return row;
   });
 
+/* ─── PTL-028 Phase 17A — External KindleGen runner ───────────────── */
+
+export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      sourceQueueId: z.string().uuid().nullable().optional(),
+      actor: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const req = getRequest();
+    const origin = new URL(req.url).origin;
+    const { runExternalKindlegen } = await import("@/publication/runner-external-kindlegen.server");
+    return runExternalKindlegen({
+      slug: data.slug,
+      origin,
+      sourceQueueId: data.sourceQueueId ?? null,
+      actor: data.actor,
+    });
+  });
+
+export const listRunnerProvidersFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { listProviders } = await import("@/publication/runner-provider");
+  return listProviders().map((p) => ({
+    id: p.id, kind: p.kind, label: p.label,
+    available: p.available(), fallback: p.fallback,
+  }));
+});
+
+/* ─── PTL-028 Phase 17B — KDP submission adapter ──────────────────── */
+
+export const runKdpAdapterFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string(), live: z.boolean().optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { runKdpAdapter } = await import("@/publication/kdp-adapter.server");
+    return runKdpAdapter({ slug: data.slug, live: data.live ?? false });
+  });
+
+/* ─── PTL-028 Phase 17C — Publication dry-run ─────────────────────── */
+
+export const runPublicationDryRunFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string(), forceRegenerate: z.boolean().optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { runPublicationDryRun } = await import("@/publication/dry-run.server");
+    return runPublicationDryRun({ slug: data.slug, forceRegenerate: data.forceRegenerate });
+  });
+
+

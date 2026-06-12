@@ -19,6 +19,9 @@ import {
   generatePublicationArtifacts,
   runReferencePdfRunner,
   runReferenceKfxRunner,
+  runExternalKindlegenRunner,
+  runKdpAdapterFn,
+  runPublicationDryRunFn,
   buildPublicationSubmissionPackage,
   reportVendorSecretsFn,
   transitionIsbn,
@@ -287,6 +290,31 @@ function CommandCenter() {
             alert("Submission packages:\n" + results.join("\n"));
           })}>
             Validate submission packages
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runExternalKindlegenRunner({ data: { slug } });
+            alert(`External KindleGen: ${r.ok ? "OK" : "FAIL"} (${r.failure ?? "—"})\n${r.errors.join("\n") || r.signed_url || ""}`);
+          })}>
+            Run external KindleGen
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runKdpAdapterFn({ data: { slug } });
+            alert(`KDP adapter (${r.mode}) → ${r.state}\nresponse: ${r.response.status} — ${r.response.message}\nerrors: ${r.issues.filter((i: any) => i.level === "error").length}`);
+          })}>
+            Run KDP dry-run
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runPublicationDryRunFn({ data: { slug } });
+            const lines = [
+              `Verdict: ${r.verdict} (${r.readinessScore}%)`,
+              `Artifacts: epub=${r.artifactSummary.epub} kindle=${r.artifactSummary.kindle} pdf=${r.artifactSummary.pdf} (${r.artifactSummary.activeCount} active)`,
+              `KDP state: ${r.kdp.state} · package ready: ${r.kdp.package.ready}`,
+              r.blockers.length ? `Blockers:\n - ${r.blockers.slice(0, 8).join("\n - ")}` : "Blockers: none",
+              r.warnings.length ? `Warnings: ${r.warnings.length}` : "",
+            ].filter(Boolean);
+            alert(lines.join("\n"));
+          })}>
+            Run full publication dry-run
           </button>
         </div>
 
