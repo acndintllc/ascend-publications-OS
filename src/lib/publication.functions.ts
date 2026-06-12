@@ -426,3 +426,156 @@ export const signArtifactUrl = createServerFn({ method: "POST" })
     const r = await import("@/publication/runner.server");
     return { url: await r.signArtifact(data.path) };
   });
+
+/* ─── PTL-025 Phase 14B — ISBN registry server fns ────────────────── */
+
+export const listIsbns = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    return r.listIsbns(data.slug);
+  });
+
+export const assignIsbn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      isbn: z.string().min(10),
+      edition: z.string().optional(),
+      format: z.string(),
+      status: z.string().optional(),
+      notes: z.string().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    const { isValidIsbn13 } = await import("@/publication/isbn");
+    if (!isValidIsbn13(data.isbn)) throw new Error("Invalid ISBN-13 checksum");
+    const row = await r.assignIsbn(data);
+    const p = await import("@/publication/persistence.server");
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "metadata.updated",
+      payload: { isbn: row.isbn, format: row.format, action: "isbn.assigned" },
+    });
+    return row;
+  });
+
+export const updateIsbn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      status: z.string().optional(),
+      notes: z.string().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    const { id, ...patch } = data;
+    return r.updateIsbn(id, patch as never);
+  });
+
+export const deleteIsbn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    await r.deleteIsbn(data.id);
+    return { ok: true };
+  });
+
+/* ─── PTL-025 Phase 14D — Vendor server fns ───────────────────────── */
+
+export const listVendors = createServerFn({ method: "GET" }).handler(async () => {
+  const r = await import("@/publication/registry-extra.server");
+  return r.listVendors();
+});
+
+export const upsertVendor = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid().optional(),
+      platform: z.string(),
+      account_id: z.string().nullable().optional(),
+      label: z.string().min(1),
+      settings: z.record(z.string(), z.unknown()).optional(),
+      credential_ref: z.string().nullable().optional(),
+      submission_prefs: z.record(z.string(), z.unknown()).optional(),
+      enabled: z.boolean().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    return r.upsertVendor(data as never);
+  });
+
+export const deleteVendor = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    await r.deleteVendor(data.id);
+    return { ok: true };
+  });
+
+/* ─── PTL-025 Phase 14C — Submission server fns ───────────────────── */
+
+export const listSubmissions = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    return r.listSubmissions(data.slug);
+  });
+
+export const createSubmission = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      platform: z.string(),
+      vendor_id: z.string().uuid().nullable().optional(),
+      queue_id: z.string().uuid().nullable().optional(),
+      isbn: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    const row = await r.createSubmission(data);
+    const p = await import("@/publication/persistence.server");
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "export.requested",
+      payload: { submission_id: row.id, platform: data.platform, state: "pending" },
+    });
+    return row;
+  });
+
+export const updateSubmission = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      slug: z.string(),
+      status: z.enum(["pending","submitted","accepted","rejected","published","withdrawn"]).optional(),
+      notes: z.string().nullable().optional(),
+      response_payload: z.record(z.string(), z.unknown()).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/registry-extra.server");
+    const { id, slug, ...patch } = data;
+    const row = await r.updateSubmission(id, patch as never);
+    const p = await import("@/publication/persistence.server");
+    await p.recordEvent({
+      slug,
+      event_type: "export.requested",
+      payload: { submission_id: row.id, state: row.status, transition: true },
+    });
+    return row;
+  });
+
+/* ─── PTL-025 Phase 14F — Publication audit ───────────────────────── */
+
+export const auditPublicationFn = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { auditPublication } = await import("@/publication/audit.server");
+    return auditPublication(data.slug);
+  });
