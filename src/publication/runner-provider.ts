@@ -35,8 +35,6 @@ export type JsonValue =
   | JsonValue[]
   | { [k: string]: JsonValue };
 
-interface _End { _?: never;
-}
 
 export interface RunnerProvider {
   id: string;
