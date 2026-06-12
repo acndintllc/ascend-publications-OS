@@ -156,7 +156,7 @@ function ReaderRoute() {
         ) : null}
         {mode === "ebook" || mode === "kindle" ? (
           <button
-            onClick={handleEpub}
+            onClick={() => handleEpub(mode === "kindle" ? "kindle" : "epub3")}
             style={{
               padding: "var(--am-space-2) var(--am-space-4)",
               borderRadius: "var(--am-radius-pill)",
@@ -169,7 +169,7 @@ function ReaderRoute() {
               letterSpacing: "var(--am-tracking-wide)",
             }}
           >
-            Download EPUB
+            {mode === "kindle" ? "Download Kindle EPUB" : "Download EPUB"}
           </button>
         ) : null}
         {doc.enrichment ? (
