@@ -19,6 +19,7 @@ export interface PublicationAudit {
   readiness: ReadinessReport | null;
   blockers: string[];
   warnings: string[];
+  vendorSecrets: VendorSecretReport[];
   facts: {
     hasRecord: boolean;
     hasMetadata: boolean;
@@ -26,13 +27,18 @@ export interface PublicationAudit {
     activeAssetCount: number;
     artifactCount: number;
     activeArtifactCount: number;
+    hasEpubArtifact: boolean;
+    hasKindleArtifact: boolean;
+    hasPdfArtifact: boolean;
     queueRows: number;
     submissionRows: number;
     isbnCount: number;
     vendorCount: number;
+    vendorsConfigured: number;
     targetsMissingIsbn: string[];
   };
 }
+
 
 export async function auditPublication(slug: string): Promise<PublicationAudit> {
   const blockers: string[] = [];
