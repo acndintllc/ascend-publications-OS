@@ -346,6 +346,39 @@ function DistributeRoute() {
             </table>
           )}
         </section>
+
+        {/* Phase 13B — Artifact registry */}
+        <section style={{ marginBlockStart: "var(--am-silence-md)" }}>
+          <h2 style={{ fontFamily: "var(--am-font-display)" }}>Artifact registry</h2>
+          {artifacts.rows.length === 0 ? (
+            <p style={{ fontFamily: "var(--am-font-ui)", color: "var(--am-color-ink-500)" }}>
+              No artifacts generated yet. Click "Generate &amp; register artifacts" above to compile EPUB, Kindle, PDF source, and packages.
+            </p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>{["Kind","Target","v","Size","Status","Generated","Active","Download"].map((h) => <th key={h} style={{ ...cell, textAlign: "left", fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>
+                {artifacts.rows.map((a) => {
+                  const url = artifacts.signed[a.id];
+                  return (
+                    <tr key={a.id} style={{ opacity: a.is_active ? 1 : 0.55 }}>
+                      <td style={cell}><strong>{a.kind}</strong></td>
+                      <td style={cell}>{a.target ?? "—"}</td>
+                      <td style={cell}>v{a.version}</td>
+                      <td style={cell}>{Math.round(a.byte_size / 1024)} KB</td>
+                      <td style={cell}>{a.status}</td>
+                      <td style={cell}>{new Date(a.generated_at).toLocaleString()}</td>
+                      <td style={cell}>{a.is_active ? "✓" : "—"}</td>
+                      <td style={cell}>
+                        {url ? <a href={url} target="_blank" rel="noreferrer" style={{ ...btn, display: "inline-block", textDecoration: "none" }}>⬇ {a.filename}</a> : <span style={{ color: "var(--am-color-ink-500)" }}>—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </section>
       </div>
     </main>
   );
