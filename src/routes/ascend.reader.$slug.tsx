@@ -151,6 +151,24 @@ function ReaderRoute() {
             Print / Save PDF
           </button>
         ) : null}
+        {mode === "ebook" || mode === "kindle" ? (
+          <button
+            onClick={handleEpub}
+            style={{
+              padding: "var(--am-space-2) var(--am-space-4)",
+              borderRadius: "var(--am-radius-pill)",
+              border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+              background: "var(--am-color-accent-500)",
+              color: "var(--am-color-ink-0)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              letterSpacing: "var(--am-tracking-wide)",
+            }}
+          >
+            Download EPUB
+          </button>
+        ) : null}
         {doc.enrichment ? (
           <span
             style={{
