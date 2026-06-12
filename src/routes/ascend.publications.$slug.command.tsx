@@ -257,17 +257,39 @@ function CommandCenter() {
             Run reference PDF runner
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runReferenceKfxRunner({ data: { slug, mode: "ok" } });
+            alert(`KFX runner: ${r.ok ? "OK" : "FAIL"} (status ${r.callback_status})\n${r.signed_url ?? ""}`);
+          })}>
+            Run reference KFX runner
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
             const modes = ["invalid_signature", "missing_artifact", "failed_generation"] as const;
             const results: string[] = [];
             for (const m of modes) {
               const r = await runReferencePdfRunner({ data: { slug, mode: m } });
-              results.push(`${m}: status ${r.callback_status} ok=${r.ok}`);
+              results.push(`pdf/${m}: status ${r.callback_status} ok=${r.ok}`);
+            }
+            for (const m of modes) {
+              const r = await runReferenceKfxRunner({ data: { slug, mode: m } });
+              results.push(`kfx/${m}: status ${r.callback_status} ok=${r.ok}`);
             }
             alert("Failure paths:\n" + results.join("\n"));
           })}>
             Run failure simulations
           </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const targets = SUPPORTED_VENDOR_PLATFORMS;
+            const results: string[] = [];
+            for (const t of targets) {
+              const pkg = await buildPublicationSubmissionPackage({ data: { slug, platform: t } });
+              results.push(`${t}: ${pkg.ready ? "READY" : "BLOCKED"} (${pkg.issues.filter((i: any) => i.level === "error").length} errors)`);
+            }
+            alert("Submission packages:\n" + results.join("\n"));
+          })}>
+            Validate submission packages
+          </button>
         </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--am-space-5)", marginBlockStart: "var(--am-space-4)" }}>
           <div>
             <strong>Active artifacts ({artifacts.rows.filter((r: any) => r.is_active).length})</strong>
