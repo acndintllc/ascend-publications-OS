@@ -125,7 +125,7 @@ export async function buildSubmissionPackage(slug: string, platform: Distributio
   return {
     slug, platform, ready, issues,
     manifest: {
-      metadata,
+      metadata: JSON.parse(JSON.stringify(metadata)) as JsonValue,
       serialized: { filename: ser.filename, mediaType: ser.mediaType, body: ser.body },
       isbn: usableIsbn ? { isbn: usableIsbn.isbn, format: usableIsbn.format } : null,
       artifacts: signedArtifacts,
