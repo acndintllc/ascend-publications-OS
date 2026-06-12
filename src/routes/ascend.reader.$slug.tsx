@@ -70,19 +70,22 @@ function ReaderRoute() {
     window.print();
   }, []);
 
-  const handleEpub = React.useCallback(() => {
-    if (typeof window === "undefined") return;
-    const artifact = buildEpub(doc);
-    const blob = new Blob([artifact.bytes as BlobPart], { type: artifact.mediaType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = artifact.filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, [doc]);
+  const handleEpub = React.useCallback(
+    (profile: "epub3" | "kindle") => {
+      if (typeof window === "undefined") return;
+      const artifact = buildEpub(doc, profile);
+      const blob = new Blob([artifact.bytes as BlobPart], { type: artifact.mediaType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = artifact.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+    [doc],
+  );
 
   return (
     <div data-mode={mode} style={{ minHeight: "100dvh", background: "var(--am-chapter-bg)" }}>
@@ -153,7 +156,7 @@ function ReaderRoute() {
         ) : null}
         {mode === "ebook" || mode === "kindle" ? (
           <button
-            onClick={handleEpub}
+            onClick={() => handleEpub(mode === "kindle" ? "kindle" : "epub3")}
             style={{
               padding: "var(--am-space-2) var(--am-space-4)",
               borderRadius: "var(--am-radius-pill)",
@@ -166,7 +169,7 @@ function ReaderRoute() {
               letterSpacing: "var(--am-tracking-wide)",
             }}
           >
-            Download EPUB
+            {mode === "kindle" ? "Download Kindle EPUB" : "Download EPUB"}
           </button>
         ) : null}
         {doc.enrichment ? (
