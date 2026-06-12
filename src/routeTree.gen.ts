@@ -10,17 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AscendReaderRouteImport } from './routes/ascend.reader'
 import { Route as AscendProofRouteImport } from './routes/ascend.proof'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AscendReaderRoute = AscendReaderRouteImport.update({
-  id: '/ascend/reader',
-  path: '/ascend/reader',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AscendProofRoute = AscendProofRouteImport.update({
@@ -32,31 +26,27 @@ const AscendProofRoute = AscendProofRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ascend/proof': typeof AscendProofRoute
-  '/ascend/reader': typeof AscendReaderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ascend/proof': typeof AscendProofRoute
-  '/ascend/reader': typeof AscendReaderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ascend/proof': typeof AscendProofRoute
-  '/ascend/reader': typeof AscendReaderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ascend/proof' | '/ascend/reader'
+  fullPaths: '/' | '/ascend/proof'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ascend/proof' | '/ascend/reader'
-  id: '__root__' | '/' | '/ascend/proof' | '/ascend/reader'
+  to: '/' | '/ascend/proof'
+  id: '__root__' | '/' | '/ascend/proof'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AscendProofRoute: typeof AscendProofRoute
-  AscendReaderRoute: typeof AscendReaderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -66,13 +56,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ascend/reader': {
-      id: '/ascend/reader'
-      path: '/ascend/reader'
-      fullPath: '/ascend/reader'
-      preLoaderRoute: typeof AscendReaderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ascend/proof': {
@@ -88,8 +71,17 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AscendProofRoute: AscendProofRoute,
-  AscendReaderRoute: AscendReaderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
