@@ -15,13 +15,18 @@ export const QUEUE_STATE_LABELS: Record<QueueState, string> = {
   failed: "Failed",
 };
 
+export type QueuePayloadValue =
+  | string | number | boolean | null
+  | QueuePayloadValue[]
+  | { [key: string]: QueuePayloadValue };
+
 export interface QueueRow {
   id: string;
   slug: string;
   target: DistributionTarget | string;
   state: QueueState;
   blockers: string[];
-  payload: Record<string, unknown>;
+  payload: { [key: string]: QueuePayloadValue };
   artifact_url: string | null;
   notes: string | null;
   created_at: string;
