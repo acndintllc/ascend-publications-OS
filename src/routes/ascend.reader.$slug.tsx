@@ -202,7 +202,10 @@ function ReaderRoute() {
         ) : null}
       </nav>
       <Chapter>
-        <RenderManuscript doc={doc} />
+        <RenderManuscript
+          doc={doc}
+          allowedVeraKinds={allowedVeraKinds as never}
+        />
       </Chapter>
     </div>
   );
