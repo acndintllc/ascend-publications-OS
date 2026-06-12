@@ -27,7 +27,15 @@ export interface StandardRunnerResult {
   signed_url?: string | null;
   failure?: RunnerFailureState;
   /** Free-form validation/log info echoed back to the registry. */
-  validation?: Record<string, unknown>;
+  validation?: { [k: string]: JsonValue };
+}
+
+export type JsonValue =
+  | string | number | boolean | null
+  | JsonValue[]
+  | { [k: string]: JsonValue };
+
+interface _End { _?: never;
 }
 
 export interface RunnerProvider {
