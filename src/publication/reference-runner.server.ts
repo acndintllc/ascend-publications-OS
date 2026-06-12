@@ -242,7 +242,7 @@ export async function runReferencePdf(input: RunReferenceInput): Promise<RunnerR
     ok: res.ok,
     mode,
     callback_status: res.status,
-    callback_body: parsed,
+    callback_body: parsed as Json,
     artifact_path: storagePath ?? undefined,
     signed_url: signedUrl,
   };
