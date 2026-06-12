@@ -28,11 +28,17 @@ export const EVENT_LABELS: Record<WorkflowEventType, string> = {
   "readiness.recomputed": "Readiness recomputed",
 };
 
+export type EventPayload =
+  | string | number | boolean | null
+  | EventPayload[]
+  | { [key: string]: EventPayload };
+
 export interface WorkflowEvent {
   id: string;
   slug: string;
   event_type: WorkflowEventType | string;
-  payload: Record<string, unknown>;
+  payload: EventPayload;
   actor: string | null;
   created_at: string;
 }
+
