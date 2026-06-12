@@ -9,6 +9,10 @@ import {
   updatePublicationMetadata,
   updatePublicationVera,
   transitionPublicationStatus,
+  listPublicationAssets,
+  uploadPublicationAsset,
+  deactivatePublicationAsset,
+  listPublicationEvents,
 } from "@/lib/publication.functions";
 import { PROFILES, getProfile, type VeraBlockKind } from "@/publication/profiles";
 import {
@@ -21,6 +25,9 @@ import { adaptForAllTargets, publicationMetadataSchema } from "@/publication/met
 import { planExports } from "@/publication/export";
 import { getManuscript } from "@/manuscript/library";
 import { enrich } from "@/manuscript/pipeline";
+import { ASSET_KINDS, ASSET_LABELS, scoreAssets, type AssetKind, type AssetRecord } from "@/publication/assets";
+import { EVENT_LABELS } from "@/publication/events";
+
 
 export const Route = createFileRoute("/ascend/publications/$slug")({
   head: ({ params }) => ({
