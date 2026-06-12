@@ -71,6 +71,48 @@ export type Database = {
           },
         ]
       }
+      publication_distribution_queue: {
+        Row: {
+          artifact_url: string | null
+          blockers: Json
+          created_at: string
+          id: string
+          notes: string | null
+          payload: Json
+          slug: string
+          state: Database["public"]["Enums"]["distribution_queue_state"]
+          submitted_at: string | null
+          target: string
+          updated_at: string
+        }
+        Insert: {
+          artifact_url?: string | null
+          blockers?: Json
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payload?: Json
+          slug: string
+          state?: Database["public"]["Enums"]["distribution_queue_state"]
+          submitted_at?: string | null
+          target: string
+          updated_at?: string
+        }
+        Update: {
+          artifact_url?: string | null
+          blockers?: Json
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payload?: Json
+          slug?: string
+          state?: Database["public"]["Enums"]["distribution_queue_state"]
+          submitted_at?: string | null
+          target?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       publication_events: {
         Row: {
           actor: string | null
@@ -279,6 +321,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      distribution_queue_state:
+        | "queued"
+        | "processing"
+        | "blocked"
+        | "ready"
+        | "submitted"
+        | "failed"
       publication_status:
         | "draft"
         | "editing"
@@ -414,6 +463,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      distribution_queue_state: [
+        "queued",
+        "processing",
+        "blocked",
+        "ready",
+        "submitted",
+        "failed",
+      ],
       publication_status: [
         "draft",
         "editing",
