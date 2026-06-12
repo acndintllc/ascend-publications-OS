@@ -239,6 +239,9 @@ function DistributeRoute() {
             <button type="button" style={btn} onClick={handleDownloadPackage} disabled={!lib || !metadata || !profile}>
               ⬇ Full publication package (.zip)
             </button>
+            <button type="button" style={btn} onClick={handleGenerateArtifacts} disabled={busy || !lib || !metadata || !profile}>
+              ⚙ Generate &amp; register artifacts
+            </button>
           </div>
         </section>
 
