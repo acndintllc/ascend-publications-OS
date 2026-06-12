@@ -1,0 +1,27 @@
+{
+  "notes": [
+    {
+      "id": "v1",
+      "voice": "VERA-RESEARCH",
+      "kind": "vera-insight",
+      "source": "ASCEND field log, 2025",
+      "body": "Across 3,200 logged decisions, participants who labeled their emotion before acting on the finding had a 41% lower rate of premature conclusion-locking.",
+      "anchor": 0
+    },
+    {
+      "id": "v2",
+      "voice": "VERA-RESEARCH",
+      "kind": "vera-research-prompt",
+      "source": "Method appendix §2.1",
+      "body": "Try this: keep a 72-hour log of decisions you almost made under pressure and the disconfirming evidence that surfaced after.",
+      "anchor": 1
+    },
+    {
+      "id": "v3",
+      "voice": "VERA-RESEARCH",
+      "kind": "vera-question",
+      "body": "Which of your current convictions would survive a result you did not want?",
+      "anchor": 2
+    }
+  ]
+}
