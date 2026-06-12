@@ -12,7 +12,7 @@ eyebrow: Chapter One
 
 The first map I ever falsified was small enough to fit inside a letter.
 It showed a river that did not exist, drawn in ink the color of bruised
-plums, snaking across a county I had never visited[^1].
+plums, snaking across a county I had never visited [@halliday1924][^1].
 
 :::pullquote cite="Field journal, 1923"
 A map is a lie agreed upon by the patient and the surveyor.

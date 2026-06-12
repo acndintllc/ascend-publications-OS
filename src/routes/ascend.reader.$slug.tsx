@@ -97,6 +97,19 @@ function ReaderRoute() {
             {m}
           </button>
         ))}
+        {doc.enrichment ? (
+          <span
+            style={{
+              marginInlineStart: "auto",
+              color: "var(--am-color-ink-500)",
+              fontSize: "var(--am-type-100)",
+              letterSpacing: "var(--am-tracking-wide)",
+            }}
+          >
+            {doc.enrichment.stats.words.toLocaleString()} words · ~
+            {doc.enrichment.stats.readingMinutes} min
+          </span>
+        ) : null}
       </nav>
       <Chapter>
         <RenderManuscript doc={doc} />
