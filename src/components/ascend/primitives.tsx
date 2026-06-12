@@ -40,7 +40,7 @@ export function ChapterOpener({
   className,
   style,
   ...rest
-}: { eyebrow?: React.ReactNode; title: React.ReactNode } & DivProps) {
+}: { eyebrow?: React.ReactNode; title: React.ReactNode } & Omit<DivProps, "title">) {
   return (
     <header
       data-am="chapter-opener"
@@ -95,7 +95,7 @@ export function Section({
   className,
   style,
   ...rest
-}: { title?: React.ReactNode } & SectionProps) {
+}: { title?: React.ReactNode } & Omit<SectionProps, "title">) {
   return (
     <section
       data-am="section"
@@ -185,7 +185,7 @@ export function PullQuote({ cite, children, style, ...rest }: { cite?: string } 
   );
 }
 
-export function Sidebar({ title, children, style, ...rest }: { title?: React.ReactNode } & React.HTMLAttributes<HTMLElement>) {
+export function Sidebar({ title, children, style, ...rest }: { title?: React.ReactNode } & Omit<React.HTMLAttributes<HTMLElement>, "title">) {
   return (
     <aside
       data-am="sidebar"
