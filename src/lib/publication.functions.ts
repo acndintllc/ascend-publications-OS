@@ -87,10 +87,17 @@ export const seedFromLibrary = createServerFn({ method: "POST" }).handler(async 
       enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
       default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
     });
+    await persistence.recordEvent({
+      slug: entry.slug,
+      event_type: "publication.created",
+      payload: { profile: profileId, source: "library-seed" },
+      actor: "system",
+    });
     inserted++;
   }
   return { inserted };
 });
+
 
 export const listPublications = createServerFn({ method: "GET" }).handler(async () => {
   const p = await import("@/publication/persistence.server");
