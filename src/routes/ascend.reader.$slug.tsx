@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Chapter } from "@/components/ascend/primitives";
 import { getManuscript } from "@/manuscript/library";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
+import { buildEpub } from "@/manuscript/package/epub-zip";
 import type { ACADocument } from "@/manuscript/schema/aca";
 
 const MODES = ["web-reader", "cinematic", "operational", "pdf", "ebook", "kindle"] as const;
@@ -68,6 +69,20 @@ function ReaderRoute() {
     window.addEventListener("afterprint", cleanup);
     window.print();
   }, []);
+
+  const handleEpub = React.useCallback(() => {
+    if (typeof window === "undefined") return;
+    const artifact = buildEpub(doc);
+    const blob = new Blob([artifact.bytes as BlobPart], { type: artifact.mediaType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = artifact.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [doc]);
 
   return (
     <div data-mode={mode} style={{ minHeight: "100dvh", background: "var(--am-chapter-bg)" }}>
@@ -134,6 +149,24 @@ function ReaderRoute() {
             }}
           >
             Print / Save PDF
+          </button>
+        ) : null}
+        {mode === "ebook" || mode === "kindle" ? (
+          <button
+            onClick={handleEpub}
+            style={{
+              padding: "var(--am-space-2) var(--am-space-4)",
+              borderRadius: "var(--am-radius-pill)",
+              border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+              background: "var(--am-color-accent-500)",
+              color: "var(--am-color-ink-0)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              letterSpacing: "var(--am-tracking-wide)",
+            }}
+          >
+            Download EPUB
           </button>
         ) : null}
         {doc.enrichment ? (
