@@ -65,8 +65,11 @@ export const Route = createFileRoute("/ascend/reader/$slug")({
 });
 
 function ReaderRoute() {
-  const { doc } = Route.useLoaderData() as { doc: ACADocument; slug: string };
-  const search = Route.useSearch();
+  const { doc, allowedVeraKinds } = Route.useLoaderData() as {
+    doc: ACADocument;
+    slug: string;
+    allowedVeraKinds?: string[];
+  };
   const [mode, setMode] = React.useState<Mode>(search.mode ?? doc.frontmatter.mode);
 
   const handlePrint = React.useCallback(() => {
