@@ -11,6 +11,8 @@ import {
   enqueueDistribution,
   updateDistributionEntry,
   removeDistributionEntry,
+  generatePublicationArtifacts,
+  listPublicationArtifacts,
 } from "@/lib/publication.functions";
 import { getManuscript } from "@/manuscript/library";
 import { enrich } from "@/manuscript/pipeline";
@@ -22,6 +24,7 @@ import { buildPackage, buildStorePackage } from "@/publication/packager";
 import { validateAllExports } from "@/publication/validate-exports";
 import type { AssetRecord } from "@/publication/assets";
 import type { QueueRow } from "@/publication/queue";
+import type { ArtifactRow } from "@/publication/runner.server";
 
 export const Route = createFileRoute("/ascend/publications/$slug/distribute")({
   head: ({ params }) => ({
@@ -31,12 +34,13 @@ export const Route = createFileRoute("/ascend/publications/$slug/distribute")({
     ],
   }),
   loader: async ({ params }) => {
-    const [pub, assets, queue] = await Promise.all([
+    const [pub, assets, queue, artifacts] = await Promise.all([
       getPublication({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listDistributionQueue({ data: { slug: params.slug } }),
+      listPublicationArtifacts({ data: { slug: params.slug } }),
     ]);
-    return { pub, assets, queue, slug: params.slug };
+    return { pub, assets, queue, artifacts, slug: params.slug };
   },
   component: DistributeRoute,
 });
@@ -74,10 +78,11 @@ function downloadBytes(filename: string, bytes: Uint8Array, mime: string) {
 }
 
 function DistributeRoute() {
-  const { pub, assets, queue, slug } = Route.useLoaderData() as {
+  const { pub, assets, queue, artifacts, slug } = Route.useLoaderData() as {
     pub: Awaited<ReturnType<typeof getPublication>>;
     assets: AssetRecord[];
     queue: QueueRow[];
+    artifacts: { rows: ArtifactRow[]; signed: Record<string, string> };
     slug: string;
   };
   const router = useRouter();
@@ -157,6 +162,15 @@ function DistributeRoute() {
     try { await removeFn({ data: { id } }); router.invalidate(); }
     finally { setBusy(false); }
   }
+  async function handleGenerateArtifacts() {
+    setBusy(true);
+    try {
+      await generatePublicationArtifacts({
+        data: { slug, storeTargets: DISTRIBUTION_TARGETS as unknown as string[], actor: "manual" },
+      });
+      router.invalidate();
+    } finally { setBusy(false); }
+  }
 
   function handleDownloadPackage() {
     if (!lib || !profile || !metadata || !enriched) return;
@@ -224,6 +238,9 @@ function DistributeRoute() {
           <div style={{ marginBlockStart: "var(--am-space-4)", display: "flex", gap: "var(--am-space-3)", flexWrap: "wrap" }}>
             <button type="button" style={btn} onClick={handleDownloadPackage} disabled={!lib || !metadata || !profile}>
               ⬇ Full publication package (.zip)
+            </button>
+            <button type="button" style={btn} onClick={handleGenerateArtifacts} disabled={busy || !lib || !metadata || !profile}>
+              ⚙ Generate &amp; register artifacts
             </button>
           </div>
         </section>
@@ -325,6 +342,39 @@ function DistributeRoute() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        {/* Phase 13B — Artifact registry */}
+        <section style={{ marginBlockStart: "var(--am-silence-md)" }}>
+          <h2 style={{ fontFamily: "var(--am-font-display)" }}>Artifact registry</h2>
+          {artifacts.rows.length === 0 ? (
+            <p style={{ fontFamily: "var(--am-font-ui)", color: "var(--am-color-ink-500)" }}>
+              No artifacts generated yet. Click "Generate &amp; register artifacts" above to compile EPUB, Kindle, PDF source, and packages.
+            </p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>{["Kind","Target","v","Size","Status","Generated","Active","Download"].map((h) => <th key={h} style={{ ...cell, textAlign: "left", fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>
+                {artifacts.rows.map((a) => {
+                  const url = artifacts.signed[a.id];
+                  return (
+                    <tr key={a.id} style={{ opacity: a.is_active ? 1 : 0.55 }}>
+                      <td style={cell}><strong>{a.kind}</strong></td>
+                      <td style={cell}>{a.target ?? "—"}</td>
+                      <td style={cell}>v{a.version}</td>
+                      <td style={cell}>{Math.round(a.byte_size / 1024)} KB</td>
+                      <td style={cell}>{a.status}</td>
+                      <td style={cell}>{new Date(a.generated_at).toLocaleString()}</td>
+                      <td style={cell}>{a.is_active ? "✓" : "—"}</td>
+                      <td style={cell}>
+                        {url ? <a href={url} target="_blank" rel="noreferrer" style={{ ...btn, display: "inline-block", textDecoration: "none" }}>⬇ {a.filename}</a> : <span style={{ color: "var(--am-color-ink-500)" }}>—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

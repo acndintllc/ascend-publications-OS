@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      publication_artifacts: {
+        Row: {
+          byte_size: number
+          filename: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          media_type: string
+          slug: string
+          source_queue_id: string | null
+          status: Database["public"]["Enums"]["artifact_status"]
+          storage_bucket: string
+          storage_path: string
+          superseded_at: string | null
+          target: string | null
+          validation: Json
+          version: number
+        }
+        Insert: {
+          byte_size?: number
+          filename: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          media_type: string
+          slug: string
+          source_queue_id?: string | null
+          status?: Database["public"]["Enums"]["artifact_status"]
+          storage_bucket?: string
+          storage_path: string
+          superseded_at?: string | null
+          target?: string | null
+          validation?: Json
+          version?: number
+        }
+        Update: {
+          byte_size?: number
+          filename?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          media_type?: string
+          slug?: string
+          source_queue_id?: string | null
+          status?: Database["public"]["Enums"]["artifact_status"]
+          storage_bucket?: string
+          storage_path?: string
+          superseded_at?: string | null
+          target?: string | null
+          validation?: Json
+          version?: number
+        }
+        Relationships: []
+      }
       publication_assets: {
         Row: {
           created_at: string
@@ -321,6 +381,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      artifact_status:
+        | "pending"
+        | "generated"
+        | "validated"
+        | "failed"
+        | "superseded"
       distribution_queue_state:
         | "queued"
         | "processing"
@@ -463,6 +529,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      artifact_status: [
+        "pending",
+        "generated",
+        "validated",
+        "failed",
+        "superseded",
+      ],
       distribution_queue_state: [
         "queued",
         "processing",

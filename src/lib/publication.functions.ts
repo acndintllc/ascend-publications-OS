@@ -339,6 +339,39 @@ export const updateDistributionEntry = createServerFn({ method: "POST" })
       event_type: "export.requested",
       payload: { queue_id: row.id, state: row.state, transition: true },
     });
+
+    // Phase 13C — Automated preparation on transition to "ready".
+    if (row.state === "ready" && !row.artifact_url) {
+      try {
+        const { runArtifactGenerationForSlug } = await import("@/publication/runner-orchestrator.server");
+        const result = await runArtifactGenerationForSlug({
+          slug: data.slug,
+          storeTargets: [row.target as never],
+          sourceQueueId: row.id,
+          actor: "auto-prepare",
+        });
+        if (result.packageUrl) {
+          const updated = await q.updateQueue(row.id, { artifact_url: result.packageUrl } as never);
+          await p.recordEvent({
+            slug: data.slug,
+            event_type: "export.requested",
+            payload: {
+              queue_id: row.id,
+              auto_prepared: true,
+              artifact_count: result.artifacts.length,
+              package_url: result.packageUrl,
+            },
+          });
+          return updated;
+        }
+      } catch (e) {
+        await p.recordEvent({
+          slug: data.slug,
+          event_type: "export.requested",
+          payload: { queue_id: row.id, auto_prepare_failed: true, error: String(e) },
+        });
+      }
+    }
     return row;
   });
 
@@ -350,4 +383,46 @@ export const removeDistributionEntry = createServerFn({ method: "POST" })
     const q = await import("@/publication/queue.server");
     await q.deleteQueueEntry(data.id);
     return { ok: true };
+  });
+
+/* ─── Phase 13A/B — Artifact generation + registry ─────────────────── */
+
+export const generatePublicationArtifacts = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      storeTargets: z.array(z.string()).optional(),
+      sourceQueueId: z.string().uuid().nullable().optional(),
+      actor: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { runArtifactGenerationForSlug } = await import("@/publication/runner-orchestrator.server");
+    return runArtifactGenerationForSlug({
+      slug: data.slug,
+      storeTargets: (data.storeTargets ?? []) as never,
+      sourceQueueId: data.sourceQueueId ?? null,
+      actor: data.actor ?? "manual",
+    });
+  });
+
+export const listPublicationArtifacts = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/runner.server");
+    const rows = await r.listArtifacts(data.slug);
+    // Pre-sign active artifacts (others omitted to keep payload bounded).
+    const signed: Record<string, string> = {};
+    for (const a of rows.filter((x) => x.is_active)) {
+      const url = await r.signArtifact(a.storage_path);
+      if (url) signed[a.id] = url;
+    }
+    return { rows, signed };
+  });
+
+export const signArtifactUrl = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ path: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const r = await import("@/publication/runner.server");
+    return { url: await r.signArtifact(data.path) };
   });
