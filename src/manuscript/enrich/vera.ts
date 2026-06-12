@@ -19,7 +19,9 @@ export function attachVera(blocks: ACABlock[], sidecar: VeraSidecar | undefined)
       if (b.kind === "body") {
         const ix = bodyIx++;
         const note = noteByAnchor.get(ix);
-        return note ? { ...b, vera: { id: note.id, voice: note.voice, body: note.body } } : b;
+        return note
+          ? { ...b, vera: { id: note.id, voice: note.voice, body: note.body, kind: note.kind, source: note.source } }
+          : b;
       }
       if (b.kind === "section" || b.kind === "sidebar" || b.kind === "callout" || b.kind === "report") {
         return { ...b, children: walk(b.children) };
@@ -28,5 +30,8 @@ export function attachVera(blocks: ACABlock[], sidecar: VeraSidecar | undefined)
     });
 
   const out = walk(blocks);
-  return { blocks: out, notes: sidecar.notes.map(({ id, voice, body }) => ({ id, voice, body })) };
+  return {
+    blocks: out,
+    notes: sidecar.notes.map(({ id, voice, body, kind, source }) => ({ id, voice, body, kind, source })),
+  };
 }
