@@ -20,10 +20,21 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/ascend/reader/$slug")({
   validateSearch: searchSchema,
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const entry = getManuscript(params.slug);
     if (!entry) throw notFound();
-    return { doc: entry.doc, slug: entry.slug };
+    // Phase 9C — VERA allow-list from publication_vera_config (DB).
+    let allowedVeraKinds: string[] | undefined;
+    try {
+      const { getPublication } = await import("@/lib/publication.functions");
+      const detail = await getPublication({ data: { slug: params.slug } });
+      if (detail?.vera?.enabled_kinds?.length) {
+        allowedVeraKinds = detail.vera.enabled_kinds;
+      }
+    } catch {
+      // Publication not seeded yet — render unrestricted.
+    }
+    return { doc: entry.doc, slug: entry.slug, allowedVeraKinds };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -54,7 +65,11 @@ export const Route = createFileRoute("/ascend/reader/$slug")({
 });
 
 function ReaderRoute() {
-  const { doc } = Route.useLoaderData() as { doc: ACADocument; slug: string };
+  const { doc, allowedVeraKinds } = Route.useLoaderData() as {
+    doc: ACADocument;
+    slug: string;
+    allowedVeraKinds?: string[];
+  };
   const search = Route.useSearch();
   const [mode, setMode] = React.useState<Mode>(search.mode ?? doc.frontmatter.mode);
 
@@ -187,7 +202,10 @@ function ReaderRoute() {
         ) : null}
       </nav>
       <Chapter>
-        <RenderManuscript doc={doc} />
+        <RenderManuscript
+          doc={doc}
+          allowedVeraKinds={allowedVeraKinds as never}
+        />
       </Chapter>
     </div>
   );

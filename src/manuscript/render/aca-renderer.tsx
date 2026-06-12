@@ -1,5 +1,7 @@
-/* ACA → React renderer (PTL-008 §5 web-reader path, Phase 3B)
-   Pure mapping ACA nodes → TIER-2-bound components. No styling here. */
+/* ACA → React renderer (PTL-008 §5 web-reader path, Phase 3B + 9C)
+   PTL-022: VERA block kinds are gated by an optional allow-list (per
+   publication profile / per-publication vera_config). When a kind is
+   suppressed by policy, a minimal fallback marker renders instead. */
 import * as React from "react";
 import {
   Body,
@@ -14,7 +16,113 @@ import {
   Section,
   Sidebar,
 } from "@/components/ascend/primitives";
-import type { ACABlock, ACADocument, ACAInline } from "../schema/aca";
+import { VERA_BLOCKS } from "@/publication/vera-blocks";
+import type { VeraBlockKind } from "@/publication/profiles";
+import type { ACABlock, ACADocument, ACAInline, VeraNote } from "../schema/aca";
+
+const VERA_ACCENTS: Record<VeraBlockKind, string> = {
+  "vera-note": "var(--am-vera-accent)",
+  "vera-explain": "#2563eb",
+  "vera-insight": "#7c3aed",
+  "vera-question": "#0891b2",
+  "vera-research-prompt": "#059669",
+  "vera-learning-prompt": "#d97706",
+  "vera-language-bridge": "#db2777",
+};
+
+interface VeraPolicy {
+  allowedKinds?: VeraBlockKind[]; // undefined = allow all
+}
+
+function renderVera(note: VeraNote, policy: VeraPolicy): React.ReactNode {
+  const kind: VeraBlockKind = (note.kind ?? "vera-note") as VeraBlockKind;
+  const spec = VERA_BLOCKS[kind];
+  if (policy.allowedKinds && !policy.allowedKinds.includes(kind)) {
+    return (
+      <aside
+        data-am="vera-suppressed"
+        data-vera-kind={kind}
+        style={{
+          marginBlockStart: "var(--am-space-4)",
+          padding: "var(--am-space-3) var(--am-space-4)",
+          borderInlineStart: "2px dashed var(--am-color-ink-300)",
+          fontFamily: "var(--am-font-ui)",
+          fontSize: "var(--am-sourcenote-size)",
+          color: "var(--am-color-ink-500)",
+          letterSpacing: "var(--am-tracking-widest)",
+          textTransform: "uppercase",
+        }}
+      >
+        VERA block suppressed by profile · {spec?.label ?? kind}
+      </aside>
+    );
+  }
+  const accent = VERA_ACCENTS[kind];
+  const missingSource = spec?.requiresSource && !note.source;
+  return (
+    <aside
+      data-am="vera-block"
+      data-vera-kind={kind}
+      data-vera-interactive={spec?.interactive ? "true" : undefined}
+      style={{
+        marginBlockStart: "var(--am-space-5)",
+        padding: "var(--am-space-5)",
+        background: "var(--am-vera-bg)",
+        borderInlineStart: `var(--am-border-thick) solid ${accent}`,
+        borderRadius: "var(--am-radius-sm)",
+        fontFamily: "var(--am-font-ui)",
+        fontSize: "var(--am-type-200)",
+        color: "var(--am-color-ink-700)",
+      }}
+    >
+      <div
+        style={{
+          letterSpacing: "var(--am-vera-label)",
+          textTransform: "uppercase",
+          color: accent,
+          fontSize: "var(--am-sourcenote-size)",
+          marginBlockEnd: "var(--am-space-3)",
+        }}
+      >
+        {note.voice} · {spec?.label ?? kind} · {note.id}
+      </div>
+      <div>{note.body}</div>
+      {note.source ? (
+        <div
+          style={{
+            marginBlockStart: "var(--am-space-3)",
+            fontSize: "var(--am-sourcenote-size)",
+            color: "var(--am-color-ink-500)",
+          }}
+        >
+          Source: {note.source}
+        </div>
+      ) : null}
+      {missingSource ? (
+        <div
+          style={{
+            marginBlockStart: "var(--am-space-3)",
+            fontSize: "var(--am-sourcenote-size)",
+            color: "#b45309",
+          }}
+        >
+          ⚠ {spec.label} requires a source citation.
+        </div>
+      ) : null}
+      {spec?.interactive ? (
+        <div
+          style={{
+            marginBlockStart: "var(--am-space-3)",
+            fontSize: "var(--am-sourcenote-size)",
+            color: "var(--am-color-ink-500)",
+          }}
+        >
+          ↳ Interactive prompt — reader response expected.
+        </div>
+      ) : null}
+    </aside>
+  );
+}
 
 function renderInline(nodes: ACAInline[]): React.ReactNode {
   return nodes.map((n, i) => {
@@ -62,48 +170,21 @@ function renderInline(nodes: ACAInline[]): React.ReactNode {
   });
 }
 
-function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
+function renderBlock(b: ACABlock, key: React.Key, policy: VeraPolicy): React.ReactNode {
   switch (b.kind) {
     case "chapter-opener":
       return <ChapterOpener key={key} eyebrow={b.eyebrow} title={renderInline(b.title)} />;
     case "section":
       return (
         <Section key={key} title={b.title ? renderInline(b.title) : undefined}>
-          {b.children.map((c, i) => renderBlock(c, i))}
+          {b.children.map((c, i) => renderBlock(c, i, policy))}
         </Section>
       );
     case "body":
       return (
         <Body key={key} style={{ marginBlockEnd: "var(--am-space-5)" }}>
           {renderInline(b.children)}
-          {b.vera ? (
-            <aside
-              data-am="vera-note"
-              style={{
-                marginBlockStart: "var(--am-space-5)",
-                padding: "var(--am-space-5)",
-                background: "var(--am-vera-bg)",
-                borderInlineStart: "var(--am-border-thick) solid var(--am-vera-accent)",
-                borderRadius: "var(--am-radius-sm)",
-                fontFamily: "var(--am-font-ui)",
-                fontSize: "var(--am-type-200)",
-                color: "var(--am-color-ink-700)",
-              }}
-            >
-              <div
-                style={{
-                  letterSpacing: "var(--am-vera-label)",
-                  textTransform: "uppercase",
-                  color: "var(--am-vera-accent)",
-                  fontSize: "var(--am-sourcenote-size)",
-                  marginBlockEnd: "var(--am-space-3)",
-                }}
-              >
-                {b.vera.voice} · {b.vera.id}
-              </div>
-              {b.vera.body}
-            </aside>
-          ) : null}
+          {b.vera ? renderVera(b.vera, policy) : null}
         </Body>
       );
     case "dialogue":
@@ -121,19 +202,19 @@ function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
     case "sidebar":
       return (
         <Sidebar key={key} title={b.title}>
-          {b.children.map((c, i) => renderBlock(c, i))}
+          {b.children.map((c, i) => renderBlock(c, i, policy))}
         </Sidebar>
       );
     case "callout":
       return (
-        <Callout key={key}>{b.children.map((c, i) => renderBlock(c, i))}</Callout>
+        <Callout key={key}>{b.children.map((c, i) => renderBlock(c, i, policy))}</Callout>
       );
     case "citation":
       return <CitationBlock key={key}>{b.value}</CitationBlock>;
     case "report":
       return (
         <ReportBlock key={key}>
-          {b.children.map((c, i) => renderBlock(c, i))}
+          {b.children.map((c, i) => renderBlock(c, i, policy))}
         </ReportBlock>
       );
     case "scene-break":
@@ -143,11 +224,18 @@ function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
   }
 }
 
-export function RenderManuscript({ doc }: { doc: ACADocument }) {
+export function RenderManuscript({
+  doc,
+  allowedVeraKinds,
+}: {
+  doc: ACADocument;
+  allowedVeraKinds?: VeraBlockKind[];
+}) {
   const bib = doc.enrichment?.bibliography ?? [];
+  const policy: VeraPolicy = { allowedKinds: allowedVeraKinds };
   return (
     <>
-      {doc.blocks.map((b, i) => renderBlock(b, i))}
+      {doc.blocks.map((b, i) => renderBlock(b, i, policy))}
       {doc.footnotes.length > 0 ? (
         <Section title="Footnotes">
           {doc.footnotes.map((f) => (

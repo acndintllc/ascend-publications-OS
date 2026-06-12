@@ -49,6 +49,17 @@ export interface VeraNote {
   id: string;
   voice: string;
   body: string;
+  /** PTL-022 Phase 9C — semantic block kind. Defaults to "vera-note" when omitted. */
+  kind?:
+    | "vera-note"
+    | "vera-explain"
+    | "vera-insight"
+    | "vera-question"
+    | "vera-research-prompt"
+    | "vera-learning-prompt"
+    | "vera-language-bridge";
+  /** Required when the publication profile flags this kind as factual. */
+  source?: string;
 }
 
 export interface ReadingStats {
