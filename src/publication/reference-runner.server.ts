@@ -16,11 +16,13 @@ const BUCKET = "publication-assets";
 
 export type RunnerMode = "ok" | "invalid_signature" | "missing_artifact" | "failed_generation";
 
+type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
+
 export interface RunnerResult {
   ok: boolean;
   mode: RunnerMode;
   callback_status: number;
-  callback_body: unknown;
+  callback_body: Json;
   artifact_path?: string;
   signed_url?: string | null;
 }
