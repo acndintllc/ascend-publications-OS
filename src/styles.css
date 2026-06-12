@@ -2,6 +2,7 @@
 @source "../src";
 @import "tw-animate-css";
 @import "./styles/tier2-semantic.css";
+@import "./styles/modes/index.css";
 
 /* ============================================================
    ASCEND MEDIA — TIER 1 PRIMITIVES (PTL-004 Phase 1A)

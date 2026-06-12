@@ -1,0 +1,43 @@
+/* ============================================================
+   ASCEND TIER 3 — operational overlay (PTL-007 §4.3)
+   Reports/dashboards/ops docs. Body → Inter Tight for scan-density.
+   Pull-quote + chapter-opener suppressed. Cool accent.
+   ============================================================ */
+
+[data-mode="operational"],
+[data-mode-section="operational"] {
+  /* Family swap for scan density */
+  --am-body-family: var(--am-font-ui);
+  --am-body-leading: var(--am-leading-relaxed);
+  --am-body-measure: var(--am-measure-wide);
+
+  --am-section-title-family: var(--am-font-ui);
+  --am-section-title-size: var(--am-type-500);
+
+  /* Suppress narrative chrome */
+  --am-chapter-opener-display-family: var(--am-font-ui);
+  --am-chapter-opener-display-size: var(--am-type-700);
+  --am-chapter-opener-display-tracking: var(--am-tracking-normal);
+  --am-chapter-rhythm: var(--am-silence-lg);
+
+  --am-pullquote-family: var(--am-font-ui);
+  --am-pullquote-size: var(--am-type-400);
+  --am-pullquote-silence: var(--am-silence-sm);
+
+  /* Cool accent collapse */
+  --am-chapter-opener-rule-color: var(--am-color-cool-500);
+  --am-pullquote-accent: var(--am-color-cool-500);
+  --am-callout-accent: var(--am-color-cool-500);
+  --am-callout-bg: var(--am-color-cool-50);
+
+  /* Report block elevated */
+  --am-report-family: var(--am-font-ui);
+  --am-report-size: var(--am-type-300);
+  --am-report-rule: var(--am-color-ink-300);
+  --am-report-accent: var(--am-color-cool-700);
+
+  /* Sidebar tightened */
+  --am-sidebar-bg: var(--am-color-cool-50);
+  --am-sidebar-radius: var(--am-radius-sm);
+  --am-sidebar-pad: var(--am-space-5);
+}

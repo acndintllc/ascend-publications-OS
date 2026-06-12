@@ -1,0 +1,28 @@
+/* ============================================================
+   ASCEND TIER 3 — ebook overlay (PTL-007 §4.5)
+   Reflowable EPUB3. Measure drops (reader controls reflow).
+   Spacing shifts to em for reader font-size scaling.
+   Variable fonts retained.
+   ============================================================ */
+
+[data-mode="ebook"],
+[data-mode-section="ebook"] {
+  /* Reader controls reflow — drop hard measure caps */
+  --am-body-measure: 100%;
+  --am-chapter-measure: 100%;
+
+  /* Reader-relative spacing (em scales with user font-size) */
+  --am-chapter-rhythm: 6em;
+  --am-pullquote-silence: 1.5em;
+  --am-section-silence: 3em;
+  --am-scenebreak-silence: 1.5em;
+
+  /* Conservative display ramp */
+  --am-chapter-opener-display-size: var(--am-type-700);
+  --am-section-title-size: var(--am-type-500);
+  --am-pullquote-size: var(--am-type-400);
+
+  /* Surface */
+  --am-sidebar-radius: var(--am-radius-sm);
+  --am-sidebar-pad: var(--am-space-5);
+}
