@@ -138,7 +138,7 @@ export const updatePublicationVera = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => veraConfigPatch.parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
-    await p.upsertVeraConfig({ ...data, config: {} });
+    await p.upsertVeraConfig(data);
     return { ok: true };
   });
 

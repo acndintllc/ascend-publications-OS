@@ -37,7 +37,6 @@ export interface DbVeraConfig {
   slug: string;
   enabled_kinds: string[];
   default_voice: string | null;
-  config: Record<string, unknown>;
 }
 
 export async function listRecords(): Promise<DbRecord[]> {
@@ -71,13 +70,17 @@ export async function getMetadata(slug: string): Promise<DbMetadata | null> {
 
 export async function getVeraConfig(slug: string): Promise<DbVeraConfig | null> {
   const { data, error } = await supabaseAdmin
-    .from("publication_vera_config").select("*").eq("slug", slug).maybeSingle();
+    .from("publication_vera_config")
+    .select("slug, enabled_kinds, default_voice")
+    .eq("slug", slug).maybeSingle();
   if (error) throw new Error(error.message);
   return (data as unknown as DbVeraConfig) ?? null;
 }
 
 export async function listVeraConfigs(): Promise<DbVeraConfig[]> {
-  const { data, error } = await supabaseAdmin.from("publication_vera_config").select("*");
+  const { data, error } = await supabaseAdmin
+    .from("publication_vera_config")
+    .select("slug, enabled_kinds, default_voice");
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as DbVeraConfig[];
 }
