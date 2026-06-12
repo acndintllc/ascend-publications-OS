@@ -18,30 +18,87 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           kind: string
           label: string | null
+          notes: string | null
+          replaces_id: string | null
           slug: string
+          uploaded_at: string
           url: string
+          version: number
         }
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           kind: string
           label?: string | null
+          notes?: string | null
+          replaces_id?: string | null
           slug: string
+          uploaded_at?: string
           url: string
+          version?: number
         }
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           kind?: string
           label?: string | null
+          notes?: string | null
+          replaces_id?: string | null
           slug?: string
+          uploaded_at?: string
           url?: string
+          version?: number
         }
         Relationships: [
           {
+            foreignKeyName: "publication_assets_replaces_id_fkey"
+            columns: ["replaces_id"]
+            isOneToOne: false
+            referencedRelation: "publication_assets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "publication_assets_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "publication_records"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      publication_events: {
+        Row: {
+          actor: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          slug: string
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          slug: string
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_events_slug_fkey"
             columns: ["slug"]
             isOneToOne: false
             referencedRelation: "publication_records"
