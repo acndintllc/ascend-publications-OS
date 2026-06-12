@@ -170,48 +170,21 @@ function renderInline(nodes: ACAInline[]): React.ReactNode {
   });
 }
 
-function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
+function renderBlock(b: ACABlock, key: React.Key, policy: VeraPolicy): React.ReactNode {
   switch (b.kind) {
     case "chapter-opener":
       return <ChapterOpener key={key} eyebrow={b.eyebrow} title={renderInline(b.title)} />;
     case "section":
       return (
         <Section key={key} title={b.title ? renderInline(b.title) : undefined}>
-          {b.children.map((c, i) => renderBlock(c, i))}
+          {b.children.map((c, i) => renderBlock(c, i, policy))}
         </Section>
       );
     case "body":
       return (
         <Body key={key} style={{ marginBlockEnd: "var(--am-space-5)" }}>
           {renderInline(b.children)}
-          {b.vera ? (
-            <aside
-              data-am="vera-note"
-              style={{
-                marginBlockStart: "var(--am-space-5)",
-                padding: "var(--am-space-5)",
-                background: "var(--am-vera-bg)",
-                borderInlineStart: "var(--am-border-thick) solid var(--am-vera-accent)",
-                borderRadius: "var(--am-radius-sm)",
-                fontFamily: "var(--am-font-ui)",
-                fontSize: "var(--am-type-200)",
-                color: "var(--am-color-ink-700)",
-              }}
-            >
-              <div
-                style={{
-                  letterSpacing: "var(--am-vera-label)",
-                  textTransform: "uppercase",
-                  color: "var(--am-vera-accent)",
-                  fontSize: "var(--am-sourcenote-size)",
-                  marginBlockEnd: "var(--am-space-3)",
-                }}
-              >
-                {b.vera.voice} · {b.vera.id}
-              </div>
-              {b.vera.body}
-            </aside>
-          ) : null}
+          {b.vera ? renderVera(b.vera, policy) : null}
         </Body>
       );
     case "dialogue":
@@ -229,19 +202,19 @@ function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
     case "sidebar":
       return (
         <Sidebar key={key} title={b.title}>
-          {b.children.map((c, i) => renderBlock(c, i))}
+          {b.children.map((c, i) => renderBlock(c, i, policy))}
         </Sidebar>
       );
     case "callout":
       return (
-        <Callout key={key}>{b.children.map((c, i) => renderBlock(c, i))}</Callout>
+        <Callout key={key}>{b.children.map((c, i) => renderBlock(c, i, policy))}</Callout>
       );
     case "citation":
       return <CitationBlock key={key}>{b.value}</CitationBlock>;
     case "report":
       return (
         <ReportBlock key={key}>
-          {b.children.map((c, i) => renderBlock(c, i))}
+          {b.children.map((c, i) => renderBlock(c, i, policy))}
         </ReportBlock>
       );
     case "scene-break":
@@ -251,11 +224,18 @@ function renderBlock(b: ACABlock, key: React.Key): React.ReactNode {
   }
 }
 
-export function RenderManuscript({ doc }: { doc: ACADocument }) {
+export function RenderManuscript({
+  doc,
+  allowedVeraKinds,
+}: {
+  doc: ACADocument;
+  allowedVeraKinds?: VeraBlockKind[];
+}) {
   const bib = doc.enrichment?.bibliography ?? [];
+  const policy: VeraPolicy = { allowedKinds: allowedVeraKinds };
   return (
     <>
-      {doc.blocks.map((b, i) => renderBlock(b, i))}
+      {doc.blocks.map((b, i) => renderBlock(b, i, policy))}
       {doc.footnotes.length > 0 ? (
         <Section title="Footnotes">
           {doc.footnotes.map((f) => (
