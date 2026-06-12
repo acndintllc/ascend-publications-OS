@@ -78,10 +78,11 @@ function downloadBytes(filename: string, bytes: Uint8Array, mime: string) {
 }
 
 function DistributeRoute() {
-  const { pub, assets, queue, slug } = Route.useLoaderData() as {
+  const { pub, assets, queue, artifacts, slug } = Route.useLoaderData() as {
     pub: Awaited<ReturnType<typeof getPublication>>;
     assets: AssetRecord[];
     queue: QueueRow[];
+    artifacts: { rows: ArtifactRow[]; signed: Record<string, string> };
     slug: string;
   };
   const router = useRouter();
