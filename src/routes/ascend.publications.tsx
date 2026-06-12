@@ -37,7 +37,11 @@ interface Row {
   adapters: AdapterResult<PublicationMetadata>[];
   issueCount: number;
   veraKinds: string[];
+  assetsReady: boolean;
+  assetsScorePct: number;
+  assetsMissing: string[];
 }
+
 
 export const Route = createFileRoute("/ascend/publications")({
   head: () => ({
