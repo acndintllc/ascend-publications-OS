@@ -17,6 +17,7 @@ const callbackSchema = z.object({
   source_queue_id: z.string().uuid().nullable().optional(),
   validation: z.record(z.string(), z.any()).optional(),
   runner_id: z.string().optional(),
+  status: z.enum(["generated", "failed"]).optional(),
 });
 
 function toHex(buf: ArrayBuffer): string {
