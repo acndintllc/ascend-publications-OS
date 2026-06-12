@@ -141,7 +141,8 @@ export const Route = createFileRoute("/api/public/render/callback")({
         return new Response(JSON.stringify({
           ok: true,
           artifact_id: (artifact as { id: string }).id,
-          signed_url: signed?.signedUrl ?? null,
+          signed_url: signedUrl,
+          status: reportedStatus,
         }), { headers: { "content-type": "application/json" } });
       },
     },
