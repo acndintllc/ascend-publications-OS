@@ -125,9 +125,52 @@ function LibraryRoute() {
                   </code>
                 </div>
               </Link>
+              <div style={{ marginBlockStart: "var(--am-space-4)", display: "flex", gap: "var(--am-space-3)", alignItems: "center", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>
+                {report.issues.length > 0 ? (
+                  <span style={{
+                    padding: "var(--am-space-1) var(--am-space-3)",
+                    borderRadius: "var(--am-radius-sm)",
+                    background: report.issues.some((i) => i.severity === "error") ? "var(--am-color-danger-500)" : "var(--am-color-warning-500)",
+                    color: "var(--am-color-ink-0)",
+                    letterSpacing: "var(--am-tracking-wide)",
+                    textTransform: "uppercase",
+                  }}>
+                    {report.issues.length} issue{report.issues.length === 1 ? "" : "s"}
+                  </span>
+                ) : (
+                  <span style={{ color: "var(--am-color-success-500)" }}>✓ clean</span>
+                )}
+                <Link
+                  to="/ascend/validate/$slug"
+                  params={{ slug }}
+                  style={{
+                    color: "var(--am-color-ink-500)",
+                    textDecoration: "none",
+                    letterSpacing: "var(--am-tracking-widest)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Validate →
+                </Link>
+              </div>
             </li>
           ))}
         </ul>
+        {failures.length > 0 ? (
+          <section style={{ marginBlockStart: "var(--am-silence-md)" }}>
+            <h2 style={{ fontFamily: "var(--am-font-display)", fontSize: "var(--am-type-500)", color: "var(--am-color-danger-500)" }}>
+              Failed to parse ({failures.length})
+            </h2>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {failures.map((f) => (
+                <li key={f.slug} style={{ padding: "var(--am-space-5)", borderInlineStart: "var(--am-border-thick) solid var(--am-color-danger-500)", marginBlockEnd: "var(--am-space-4)", background: "var(--am-color-ink-50)", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+                  <code style={{ fontFamily: "var(--am-font-mono)", color: "var(--am-color-ink-700)" }}>{f.slug}</code>
+                  <p style={{ margin: 0, marginBlockStart: "var(--am-space-3)", color: "var(--am-color-ink-600)" }}>{f.error}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </div>
     </main>
   );
