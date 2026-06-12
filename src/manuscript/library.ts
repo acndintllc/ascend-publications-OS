@@ -1,8 +1,10 @@
-/* Manuscript library (Phase 3C + 3D + 6A).
-   Bundles manuscripts/<slug>/{manuscript.md, citations.bib, vera.json}
-   at build time via Vite import.meta.glob, runs enrichment, and
-   retains failed manuscripts so the library UI can report them. */
+/* Manuscript library (Phase 3C + 3D + 6A + 6B).
+   Bundles manuscripts/<slug>/{manuscript.md|.docx, citations.bib,
+   vera.json} at build time via Vite import.meta.glob, runs
+   enrichment, and retains failed manuscripts so the library UI
+   can report them. */
 import { parseManuscript } from "./ingest/markdown";
+import { parseDocx } from "./ingest/docx";
 import { parseBib, resolveCitations } from "./enrich/citations";
 import { computeReadingStats } from "./enrich/reading-stats";
 import { attachVera, type VeraSidecar } from "./enrich/vera";
@@ -25,6 +27,12 @@ const veraSources = import.meta.glob("/manuscripts/*/vera.json", {
   import: "default",
   eager: true,
 }) as Record<string, VeraSidecar>;
+
+const docxSources = import.meta.glob("/manuscripts/*/manuscript.docx", {
+  query: "?arraybuffer",
+  import: "default",
+  eager: true,
+}) as Record<string, ArrayBuffer>;
 
 const slugOf = (p: string) => /\/manuscripts\/([^/]+)\//.exec(p)?.[1];
 const indexBy = <T>(src: Record<string, T>) => {
@@ -61,11 +69,27 @@ const state: LibraryState = (() => {
   const entries: LibraryEntry[] = [];
   const failures: LibraryFailure[] = [];
 
+  type Source =
+    | { kind: "md"; slug: string; raw: string }
+    | { kind: "docx"; slug: string; bytes: Uint8Array };
+
+  const sources: Source[] = [];
   for (const [path, raw] of Object.entries(mdSources)) {
     const slug = slugOf(path);
-    if (!slug) continue;
+    if (slug) sources.push({ kind: "md", slug, raw });
+  }
+  for (const [path, buf] of Object.entries(docxSources)) {
+    const slug = slugOf(path);
+    if (slug && !sources.some((s) => s.slug === slug)) {
+      sources.push({ kind: "docx", slug, bytes: new Uint8Array(buf) });
+    }
+  }
+
+  for (const src of sources) {
+    const { slug } = src;
     try {
-      const parsed = parseManuscript(raw);
+      const parsed =
+        src.kind === "md" ? parseManuscript(src.raw) : parseDocx(src.bytes);
       const bib = bibIndex.get(slug) ? parseBib(bibIndex.get(slug)!) : [];
       const { blocks: bibBlocks, used } = resolveCitations(parsed.blocks, bib);
 
