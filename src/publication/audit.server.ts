@@ -59,13 +59,17 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
     blockers.push("No publication record");
     return {
       slug, readiness: null, blockers, warnings,
+      vendorSecrets: [],
       facts: {
         hasRecord: false, hasMetadata: false, assetCount: 0, activeAssetCount: 0,
-        artifactCount: 0, activeArtifactCount: 0, queueRows: 0,
-        submissionRows: 0, isbnCount: 0, vendorCount: 0, targetsMissingIsbn: [],
+        artifactCount: 0, activeArtifactCount: 0,
+        hasEpubArtifact: false, hasKindleArtifact: false, hasPdfArtifact: false,
+        queueRows: 0, submissionRows: 0,
+        isbnCount: 0, vendorCount: 0, vendorsConfigured: 0, targetsMissingIsbn: [],
       },
     };
   }
+
 
   const profile = getProfile(record.profile);
   if (!profile) blockers.push(`Unknown profile: ${record.profile}`);
