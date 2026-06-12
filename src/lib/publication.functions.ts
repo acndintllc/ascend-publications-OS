@@ -427,6 +427,33 @@ export const signArtifactUrl = createServerFn({ method: "POST" })
     return { url: await r.signArtifact(data.path) };
   });
 
+/* ─── PTL-026 Phase 15A — Reference external PDF runner ───────────── */
+
+const runnerModeEnum = z.enum(["ok", "invalid_signature", "missing_artifact", "failed_generation"]);
+
+export const runReferencePdfRunner = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      sourceQueueId: z.string().uuid().nullable().optional(),
+      mode: runnerModeEnum.optional(),
+      actor: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const req = getRequest();
+    const origin = new URL(req.url).origin;
+    const { runReferencePdf } = await import("@/publication/reference-runner.server");
+    return runReferencePdf({
+      slug: data.slug,
+      origin,
+      sourceQueueId: data.sourceQueueId ?? null,
+      mode: data.mode ?? "ok",
+      actor: data.actor,
+    });
+  });
+
 /* ─── PTL-025 Phase 14B — ISBN registry server fns ────────────────── */
 
 export const listIsbns = createServerFn({ method: "GET" })

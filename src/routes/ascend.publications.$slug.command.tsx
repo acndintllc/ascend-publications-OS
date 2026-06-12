@@ -17,6 +17,7 @@ import {
   createSubmission,
   updateSubmission,
   generatePublicationArtifacts,
+  runReferencePdfRunner,
 } from "@/lib/publication.functions";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
@@ -211,22 +212,44 @@ function CommandCenter() {
       {/* Artifacts + Queue */}
       <section style={card}>
         <div style={h}>Artifacts & Queue</div>
-        <button style={btn} disabled={busy} onClick={() => wrap(() => generatePublicationArtifacts({ data: { slug } }))}>
-          Generate artifacts
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button style={btn} disabled={busy} onClick={() => wrap(() => generatePublicationArtifacts({ data: { slug } }))}>
+            Generate artifacts
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runReferencePdfRunner({ data: { slug, mode: "ok" } });
+            alert(`PDF runner: ${r.ok ? "OK" : "FAIL"} (status ${r.callback_status})\n${r.signed_url ?? ""}`);
+          })}>
+            Run reference PDF runner
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const modes = ["invalid_signature", "missing_artifact", "failed_generation"] as const;
+            const results: string[] = [];
+            for (const m of modes) {
+              const r = await runReferencePdfRunner({ data: { slug, mode: m } });
+              results.push(`${m}: status ${r.callback_status} ok=${r.ok}`);
+            }
+            alert("Failure paths:\n" + results.join("\n"));
+          })}>
+            Run failure simulations
+          </button>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--am-space-5)", marginBlockStart: "var(--am-space-4)" }}>
           <div>
             <strong>Active artifacts ({artifacts.rows.filter((r: any) => r.is_active).length})</strong>
             <ul style={{ fontFamily: "var(--am-font-ui)" }}>
               {artifacts.rows.filter((r: any) => r.is_active).map((a: any) => (
-                <li key={a.id}>{a.kind}{a.target ? `/${a.target}` : ""} v{a.version} · {(a.byte_size/1024).toFixed(1)}KB</li>
+                <li key={a.id}>
+                  {a.kind}{a.target ? `/${a.target}` : ""} v{a.version} · {(a.byte_size/1024).toFixed(1)}KB
+                  {artifacts.signed[a.id] && <> · <a href={artifacts.signed[a.id]} target="_blank" rel="noreferrer">download</a></>}
+                </li>
               ))}
             </ul>
           </div>
           <div>
             <strong>Distribution queue ({queue.length})</strong>
             <ul style={{ fontFamily: "var(--am-font-ui)" }}>
-              {queue.map((q: any) => <li key={q.id}>{q.target} · {q.state}</li>)}
+              {queue.map((q: any) => <li key={q.id}>{q.target} · {q.state}{q.artifact_url ? " · ✓ artifact" : ""}</li>)}
             </ul>
           </div>
         </div>

@@ -17,6 +17,7 @@ const callbackSchema = z.object({
   source_queue_id: z.string().uuid().nullable().optional(),
   validation: z.record(z.string(), z.any()).optional(),
   runner_id: z.string().optional(),
+  status: z.enum(["generated", "failed"]).optional(),
 });
 
 function toHex(buf: ArrayBuffer): string {
@@ -71,25 +72,31 @@ export const Route = createFileRoute("/api/public/render/callback")({
         const { data: vrows } = await q.order("version", { ascending: false }).limit(1);
         const nextVersion = ((vrows?.[0] as { version: number } | undefined)?.version ?? 0) + 1;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let su: any = supabaseAdmin.from("publication_artifacts" as never)
-          .update({
-            is_active: false, status: "superseded",
-            superseded_at: new Date().toISOString(),
-          } as never)
-          .eq("slug", parsed.slug).eq("kind", parsed.kind).eq("is_active", true);
-        su = parsed.target == null ? su.is("target", null) : su.eq("target", parsed.target);
-        await su;
+        const reportedStatus = parsed.status ?? "generated";
+        const failed = reportedStatus === "failed";
+
+        // Only supersede prior active when this is a success row.
+        if (!failed) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let su: any = supabaseAdmin.from("publication_artifacts" as never)
+            .update({
+              is_active: false, status: "superseded",
+              superseded_at: new Date().toISOString(),
+            } as never)
+            .eq("slug", parsed.slug).eq("kind", parsed.kind).eq("is_active", true);
+          su = parsed.target == null ? su.is("target", null) : su.eq("target", parsed.target);
+          await su;
+        }
 
         const insertRow = {
           slug: parsed.slug, kind: parsed.kind, target: parsed.target ?? null,
-          version: nextVersion, is_active: true,
+          version: nextVersion, is_active: !failed,
           storage_bucket: "publication-assets",
           storage_path: parsed.storage_path,
           filename: parsed.filename,
           byte_size: parsed.byte_size,
           media_type: parsed.media_type,
-          status: "generated",
+          status: reportedStatus,
           validation: parsed.validation ?? {},
           source_queue_id: parsed.source_queue_id ?? null,
           generated_by: parsed.runner_id ?? "external-runner",
@@ -105,31 +112,37 @@ export const Route = createFileRoute("/api/public/render/callback")({
         // Record event
         await supabaseAdmin.from("publication_events" as never).insert({
           slug: parsed.slug,
-          event_type: "export.requested",
+          event_type: failed ? "auto_prepare_failed" : "export.requested",
           payload: {
             runner_callback: true,
             kind: parsed.kind, target: parsed.target ?? null,
             storage_path: parsed.storage_path, version: nextVersion,
             source_queue_id: parsed.source_queue_id ?? null,
+            status: reportedStatus,
           } as never,
-          actor: "external-runner",
+          actor: parsed.runner_id ?? "external-runner",
         } as never);
 
-        // Sign URL (7d) for queue artifact_url update
-        const { data: signed } = await supabaseAdmin.storage
-          .from("publication-assets")
-          .createSignedUrl(parsed.storage_path, 60 * 60 * 24 * 7);
-
-        if (parsed.source_queue_id && signed?.signedUrl) {
-          await supabaseAdmin.from("publication_distribution_queue" as never)
-            .update({ artifact_url: signed.signedUrl, updated_at: new Date().toISOString() } as never)
-            .eq("id", parsed.source_queue_id);
+        // Sign URL (7d) for queue artifact_url update — only on success.
+        let signedUrl: string | null = null;
+        if (!failed) {
+          const { data: signed } = await supabaseAdmin.storage
+            .from("publication-assets")
+            .createSignedUrl(parsed.storage_path, 60 * 60 * 24 * 7);
+          signedUrl = signed?.signedUrl ?? null;
+          if (parsed.source_queue_id && signedUrl) {
+            await supabaseAdmin.from("publication_distribution_queue" as never)
+              .update({ artifact_url: signedUrl, updated_at: new Date().toISOString() } as never)
+              .eq("id", parsed.source_queue_id);
+          }
         }
+
 
         return new Response(JSON.stringify({
           ok: true,
           artifact_id: (artifact as { id: string }).id,
-          signed_url: signed?.signedUrl ?? null,
+          signed_url: signedUrl,
+          status: reportedStatus,
         }), { headers: { "content-type": "application/json" } });
       },
     },
