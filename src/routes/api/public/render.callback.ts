@@ -4,7 +4,6 @@
    On success, registers a new artifact row (versioned, supersedes prior
    active) and updates the originating distribution queue entry. */
 import { createFileRoute } from "@tanstack/react-router";
-import { createHmac, timingSafeEqual } from "crypto";
 import { z } from "zod";
 
 const callbackSchema = z.object({
@@ -20,13 +19,26 @@ const callbackSchema = z.object({
   runner_id: z.string().optional(),
 });
 
-function verify(sig: string | null, body: string): boolean {
+function toHex(buf: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function verify(sig: string | null, body: string): Promise<boolean> {
   const secret = process.env.ASCEND_RUNNER_SECRET;
   if (!secret || !sig) return false;
-  const expected = createHmac("sha256", secret).update(Buffer.from(body, "utf8")).digest("hex");
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, enc.encode(body));
+  const expected = toHex(mac);
+  if (expected.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
 }
 
 export const Route = createFileRoute("/api/public/render/callback")({
