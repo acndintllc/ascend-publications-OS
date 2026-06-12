@@ -121,3 +121,108 @@ export async function transitionStatus(slug: string, next: PublicationStatus, no
     .insert({ slug, version: cur.version, status: next, notes: notes ?? null } as never);
   if (e2) throw new Error(e2.message);
 }
+
+/* ─── 9E: assets ─────────────────────────────────────────────────── */
+
+export async function listAssets(slug: string): Promise<AssetRecord[]> {
+  const { data, error } = await supabaseAdmin
+    .from("publication_assets")
+    .select("*")
+    .eq("slug", slug)
+    .order("uploaded_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as AssetRecord[];
+}
+
+export async function listAllAssets(): Promise<AssetRecord[]> {
+  const { data, error } = await supabaseAdmin
+    .from("publication_assets").select("*");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as AssetRecord[];
+}
+
+export async function uploadAsset(input: {
+  slug: string;
+  kind: string;
+  url: string;
+  label?: string | null;
+  notes?: string | null;
+}): Promise<{ asset: AssetRecord; replaced: AssetRecord | null }> {
+  // Deactivate any existing active asset of this kind and bump version.
+  const { data: existing, error: e1 } = await supabaseAdmin
+    .from("publication_assets")
+    .select("*")
+    .eq("slug", input.slug)
+    .eq("kind", input.kind)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (e1) throw new Error(e1.message);
+  const prior = (existing as unknown as AssetRecord | null) ?? null;
+  const version = prior ? prior.version + 1 : 1;
+  if (prior) {
+    const { error: e2 } = await supabaseAdmin
+      .from("publication_assets")
+      .update({ is_active: false } as never)
+      .eq("id", prior.id);
+    if (e2) throw new Error(e2.message);
+  }
+  const insertRow = {
+    slug: input.slug,
+    kind: input.kind,
+    url: input.url,
+    label: input.label ?? null,
+    notes: input.notes ?? null,
+    version,
+    is_active: true,
+    replaces_id: prior?.id ?? null,
+    uploaded_at: new Date().toISOString(),
+  };
+  const { data: inserted, error: e3 } = await supabaseAdmin
+    .from("publication_assets")
+    .insert(insertRow as never)
+    .select("*")
+    .single();
+  if (e3) throw new Error(e3.message);
+  return { asset: inserted as unknown as AssetRecord, replaced: prior };
+}
+
+export async function deactivateAsset(id: string): Promise<AssetRecord> {
+  const { data, error } = await supabaseAdmin
+    .from("publication_assets")
+    .update({ is_active: false } as never)
+    .eq("id", id)
+    .select("*").single();
+  if (error) throw new Error(error.message);
+  return data as unknown as AssetRecord;
+}
+
+/* ─── 9F: workflow events ────────────────────────────────────────── */
+
+export async function recordEvent(input: {
+  slug: string;
+  event_type: WorkflowEventType | string;
+  payload?: Record<string, unknown>;
+  actor?: string | null;
+}): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("publication_events")
+    .insert({
+      slug: input.slug,
+      event_type: input.event_type,
+      payload: (input.payload ?? {}) as never,
+      actor: input.actor ?? null,
+    } as never);
+  if (error) throw new Error(error.message);
+}
+
+export async function listEvents(slug: string, limit = 50): Promise<WorkflowEvent[]> {
+  const { data, error } = await supabaseAdmin
+    .from("publication_events")
+    .select("*")
+    .eq("slug", slug)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as WorkflowEvent[];
+}
+
