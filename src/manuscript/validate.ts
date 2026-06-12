@@ -7,8 +7,8 @@ import type {
   ACADocument,
   ACAInline,
   BibEntry,
-} from "../schema/aca";
-import type { VeraSidecar } from "../enrich/vera";
+} from "./schema/aca";
+import type { VeraSidecar } from "./enrich/vera";
 
 export interface ValidationIssue {
   severity: "error" | "warning" | "info";
