@@ -1,0 +1,43 @@
+/* ============================================================
+   ASCEND TIER 3 — cinematic overlay (PTL-007 §4.2)
+   Hero/immersive surface. Display ramp +1 step, dark canvas,
+   cinematic motion family, opsz axis → display.
+   ============================================================ */
+
+[data-mode="cinematic"],
+[data-mode-section="cinematic"] {
+  /* Canvas inversion */
+  --am-chapter-bg: var(--am-color-ink-950);
+  --am-chapter-ink: var(--am-color-ink-50);
+  --am-body-ink: var(--am-color-ink-100);
+  --am-dialogue-ink: var(--am-color-ink-0);
+
+  /* Display ramp +1 step */
+  --am-chapter-opener-display-size: var(--am-type-1000);
+  --am-section-title-size: var(--am-type-700);
+  --am-pullquote-size: var(--am-type-600);
+
+  /* Accent promotion */
+  --am-chapter-opener-rule-color: var(--am-color-accent-400);
+  --am-pullquote-accent: var(--am-color-accent-400);
+  --am-callout-accent: var(--am-color-accent-400);
+
+  /* Surface re-mapping */
+  --am-sidebar-bg: var(--am-color-ink-900);
+  --am-sidebar-ink: var(--am-color-ink-50);
+  --am-callout-bg: var(--am-color-accent-900);
+  --am-citation-bg: var(--am-color-cool-900);
+  --am-vera-bg: var(--am-color-cool-900);
+  --am-research-bg: var(--am-color-cool-900);
+  --am-appendix-bg: var(--am-color-ink-900);
+  --am-appendix-ink: var(--am-color-ink-50);
+
+  /* Quiet metadata */
+  --am-footnote-ink: var(--am-color-ink-300);
+  --am-sourcenote-ink: var(--am-color-ink-400);
+  --am-endnote-rule: var(--am-color-ink-700);
+  --am-report-rule: var(--am-color-ink-700);
+
+  /* Glyphs */
+  --am-scenebreak-glyph-color: var(--am-color-accent-400);
+}

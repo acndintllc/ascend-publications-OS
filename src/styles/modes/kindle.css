@@ -1,0 +1,45 @@
+/* ============================================================
+   ASCEND TIER 3 — kindle overlay (PTL-007 §4.6)
+   KF8/KFX target. Pairs with build-time CSS variable
+   flattening (KF8 strips custom properties) and static
+   font masters. This layer = source of truth pre-flatten.
+   E-ink: color tokens map to ink ramp by L*.
+   ============================================================ */
+
+[data-mode="kindle"],
+[data-mode-section="kindle"] {
+  /* Reflowable */
+  --am-body-measure: 100%;
+  --am-chapter-measure: 100%;
+
+  /* E-ink: all accents collapse to ink ramp */
+  --am-chapter-opener-rule-color: var(--am-color-ink-700);
+  --am-pullquote-accent: var(--am-color-ink-700);
+  --am-callout-accent: var(--am-color-ink-700);
+  --am-vera-accent: var(--am-color-ink-700);
+  --am-research-accent: var(--am-color-ink-500);
+  --am-report-accent: var(--am-color-ink-700);
+  --am-scenebreak-glyph-color: var(--am-color-ink-500);
+
+  /* Surface backgrounds → near-white (e-ink) */
+  --am-chapter-bg: var(--am-color-ink-0);
+  --am-chapter-ink: var(--am-color-ink-900);
+  --am-body-ink: var(--am-color-ink-900);
+  --am-sidebar-bg: var(--am-color-ink-50);
+  --am-sidebar-ink: var(--am-color-ink-900);
+  --am-callout-bg: var(--am-color-ink-50);
+  --am-citation-bg: var(--am-color-ink-50);
+  --am-vera-bg: var(--am-color-ink-50);
+  --am-research-bg: var(--am-color-ink-50);
+  --am-appendix-bg: var(--am-color-ink-0);
+
+  /* Reader-relative spacing */
+  --am-chapter-rhythm: 5em;
+  --am-pullquote-silence: 1.25em;
+  --am-section-silence: 2.5em;
+
+  /* Conservative ramp; static weights resolved at build */
+  --am-chapter-opener-display-size: var(--am-type-600);
+  --am-section-title-size: var(--am-type-400);
+  --am-pullquote-size: var(--am-type-300);
+}

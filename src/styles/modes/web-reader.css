@@ -1,0 +1,32 @@
+/* ============================================================
+   ASCEND TIER 3 — web-reader overlay (PTL-007 §4.1)
+   Default mode. TIER 2 values pass through unchanged.
+   Adds prefers-color-scheme: dark ink inversion only.
+   Rule: re-map TIER 2 → TIER 1 only. No raw values.
+   ============================================================ */
+
+[data-mode="web-reader"],
+[data-mode-section="web-reader"] {
+  /* Pass-through: TIER 2 defaults apply unchanged. */
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-mode="web-reader"]:not([data-mode-section]),
+  [data-mode-section="web-reader"] {
+    --am-chapter-bg: var(--am-color-ink-950);
+    --am-chapter-ink: var(--am-color-ink-50);
+    --am-body-ink: var(--am-color-ink-100);
+    --am-dialogue-ink: var(--am-color-ink-50);
+    --am-sidebar-bg: var(--am-color-ink-900);
+    --am-sidebar-ink: var(--am-color-ink-100);
+    --am-footnote-ink: var(--am-color-ink-300);
+    --am-sourcenote-ink: var(--am-color-ink-400);
+    --am-appendix-bg: var(--am-color-ink-900);
+    --am-appendix-ink: var(--am-color-ink-100);
+    --am-glossary-def-ink: var(--am-color-ink-200);
+    --am-citation-bg: var(--am-color-cool-900);
+    --am-vera-bg: var(--am-color-cool-900);
+    --am-research-bg: var(--am-color-cool-900);
+    --am-callout-bg: var(--am-color-accent-900);
+  }
+}

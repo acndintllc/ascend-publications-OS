@@ -1,0 +1,42 @@
+/* ============================================================
+   ASCEND TIER 3 — pdf overlay (PTL-007 §4.4)
+   Print-ready manuscript. Pairs with build-time OKLCH→CMYK
+   flattening (R-PDF-2) and static weight ladder (R-PDF-1).
+   This CSS layer handles structural/page tokens only.
+   ============================================================ */
+
+[data-mode="pdf"],
+[data-mode-section="pdf"] {
+  /* Page surface */
+  --am-chapter-bg: var(--am-color-ink-0);
+  --am-chapter-ink: var(--am-color-ink-900);
+  --am-body-ink: var(--am-color-ink-900);
+  --am-sidebar-bg: var(--am-color-ink-50);
+  --am-callout-bg: var(--am-color-ink-50);
+  --am-citation-bg: var(--am-color-ink-50);
+  --am-vera-bg: var(--am-color-ink-50);
+  --am-research-bg: var(--am-color-ink-50);
+  --am-appendix-bg: var(--am-color-ink-0);
+
+  /* Print measure */
+  --am-body-measure: var(--am-measure-prose);
+  --am-chapter-measure: var(--am-measure-prose);
+
+  /* Conservative display scale for print */
+  --am-chapter-opener-display-size: var(--am-type-800);
+  --am-section-title-size: var(--am-type-500);
+  --am-pullquote-size: var(--am-type-400);
+}
+
+@media print {
+  [data-mode="pdf"] .am-chapter,
+  [data-mode="pdf"] [data-am-chapter] {
+    page-break-before: always;
+    break-before: page;
+  }
+  [data-mode="pdf"] .am-scene-break,
+  [data-mode="pdf"] [data-am-scene-break] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
