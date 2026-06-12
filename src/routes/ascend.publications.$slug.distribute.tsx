@@ -162,6 +162,15 @@ function DistributeRoute() {
     try { await removeFn({ data: { id } }); router.invalidate(); }
     finally { setBusy(false); }
   }
+  async function handleGenerateArtifacts() {
+    setBusy(true);
+    try {
+      await generatePublicationArtifacts({
+        data: { slug, storeTargets: DISTRIBUTION_TARGETS as unknown as string[], actor: "manual" },
+      });
+      router.invalidate();
+    } finally { setBusy(false); }
+  }
 
   function handleDownloadPackage() {
     if (!lib || !profile || !metadata || !enriched) return;
