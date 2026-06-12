@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AscendProofRouteImport } from './routes/ascend.proof'
+import { Route as AscendLibraryRouteImport } from './routes/ascend.library'
+import { Route as AscendReaderSlugRouteImport } from './routes/ascend.reader.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +24,54 @@ const AscendProofRoute = AscendProofRouteImport.update({
   path: '/ascend/proof',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AscendLibraryRoute = AscendLibraryRouteImport.update({
+  id: '/ascend/library',
+  path: '/ascend/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AscendReaderSlugRoute = AscendReaderSlugRouteImport.update({
+  id: '/ascend/reader/$slug',
+  path: '/ascend/reader/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
+  '/ascend/reader/$slug': typeof AscendReaderSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
+  '/ascend/reader/$slug': typeof AscendReaderSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ascend/library': typeof AscendLibraryRoute
   '/ascend/proof': typeof AscendProofRoute
+  '/ascend/reader/$slug': typeof AscendReaderSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ascend/proof'
+  fullPaths: '/' | '/ascend/library' | '/ascend/proof' | '/ascend/reader/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ascend/proof'
-  id: '__root__' | '/' | '/ascend/proof'
+  to: '/' | '/ascend/library' | '/ascend/proof' | '/ascend/reader/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/ascend/library'
+    | '/ascend/proof'
+    | '/ascend/reader/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AscendLibraryRoute: typeof AscendLibraryRoute
   AscendProofRoute: typeof AscendProofRoute
+  AscendReaderSlugRoute: typeof AscendReaderSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +90,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AscendProofRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ascend/library': {
+      id: '/ascend/library'
+      path: '/ascend/library'
+      fullPath: '/ascend/library'
+      preLoaderRoute: typeof AscendLibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ascend/reader/$slug': {
+      id: '/ascend/reader/$slug'
+      path: '/ascend/reader/$slug'
+      fullPath: '/ascend/reader/$slug'
+      preLoaderRoute: typeof AscendReaderSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AscendLibraryRoute: AscendLibraryRoute,
   AscendProofRoute: AscendProofRoute,
+  AscendReaderSlugRoute: AscendReaderSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
