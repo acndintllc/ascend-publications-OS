@@ -1,6 +1,6 @@
 /* /ascend/library — manuscript index (Phase 3C). */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { listManuscripts } from "@/manuscript/library";
+import { listManuscripts, type LibraryEntry } from "@/manuscript/library";
 
 export const Route = createFileRoute("/ascend/library")({
   head: () => ({
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/ascend/library")({
 });
 
 function LibraryRoute() {
-  const { entries } = Route.useLoaderData();
+  const { entries } = Route.useLoaderData() as { entries: LibraryEntry[] };
   return (
     <main
       style={{
