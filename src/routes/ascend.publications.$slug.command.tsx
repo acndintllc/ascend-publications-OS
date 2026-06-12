@@ -36,7 +36,7 @@ export const Route = createFileRoute("/ascend/publications/$slug/command")({
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -44,11 +44,13 @@ export const Route = createFileRoute("/ascend/publications/$slug/command")({
       listIsbns({ data: { slug: params.slug } }),
       listSubmissions({ data: { slug: params.slug } }),
       listVendors(),
+      reportVendorSecretsFn(),
     ]);
-    return { audit, assets, artifacts, queue, isbns, submissions, vendors, slug: params.slug };
+    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug: params.slug };
   },
   component: CommandCenter,
 });
+
 
 const card: React.CSSProperties = {
   border: "1px solid var(--am-color-ink-200)",
