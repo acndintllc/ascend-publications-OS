@@ -173,7 +173,7 @@ export async function runExternalKindlegen(input: ExternalKindlegenInput): Promi
         errors: [`Callback ${cb.status}`],
         callback_status: cbStatus,
         failure: "callback_failure",
-        validation: { callback_body: parsedBody },
+        validation: { callback_body: safeBody },
       };
     }
   } catch (e) {
