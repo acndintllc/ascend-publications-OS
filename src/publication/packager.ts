@@ -95,7 +95,7 @@ export function buildPackage(inputs: PackageInputs): PackageArtifact {
     publication: {
       title: metadata.title,
       author: metadata.author,
-      version: doc.frontmatter.version ?? "0.1.0",
+      version: "0.1.0",
     },
     contents: {
       metadata: "metadata/",
