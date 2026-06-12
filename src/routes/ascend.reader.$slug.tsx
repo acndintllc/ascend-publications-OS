@@ -70,6 +70,20 @@ function ReaderRoute() {
     window.print();
   }, []);
 
+  const handleEpub = React.useCallback(() => {
+    if (typeof window === "undefined") return;
+    const artifact = buildEpub(doc);
+    const blob = new Blob([artifact.bytes as BlobPart], { type: artifact.mediaType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = artifact.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [doc]);
+
   return (
     <div data-mode={mode} style={{ minHeight: "100dvh", background: "var(--am-chapter-bg)" }}>
       <nav
