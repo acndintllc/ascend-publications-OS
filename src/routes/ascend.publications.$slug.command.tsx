@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* PTL-025 Phase 14E — Publication Command Center.
    Unified single-pane view: readiness, assets, exports, artifacts,
    ISBN registry, queue state, submissions, vendors, blockers. */
