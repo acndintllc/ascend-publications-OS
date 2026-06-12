@@ -165,14 +165,29 @@ function CommandCenter() {
         <table style={{ width: "100%", borderCollapse: "collapse", marginBlockStart: "var(--am-space-3)" }}>
           <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th></tr></thead>
           <tbody>
-            {isbns.length === 0 && <tr><td colSpan={5} style={{ padding: 8, color: "var(--am-color-ink-700)" }}>No ISBNs assigned.</td></tr>}
-            {isbns.map((r: any) => (
-              <tr key={r.id}><td>{r.isbn}</td><td>{r.format}</td><td>{r.edition}</td><td>{r.status}</td>
-              <td>{new Date(r.assigned_at).toISOString().slice(0,10)}</td></tr>
-            ))}
+            {isbns.length === 0 && <tr><td colSpan={6} style={{ padding: 8, color: "var(--am-color-ink-700)" }}>No ISBNs assigned.</td></tr>}
+            {isbns.map((r: any) => {
+              const nexts = nextIsbnStates(r.status);
+              return (
+                <tr key={r.id}>
+                  <td>{r.isbn}</td><td>{r.format}</td><td>{r.edition}</td><td>{r.status}</td>
+                  <td>{new Date(r.assigned_at).toISOString().slice(0,10)}</td>
+                  <td>
+                    {nexts.length === 0 ? "—" : nexts.map((n) => (
+                      <button key={n} style={{ ...btn, padding: "2px 8px", marginInlineEnd: 4 }} disabled={busy}
+                        onClick={() => wrap(() => transitionIsbn({ data: { id: r.id, slug, next: n } }))}>
+                        → {n}
+                      </button>
+                    ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
+          <thead><tr><th align="left">ISBN</th><th align="left">Format</th><th align="left">Edition</th><th align="left">Status</th><th align="left">Assigned</th><th align="left">Transition</th></tr></thead>
         </table>
       </section>
+
 
       {/* Vendors */}
       <section style={card}>
