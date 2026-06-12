@@ -50,7 +50,7 @@ export const Route = createFileRoute("/api/public/render/callback")({
       }, null, 2), { headers: { "content-type": "application/json" } }),
       POST: async ({ request }) => {
         const body = await request.text();
-        if (!verify(request.headers.get("x-ascend-signature"), body)) {
+        if (!(await verify(request.headers.get("x-ascend-signature"), body))) {
           return new Response(JSON.stringify({ ok: false, error: "Invalid signature" }),
             { status: 401, headers: { "content-type": "application/json" } });
         }
