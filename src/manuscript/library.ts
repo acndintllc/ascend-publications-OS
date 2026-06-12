@@ -69,11 +69,27 @@ const state: LibraryState = (() => {
   const entries: LibraryEntry[] = [];
   const failures: LibraryFailure[] = [];
 
+  type Source =
+    | { kind: "md"; slug: string; raw: string }
+    | { kind: "docx"; slug: string; bytes: Uint8Array };
+
+  const sources: Source[] = [];
   for (const [path, raw] of Object.entries(mdSources)) {
     const slug = slugOf(path);
-    if (!slug) continue;
+    if (slug) sources.push({ kind: "md", slug, raw });
+  }
+  for (const [path, buf] of Object.entries(docxSources)) {
+    const slug = slugOf(path);
+    if (slug && !sources.some((s) => s.slug === slug)) {
+      sources.push({ kind: "docx", slug, bytes: new Uint8Array(buf) });
+    }
+  }
+
+  for (const src of sources) {
+    const { slug } = src;
     try {
-      const parsed = parseManuscript(raw);
+      const parsed =
+        src.kind === "md" ? parseManuscript(src.raw) : parseDocx(src.bytes);
       const bib = bibIndex.get(slug) ? parseBib(bibIndex.get(slug)!) : [];
       const { blocks: bibBlocks, used } = resolveCitations(parsed.blocks, bib);
 
