@@ -86,7 +86,6 @@ export const seedFromLibrary = createServerFn({ method: "POST" }).handler(async 
       slug: entry.slug,
       enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
       default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
-      config: {},
     });
     inserted++;
   }
