@@ -744,4 +744,74 @@ export const runPublicationDryRunFn = createServerFn({ method: "POST" })
     return runPublicationDryRun({ slug: data.slug, forceRegenerate: data.forceRegenerate });
   });
 
+/* ─── PTL-029 Phase 18B — Kindle provider failover ────────────────── */
+
+export const runKindleFailoverFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      forceFallback: z.boolean().optional(),
+      sourceQueueId: z.string().uuid().nullable().optional(),
+      actor: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const origin = new URL(getRequest().url).origin;
+    const { runKindleWithFailover } = await import("@/publication/kindle-orchestrator.server");
+    return runKindleWithFailover({
+      slug: data.slug, origin,
+      sourceQueueId: data.sourceQueueId ?? null,
+      actor: data.actor, forceFallback: data.forceFallback,
+    });
+  });
+
+export const kindleProviderHealthFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { kindleProviderHealth } = await import("@/publication/kindle-orchestrator.server");
+  return kindleProviderHealth();
+});
+
+/* ─── PTL-029 Phase 18F — Governance gate ─────────────────────────── */
+
+export const evaluateGovernanceGateFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(), platform: z.string(),
+      liveRequested: z.boolean().optional(),
+      approver: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { evaluateGovernanceGate } = await import("@/publication/governance.server");
+    return evaluateGovernanceGate(data);
+  });
+
+/* ─── PTL-029 Phase 18A — Live KDP submission ─────────────────────── */
+
+export const runLiveKdpSubmissionFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      slug: z.string(),
+      liveEnabled: z.boolean(),
+      approver: z.string().optional(),
+      submissionId: z.string().uuid().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { runLiveKdpSubmission } = await import("@/publication/kdp-live.server");
+    return runLiveKdpSubmission(data);
+  });
+
+/* ─── PTL-029 Phase 18C — Readiness automation ────────────────────── */
+
+export const revalidateReadinessFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string(), trigger: z.string().optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { revalidateReadiness } = await import("@/publication/readiness-automation.server");
+    return revalidateReadiness(data.slug, data.trigger ?? "manual");
+  });
+
+
 
