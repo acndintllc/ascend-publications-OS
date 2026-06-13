@@ -181,6 +181,16 @@ export const transitionPublicationStatus = createServerFn({ method: "POST" })
       event_type: "status.changed",
       payload: { from: before?.status, to: data.next, notes: data.notes ?? null },
     });
+    // PTL-029 Phase 18C — automatic readiness revalidation.
+    try {
+      const { revalidateReadiness } = await import("@/publication/readiness-automation.server");
+      await revalidateReadiness(data.slug, "status.changed");
+    } catch (e) {
+      await p.recordEvent({
+        slug: data.slug, event_type: "readiness.recomputed",
+        payload: { trigger: "status.changed", auto_failed: true, error: String(e) },
+      });
+    }
     return { ok: true };
   });
 
