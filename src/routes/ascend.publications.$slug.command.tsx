@@ -25,6 +25,11 @@ import {
   buildPublicationSubmissionPackage,
   reportVendorSecretsFn,
   transitionIsbn,
+  runKindleFailoverFn,
+  kindleProviderHealthFn,
+  evaluateGovernanceGateFn,
+  runLiveKdpSubmissionFn,
+  revalidateReadinessFn,
 } from "@/lib/publication.functions";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
@@ -315,6 +320,51 @@ function CommandCenter() {
             alert(lines.join("\n"));
           })}>
             Run full publication dry-run
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const h = await kindleProviderHealthFn();
+            const r = await runKindleFailoverFn({ data: { slug } });
+            alert([
+              `Kindle providers — primary: ${h.primary?.id} (available=${h.primary?.available}); fallback: ${h.fallback?.id}`,
+              `Attempts: ${r.attempted.length} · failover used: ${r.failoverUsed}`,
+              `Final: ${r.final.provider} ok=${r.final.ok}${r.final.failure ? ` failure=${r.final.failure}` : ""}`,
+            ].join("\n"));
+          })}>
+            Run Kindle (primary → fallback)
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await runKindleFailoverFn({ data: { slug, forceFallback: true } });
+            alert(`Forced fallback: provider=${r.final.provider} ok=${r.final.ok} failover_used=${r.failoverUsed}`);
+          })}>
+            Force fallback (proof)
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const g = await evaluateGovernanceGateFn({ data: { slug, platform: "kdp" } });
+            alert([
+              `Governance gate (kdp): ${g.approved ? "APPROVED" : "BLOCKED"}`,
+              ...Object.entries(g.checks).map(([k, v]) => ` - ${k}: ${v ? "✓" : "✗"}`),
+              g.blockers.length ? `Blockers:\n - ${g.blockers.join("\n - ")}` : "",
+            ].filter(Boolean).join("\n"));
+          })}>
+            Evaluate governance gate (KDP)
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            if (!confirm("Execute LIVE KDP submission? This will mark the submission row as submitted/rejected and persist a receipt.")) return;
+            const approver = prompt("Approver name (for audit log):") ?? undefined;
+            const r = await runLiveKdpSubmissionFn({ data: { slug, liveEnabled: true, approver } });
+            alert([
+              `Mode: ${r.mode}`,
+              r.receipt ? `Receipt: ${r.receipt.receipt_id} · accepted=${r.receipt.accepted}` : "(no receipt)",
+              r.message,
+            ].join("\n"));
+          })}>
+            Execute live KDP submission
+          </button>
+          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
+            const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
+            alert(`Readiness: ${r.score}% (ready=${r.ready}) · blockers=${r.blockers.length} · warnings=${r.warnings.length}`);
+          })}>
+            Revalidate readiness
           </button>
         </div>
 
