@@ -1,5 +1,5 @@
 /* PTL-025 Phase 14F — First-publication readiness audit. Server-only. */
-import { getManuscript } from "@/manuscript/library";
+import { resolveManuscriptForSlug } from "@/manuscript/resolver.server";
 import { enrich } from "@/manuscript/pipeline";
 import { getProfile } from "./profiles";
 import { planExports } from "./export";
