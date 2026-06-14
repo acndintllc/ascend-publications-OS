@@ -39,8 +39,8 @@ export async function runArtifactGenerationForSlug(
   const profile = getProfile(record.profile);
   if (!profile) throw new Error(`Unknown profile: ${record.profile}`);
 
-  const lib = getManuscript(slug);
-  if (!lib) throw new Error(`No bundled manuscript for slug: ${slug}`);
+  const lib = await resolveManuscriptForSlug(slug);
+  if (!lib) throw new Error(`No manuscript source for slug: ${slug}`);
   const enriched = enrich(lib.doc, { bib: lib.bib, vera: lib.veraSidecar });
 
   const parsed = publicationMetadataSchema.safeParse({
