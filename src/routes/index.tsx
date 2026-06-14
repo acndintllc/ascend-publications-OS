@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
 
 export const Route = createFileRoute("/")({
   head: () => ({
