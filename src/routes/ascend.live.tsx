@@ -100,6 +100,13 @@ function LiveRoute() {
           subtitle: fm.subtitle ?? null,
           author: fm.authors[0] ?? "Unknown",
           contributors: fm.authors.slice(1),
+          manuscript: {
+            filename: status.raw.filename,
+            format: status.raw.format,
+            contentBase64: status.raw.contentBase64,
+          },
+          bibText: status.raw.bibText,
+          veraJson: status.raw.veraJson,
         },
       });
       setRegistered(res);
