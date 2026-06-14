@@ -4,7 +4,7 @@
    and vera.json, and the reader renders instantly with the same
    pipeline used at build time — no redeploy. */
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Chapter } from "@/components/ascend/primitives";
 import { BrandMark } from "@/components/ascend/brand-mark";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
@@ -15,8 +15,10 @@ import {
   ingestVera,
   type EnrichResult,
 } from "@/manuscript/pipeline";
+import { registerUploadedPublication } from "@/lib/publication.functions";
 import type { BibEntry } from "@/manuscript/schema/aca";
 import type { VeraSidecar } from "@/manuscript/enrich/vera";
+
 
 export const Route = createFileRoute("/ascend/live")({
   head: () => ({
