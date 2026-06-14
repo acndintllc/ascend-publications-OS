@@ -21,8 +21,16 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/ascend/reader/$slug")({
   validateSearch: searchSchema,
   loader: async ({ params }) => {
+    let doc: ACADocument | undefined;
     const entry = getManuscript(params.slug);
-    if (!entry) throw notFound();
+    if (entry) {
+      doc = entry.doc;
+    } else {
+      const { loadManuscriptDoc } = await import("@/lib/publication.functions");
+      const res = await loadManuscriptDoc({ data: { slug: params.slug } });
+      if (!res) throw notFound();
+      doc = res.doc as ACADocument;
+    }
     // Phase 9C — VERA allow-list from publication_vera_config (DB).
     let allowedVeraKinds: string[] | undefined;
     try {
@@ -34,7 +42,7 @@ export const Route = createFileRoute("/ascend/reader/$slug")({
     } catch {
       // Publication not seeded yet — render unrestricted.
     }
-    return { doc: entry.doc, slug: entry.slug, allowedVeraKinds };
+    return { doc, slug: params.slug, allowedVeraKinds };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
