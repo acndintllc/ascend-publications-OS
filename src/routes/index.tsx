@@ -126,16 +126,16 @@ function Home() {
           <img
             src={ASCEND_LOGO_URL}
             alt="Ascend Publishing"
-            width={160}
-            height={160}
+            width={320}
+            height={320}
             style={{
-              width: 160,
-              height: 160,
+              width: 320,
+              height: 320,
               objectFit: "contain",
-              borderRadius: 16,
+              borderRadius: 24,
               background: "#000",
-              padding: 6,
-              boxShadow: "0 12px 48px rgba(0,0,0,0.22)",
+              padding: 8,
+              boxShadow: "0 16px 64px rgba(0,0,0,0.28)",
             }}
           />
           <div>
