@@ -3,7 +3,7 @@
    invokes it. Lives in its own .server.ts file so we can pull the
    build-time manuscript library + admin storage without leaking the
    library glob graph into the auto-prepare client bundle. */
-import { getManuscript } from "@/manuscript/library";
+import { resolveManuscriptForSlug } from "@/manuscript/resolver.server";
 import { enrich } from "@/manuscript/pipeline";
 import { getProfile } from "@/publication/profiles";
 import { planExports } from "@/publication/export";
