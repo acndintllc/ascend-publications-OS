@@ -4,7 +4,7 @@
    and vera.json, and the reader renders instantly with the same
    pipeline used at build time — no redeploy. */
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Chapter } from "@/components/ascend/primitives";
 import { BrandMark } from "@/components/ascend/brand-mark";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
@@ -15,8 +15,10 @@ import {
   ingestVera,
   type EnrichResult,
 } from "@/manuscript/pipeline";
+import { registerUploadedPublication } from "@/lib/publication.functions";
 import type { BibEntry } from "@/manuscript/schema/aca";
 import type { VeraSidecar } from "@/manuscript/enrich/vera";
+
 
 export const Route = createFileRoute("/ascend/live")({
   head: () => ({
@@ -65,9 +67,43 @@ function classifyFile(file: File): "manuscript" | "bib" | "vera" | "unknown" {
 }
 
 function LiveRoute() {
+  const router = useRouter();
   const [status, setStatus] = React.useState<Status>({ kind: "empty" });
   const [dragOver, setDragOver] = React.useState(false);
+  const [registering, setRegistering] = React.useState(false);
+  const [registered, setRegistered] = React.useState<{ slug: string; created: boolean } | null>(null);
+  const [registerError, setRegisterError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    setRegistered(null);
+    setRegisterError(null);
+  }, [status.kind === "ready" ? status.sourceName : null]);
+
+  const handleRegister = React.useCallback(async () => {
+    if (status.kind !== "ready") return;
+    setRegistering(true);
+    setRegisterError(null);
+    try {
+      const fm = status.result.doc.frontmatter;
+      const res = await registerUploadedPublication({
+        data: {
+          title: fm.title,
+          subtitle: fm.subtitle ?? null,
+          author: fm.authors[0] ?? "Unknown",
+          contributors: fm.authors.slice(1),
+        },
+      });
+      setRegistered(res);
+      void router.invalidate();
+    } catch (e) {
+      setRegisterError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRegistering(false);
+    }
+  }, [status, router]);
+
+
 
   const ingest = React.useCallback(async (files: FileList | File[]) => {
     const arr = Array.from(files);
@@ -175,8 +211,70 @@ function LiveRoute() {
             >
               Clear
             </button>
+            {registered ? (
+              <>
+                <Link
+                  to="/ascend/publications/$slug"
+                  params={{ slug: registered.slug }}
+                  style={{
+                    marginInlineStart: "var(--am-space-2)",
+                    padding: "var(--am-space-2) var(--am-space-4)",
+                    borderRadius: "var(--am-radius-pill)",
+                    border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+                    background: "var(--am-color-accent-500)",
+                    color: "var(--am-color-ink-0)",
+                    textDecoration: "none",
+                  }}
+                >
+                  Open publication →
+                </Link>
+                <Link
+                  to="/ascend/publications/$slug/command"
+                  params={{ slug: registered.slug }}
+                  style={{
+                    marginInlineStart: "var(--am-space-2)",
+                    padding: "var(--am-space-2) var(--am-space-4)",
+                    borderRadius: "var(--am-radius-pill)",
+                    border: "var(--am-border-thin) solid var(--am-color-ink-300)",
+                    background: "transparent",
+                    color: "var(--am-color-ink-700)",
+                    textDecoration: "none",
+                  }}
+                >
+                  Command Center
+                </Link>
+                <span style={{ color: "var(--am-color-ink-500)", fontSize: "var(--am-type-100)" }}>
+                  {registered.created ? "Registered" : "Already registered"}
+                </span>
+              </>
+            ) : (
+              <button
+                onClick={handleRegister}
+                disabled={registering}
+                style={{
+                  marginInlineStart: "var(--am-space-2)",
+                  padding: "var(--am-space-2) var(--am-space-4)",
+                  borderRadius: "var(--am-radius-pill)",
+                  border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+                  background: "var(--am-color-accent-500)",
+                  color: "var(--am-color-ink-0)",
+                  cursor: registering ? "wait" : "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "inherit",
+                  opacity: registering ? 0.7 : 1,
+                }}
+              >
+                {registering ? "Registering…" : "Register as publication"}
+              </button>
+            )}
+            {registerError ? (
+              <span style={{ color: "var(--am-color-danger-700, #8a0019)", fontSize: "var(--am-type-100)" }}>
+                {registerError}
+              </span>
+            ) : null}
           </>
         ) : null}
+
         {status.kind === "ready" && status.result.report.issues.length ? (
           <span
             style={{
