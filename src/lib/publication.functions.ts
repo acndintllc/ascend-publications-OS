@@ -818,6 +818,13 @@ export const revalidateReadinessFn = createServerFn({ method: "POST" })
 
 /* ─── Ingest bridge — register an uploaded manuscript as a publication ─── */
 
+const manuscriptUploadSchema = z.object({
+  filename: z.string().min(1),
+  format: z.enum(["md", "docx"]),
+  /** Base64-encoded bytes for docx, or raw text for md (also base64-safe). */
+  contentBase64: z.string().min(1),
+});
+
 const registerUploadSchema = z.object({
   slug: z.string().min(1).optional(),
   title: z.string().min(1),
@@ -825,6 +832,9 @@ const registerUploadSchema = z.object({
   author: z.string().min(1).optional(),
   contributors: z.array(z.string()).optional(),
   profile: z.string().optional(),
+  manuscript: manuscriptUploadSchema.optional(),
+  bibText: z.string().optional(),
+  veraJson: z.string().optional(),
 });
 
 function slugify(input: string): string {
@@ -845,16 +855,72 @@ function inferProfileFromSlug(slug: string): string {
   return "novel";
 }
 
+function decodeBase64(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 /** Create (or return existing) publication record from an ad-hoc upload.
-    Idempotent by slug — re-registering the same slug is a no-op. */
+    Idempotent by slug. When `manuscript` is provided the source file
+    (and optional bib/vera companions) are persisted to the
+    publication-manuscripts bucket and tracked in publication_sources
+    so the full publishing pipeline can resolve the slug. */
 export const registerUploadedPublication = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => registerUploadSchema.parse(d))
   .handler(async ({ data }) => {
     const persistence = await import("@/publication/persistence.server");
     const { getProfile } = await import("@/publication/profiles");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const slug = data.slug ? slugify(data.slug) : slugify(data.title);
+
+    // Persist manuscript source bytes (if provided) — idempotent overwrite.
+    let sourcePersisted = false;
+    if (data.manuscript) {
+      const bucket = supabaseAdmin.storage.from("publication-manuscripts");
+      const ext = data.manuscript.format === "docx" ? "docx" : "md";
+      const storagePath = `${slug}/manuscript.${ext}`;
+      const bytes = decodeBase64(data.manuscript.contentBase64);
+      const contentType =
+        ext === "docx"
+          ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          : "text/markdown";
+      const up = await bucket.upload(storagePath, bytes, { contentType, upsert: true });
+      if (up.error) throw new Error(`manuscript upload failed: ${up.error.message}`);
+
+      let bibPath: string | null = null;
+      if (data.bibText) {
+        bibPath = `${slug}/citations.bib`;
+        const ub = await bucket.upload(bibPath, new TextEncoder().encode(data.bibText), {
+          contentType: "text/plain", upsert: true,
+        });
+        if (ub.error) throw new Error(`bib upload failed: ${ub.error.message}`);
+      }
+      let veraPath: string | null = null;
+      if (data.veraJson) {
+        veraPath = `${slug}/vera.json`;
+        const uv = await bucket.upload(veraPath, new TextEncoder().encode(data.veraJson), {
+          contentType: "application/json", upsert: true,
+        });
+        if (uv.error) throw new Error(`vera upload failed: ${uv.error.message}`);
+      }
+      const { error: srcErr } = await supabaseAdmin
+        .from("publication_sources")
+        .upsert({
+          slug,
+          format: data.manuscript.format,
+          storage_path: storagePath,
+          bib_path: bibPath,
+          vera_path: veraPath,
+          uploaded_at: new Date().toISOString(),
+        } as never);
+      if (srcErr) throw new Error(`source row insert failed: ${srcErr.message}`);
+      sourcePersisted = true;
+    }
+
     const existing = await persistence.getRecord(slug);
-    if (existing) return { slug, created: false };
+    if (existing) return { slug, created: false, sourcePersisted };
     const profileId = data.profile ?? inferProfileFromSlug(slug);
     const profile = getProfile(profileId);
     const author = data.author ?? "Unknown";
@@ -886,8 +952,22 @@ export const registerUploadedPublication = createServerFn({ method: "POST" })
     await persistence.recordEvent({
       slug,
       event_type: "publication.created",
-      payload: { profile: profileId, source: "live-upload" },
+      payload: { profile: profileId, source: "live-upload", sourcePersisted },
       actor: "system",
     });
-    return { slug, created: true };
+    return { slug, created: true, sourcePersisted };
   });
+
+/** Server-side enriched-doc resolver for uploaded manuscripts. The reader
+    route uses this when the bundled library has no entry for the slug. */
+export const loadManuscriptDoc = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { resolveManuscriptForSlug } = await import("@/manuscript/resolver.server");
+    const r = await resolveManuscriptForSlug(data.slug);
+    if (!r) return null;
+    const { enrich } = await import("@/manuscript/pipeline");
+    const { doc } = enrich(r.doc, { bib: r.bib, vera: r.veraSidecar });
+    return { slug: r.slug, doc, source: r.source };
+  });
+
