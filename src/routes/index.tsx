@@ -118,8 +118,10 @@ function Home() {
         <header
           style={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: "var(--am-space-5)",
+            textAlign: "center",
+            gap: "var(--am-space-6)",
             marginBlockEnd: "var(--am-silence-md)",
           }}
         >
