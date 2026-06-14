@@ -39,9 +39,17 @@ interface Sources {
   vera?: VeraSidecar;
 }
 
+interface RawSource {
+  format: "md" | "docx";
+  filename: string;
+  contentBase64: string;
+  bibText?: string;
+  veraJson?: string;
+}
+
 type Status =
   | { kind: "empty" }
-  | { kind: "ready"; result: EnrichResult; sourceName: string }
+  | { kind: "ready"; result: EnrichResult; sourceName: string; raw: RawSource }
   | { kind: "error"; message: string };
 
 async function readManuscript(file: File, sources: Sources): Promise<EnrichResult> {
