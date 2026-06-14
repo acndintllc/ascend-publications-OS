@@ -67,9 +67,43 @@ function classifyFile(file: File): "manuscript" | "bib" | "vera" | "unknown" {
 }
 
 function LiveRoute() {
+  const router = useRouter();
   const [status, setStatus] = React.useState<Status>({ kind: "empty" });
   const [dragOver, setDragOver] = React.useState(false);
+  const [registering, setRegistering] = React.useState(false);
+  const [registered, setRegistered] = React.useState<{ slug: string; created: boolean } | null>(null);
+  const [registerError, setRegisterError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    setRegistered(null);
+    setRegisterError(null);
+  }, [status.kind === "ready" ? status.sourceName : null]);
+
+  const handleRegister = React.useCallback(async () => {
+    if (status.kind !== "ready") return;
+    setRegistering(true);
+    setRegisterError(null);
+    try {
+      const fm = status.result.doc.frontmatter;
+      const res = await registerUploadedPublication({
+        data: {
+          title: fm.title,
+          subtitle: fm.subtitle ?? null,
+          author: fm.authors[0] ?? "Unknown",
+          contributors: fm.authors.slice(1),
+        },
+      });
+      setRegistered(res);
+      void router.invalidate();
+    } catch (e) {
+      setRegisterError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRegistering(false);
+    }
+  }, [status, router]);
+
+
 
   const ingest = React.useCallback(async (files: FileList | File[]) => {
     const arr = Array.from(files);
