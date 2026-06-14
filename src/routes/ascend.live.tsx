@@ -116,13 +116,20 @@ function LiveRoute() {
   const ingest = React.useCallback(async (files: FileList | File[]) => {
     const arr = Array.from(files);
     let manuscript: File | undefined;
+    let bibText: string | undefined;
+    let veraJson: string | undefined;
     const sources: Sources = {};
     try {
       for (const f of arr) {
         const kind = classifyFile(f);
         if (kind === "manuscript") manuscript = f;
-        else if (kind === "bib") sources.bib = ingestBib(await f.text());
-        else if (kind === "vera") sources.vera = ingestVera(await f.text());
+        else if (kind === "bib") {
+          bibText = await f.text();
+          sources.bib = ingestBib(bibText);
+        } else if (kind === "vera") {
+          veraJson = await f.text();
+          sources.vera = ingestVera(veraJson);
+        }
       }
       if (!manuscript) {
         throw new Error(
@@ -130,7 +137,15 @@ function LiveRoute() {
         );
       }
       const result = await readManuscript(manuscript, sources);
-      setStatus({ kind: "ready", result, sourceName: manuscript.name });
+      const bytes = new Uint8Array(await manuscript.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const contentBase64 = btoa(bin);
+      const format: "md" | "docx" = manuscript.name.toLowerCase().endsWith(".docx") ? "docx" : "md";
+      const raw: RawSource = {
+        format, filename: manuscript.name, contentBase64, bibText, veraJson,
+      };
+      setStatus({ kind: "ready", result, sourceName: manuscript.name, raw });
     } catch (err) {
       setStatus({
         kind: "error",
