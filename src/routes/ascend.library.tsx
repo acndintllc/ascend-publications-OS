@@ -37,7 +37,7 @@ function LibraryRoute() {
       <div style={{ maxWidth: "var(--am-chapter-measure)", marginInline: "auto" }}>
         <header style={{ marginBlockEnd: "var(--am-silence-md)" }}>
           <div style={{ marginBlockEnd: "var(--am-space-5)" }}>
-            <BrandMark size={36} tagline />
+            <BrandMark size={52} tagline />
           </div>
           <div
             style={{

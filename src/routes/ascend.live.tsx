@@ -129,7 +129,7 @@ function LiveRoute() {
           fontSize: "var(--am-type-200)",
         }}
       >
-        <BrandMark size={28} />
+        <BrandMark size={44} />
         <span style={{ color: "var(--am-color-ink-400)" }}>·</span>
         <Link
           to="/ascend/library"
