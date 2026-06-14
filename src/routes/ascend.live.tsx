@@ -211,8 +211,70 @@ function LiveRoute() {
             >
               Clear
             </button>
+            {registered ? (
+              <>
+                <Link
+                  to="/ascend/publications/$slug"
+                  params={{ slug: registered.slug }}
+                  style={{
+                    marginInlineStart: "var(--am-space-2)",
+                    padding: "var(--am-space-2) var(--am-space-4)",
+                    borderRadius: "var(--am-radius-pill)",
+                    border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+                    background: "var(--am-color-accent-500)",
+                    color: "var(--am-color-ink-0)",
+                    textDecoration: "none",
+                  }}
+                >
+                  Open publication →
+                </Link>
+                <Link
+                  to="/ascend/publications/$slug/command"
+                  params={{ slug: registered.slug }}
+                  style={{
+                    marginInlineStart: "var(--am-space-2)",
+                    padding: "var(--am-space-2) var(--am-space-4)",
+                    borderRadius: "var(--am-radius-pill)",
+                    border: "var(--am-border-thin) solid var(--am-color-ink-300)",
+                    background: "transparent",
+                    color: "var(--am-color-ink-700)",
+                    textDecoration: "none",
+                  }}
+                >
+                  Command Center
+                </Link>
+                <span style={{ color: "var(--am-color-ink-500)", fontSize: "var(--am-type-100)" }}>
+                  {registered.created ? "Registered" : "Already registered"}
+                </span>
+              </>
+            ) : (
+              <button
+                onClick={handleRegister}
+                disabled={registering}
+                style={{
+                  marginInlineStart: "var(--am-space-2)",
+                  padding: "var(--am-space-2) var(--am-space-4)",
+                  borderRadius: "var(--am-radius-pill)",
+                  border: "var(--am-border-thin) solid var(--am-color-accent-500)",
+                  background: "var(--am-color-accent-500)",
+                  color: "var(--am-color-ink-0)",
+                  cursor: registering ? "wait" : "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "inherit",
+                  opacity: registering ? 0.7 : 1,
+                }}
+              >
+                {registering ? "Registering…" : "Register as publication"}
+              </button>
+            )}
+            {registerError ? (
+              <span style={{ color: "var(--am-color-danger-700, #8a0019)", fontSize: "var(--am-type-100)" }}>
+                {registerError}
+              </span>
+            ) : null}
           </>
         ) : null}
+
         {status.kind === "ready" && status.result.report.issues.length ? (
           <span
             style={{
