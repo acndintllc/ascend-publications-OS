@@ -6,6 +6,7 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Chapter } from "@/components/ascend/primitives";
+import { BrandMark } from "@/components/ascend/brand-mark";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
 import {
   ingestBib,
@@ -128,6 +129,8 @@ function LiveRoute() {
           fontSize: "var(--am-type-200)",
         }}
       >
+        <BrandMark size={28} />
+        <span style={{ color: "var(--am-color-ink-400)" }}>·</span>
         <Link
           to="/ascend/library"
           style={{

@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import logoAsset from "@/assets/ascend-publishing-logo.png.asset.json";
 
 // ASCEND TIER 1 — Self-hosted WOFF2 font primitives (Stack 1: Editorial Authority)
 import "@fontsource-variable/fraunces/index.css";
@@ -81,20 +82,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Ascend Publishing — Human Signal Preserved" },
+      {
+        name: "description",
+        content:
+          "Ascend Publishing — internal Publishing OS for manuscript ingestion, metadata, readiness, and distribution.",
+      },
+      { name: "author", content: "Ascend Publishing" },
+      { property: "og:site_name", content: "Ascend Publishing" },
+      { property: "og:title", content: "Ascend Publishing — Human Signal Preserved" },
+      {
+        property: "og:description",
+        content: "Internal Publishing OS for the Ascend Publishing imprint.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: logoAsset.url },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:image", content: logoAsset.url },
+      { name: "theme-color", content: "#000000" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: logoAsset.url },
+      { rel: "apple-touch-icon", href: logoAsset.url },
     ],
   }),
   shellComponent: RootShell,

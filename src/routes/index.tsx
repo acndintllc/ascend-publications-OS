@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -114,18 +115,55 @@ function Home() {
       }}
     >
       <div style={{ maxWidth: 1100, marginInline: "auto" }}>
-        <div
+        <header
           style={{
-            fontFamily: "var(--am-font-ui)",
-            letterSpacing: "var(--am-tracking-widest)",
-            textTransform: "uppercase",
-            fontSize: "var(--am-sourcenote-size)",
-            color: "var(--am-color-ink-500)",
-            marginBlockEnd: "var(--am-space-5)",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--am-space-5)",
+            marginBlockEnd: "var(--am-silence-md)",
           }}
         >
-          ASCEND · Publishing OS · Internal Console
-        </div>
+          <img
+            src={ASCEND_LOGO_URL}
+            alt="Ascend Publishing"
+            width={88}
+            height={88}
+            style={{
+              width: 88,
+              height: 88,
+              objectFit: "contain",
+              borderRadius: 12,
+              background: "#000",
+              padding: 4,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            }}
+          />
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--am-font-ui)",
+                letterSpacing: "var(--am-tracking-widest)",
+                textTransform: "uppercase",
+                fontSize: "var(--am-sourcenote-size)",
+                color: "var(--am-color-ink-500)",
+                marginBlockEnd: "var(--am-space-2)",
+              }}
+            >
+              Ascend Publishing · Internal Console
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--am-font-ui)",
+                fontSize: "var(--am-type-100)",
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                color: "var(--am-color-ink-600)",
+              }}
+            >
+              Human Signal Preserved
+            </div>
+          </div>
+        </header>
         <h1
           style={{
             fontFamily: "var(--am-font-display)",
