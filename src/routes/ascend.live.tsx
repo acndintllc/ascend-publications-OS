@@ -6,6 +6,7 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Chapter } from "@/components/ascend/primitives";
+import { BrandMark } from "@/components/ascend/brand-mark";
 import { RenderManuscript } from "@/manuscript/render/aca-renderer";
 import {
   ingestBib,
