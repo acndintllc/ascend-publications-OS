@@ -339,6 +339,33 @@ export type Database = {
         }
         Relationships: []
       }
+      publication_sources: {
+        Row: {
+          bib_path: string | null
+          format: string
+          slug: string
+          storage_path: string
+          uploaded_at: string
+          vera_path: string | null
+        }
+        Insert: {
+          bib_path?: string | null
+          format: string
+          slug: string
+          storage_path: string
+          uploaded_at?: string
+          vera_path?: string | null
+        }
+        Update: {
+          bib_path?: string | null
+          format?: string
+          slug?: string
+          storage_path?: string
+          uploaded_at?: string
+          vera_path?: string | null
+        }
+        Relationships: []
+      }
       publication_submissions: {
         Row: {
           created_at: string

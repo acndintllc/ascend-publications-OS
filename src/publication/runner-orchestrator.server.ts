@@ -3,7 +3,7 @@
    invokes it. Lives in its own .server.ts file so we can pull the
    build-time manuscript library + admin storage without leaking the
    library glob graph into the auto-prepare client bundle. */
-import { getManuscript } from "@/manuscript/library";
+import { resolveManuscriptForSlug } from "@/manuscript/resolver.server";
 import { enrich } from "@/manuscript/pipeline";
 import { getProfile } from "@/publication/profiles";
 import { planExports } from "@/publication/export";
@@ -39,8 +39,8 @@ export async function runArtifactGenerationForSlug(
   const profile = getProfile(record.profile);
   if (!profile) throw new Error(`Unknown profile: ${record.profile}`);
 
-  const lib = getManuscript(slug);
-  if (!lib) throw new Error(`No bundled manuscript for slug: ${slug}`);
+  const lib = await resolveManuscriptForSlug(slug);
+  if (!lib) throw new Error(`No manuscript source for slug: ${slug}`);
   const enriched = enrich(lib.doc, { bib: lib.bib, vera: lib.veraSidecar });
 
   const parsed = publicationMetadataSchema.safeParse({

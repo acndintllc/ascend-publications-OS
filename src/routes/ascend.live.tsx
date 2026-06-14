@@ -39,9 +39,17 @@ interface Sources {
   vera?: VeraSidecar;
 }
 
+interface RawSource {
+  format: "md" | "docx";
+  filename: string;
+  contentBase64: string;
+  bibText?: string;
+  veraJson?: string;
+}
+
 type Status =
   | { kind: "empty" }
-  | { kind: "ready"; result: EnrichResult; sourceName: string }
+  | { kind: "ready"; result: EnrichResult; sourceName: string; raw: RawSource }
   | { kind: "error"; message: string };
 
 async function readManuscript(file: File, sources: Sources): Promise<EnrichResult> {
@@ -92,6 +100,13 @@ function LiveRoute() {
           subtitle: fm.subtitle ?? null,
           author: fm.authors[0] ?? "Unknown",
           contributors: fm.authors.slice(1),
+          manuscript: {
+            filename: status.raw.filename,
+            format: status.raw.format,
+            contentBase64: status.raw.contentBase64,
+          },
+          bibText: status.raw.bibText,
+          veraJson: status.raw.veraJson,
         },
       });
       setRegistered(res);
@@ -108,13 +123,20 @@ function LiveRoute() {
   const ingest = React.useCallback(async (files: FileList | File[]) => {
     const arr = Array.from(files);
     let manuscript: File | undefined;
+    let bibText: string | undefined;
+    let veraJson: string | undefined;
     const sources: Sources = {};
     try {
       for (const f of arr) {
         const kind = classifyFile(f);
         if (kind === "manuscript") manuscript = f;
-        else if (kind === "bib") sources.bib = ingestBib(await f.text());
-        else if (kind === "vera") sources.vera = ingestVera(await f.text());
+        else if (kind === "bib") {
+          bibText = await f.text();
+          sources.bib = ingestBib(bibText);
+        } else if (kind === "vera") {
+          veraJson = await f.text();
+          sources.vera = ingestVera(veraJson);
+        }
       }
       if (!manuscript) {
         throw new Error(
@@ -122,7 +144,15 @@ function LiveRoute() {
         );
       }
       const result = await readManuscript(manuscript, sources);
-      setStatus({ kind: "ready", result, sourceName: manuscript.name });
+      const bytes = new Uint8Array(await manuscript.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const contentBase64 = btoa(bin);
+      const format: "md" | "docx" = manuscript.name.toLowerCase().endsWith(".docx") ? "docx" : "md";
+      const raw: RawSource = {
+        format, filename: manuscript.name, contentBase64, bibText, veraJson,
+      };
+      setStatus({ kind: "ready", result, sourceName: manuscript.name, raw });
     } catch (err) {
       setStatus({
         kind: "error",

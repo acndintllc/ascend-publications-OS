@@ -1,5 +1,5 @@
 /* PTL-025 Phase 14F — First-publication readiness audit. Server-only. */
-import { getManuscript } from "@/manuscript/library";
+import { resolveManuscriptForSlug } from "@/manuscript/resolver.server";
 import { enrich } from "@/manuscript/pipeline";
 import { getProfile } from "./profiles";
 import { planExports } from "./export";
@@ -74,7 +74,7 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
   const profile = getProfile(record.profile);
   if (!profile) blockers.push(`Unknown profile: ${record.profile}`);
 
-  const lib = getManuscript(slug);
+  const lib = await resolveManuscriptForSlug(slug);
   let readiness: ReadinessReport | null = null;
   let parsed: PublicationMetadata | null = null;
   if (lib && profile) {
