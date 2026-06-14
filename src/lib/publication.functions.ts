@@ -815,3 +815,79 @@ export const revalidateReadinessFn = createServerFn({ method: "POST" })
 
 
 
+
+/* ─── Ingest bridge — register an uploaded manuscript as a publication ─── */
+
+const registerUploadSchema = z.object({
+  slug: z.string().min(1).optional(),
+  title: z.string().min(1),
+  subtitle: z.string().nullable().optional(),
+  author: z.string().min(1).optional(),
+  contributors: z.array(z.string()).optional(),
+  profile: z.string().optional(),
+});
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || `manuscript-${Date.now()}`;
+}
+
+function inferProfileFromSlug(slug: string): string {
+  if (/research|signal|report|emotion/i.test(slug)) return "research";
+  if (/documentary|history/i.test(slug)) return "documentary";
+  if (/rulebook|guide|edu/i.test(slug)) return "educational";
+  if (/kids|encyclopedia|bilingual/i.test(slug)) return "childrens";
+  return "novel";
+}
+
+/** Create (or return existing) publication record from an ad-hoc upload.
+    Idempotent by slug — re-registering the same slug is a no-op. */
+export const registerUploadedPublication = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => registerUploadSchema.parse(d))
+  .handler(async ({ data }) => {
+    const persistence = await import("@/publication/persistence.server");
+    const { getProfile } = await import("@/publication/profiles");
+    const slug = data.slug ? slugify(data.slug) : slugify(data.title);
+    const existing = await persistence.getRecord(slug);
+    if (existing) return { slug, created: false };
+    const profileId = data.profile ?? inferProfileFromSlug(slug);
+    const profile = getProfile(profileId);
+    const author = data.author ?? "Unknown";
+    await persistence.upsertRecord({
+      slug,
+      title: data.title,
+      subtitle: data.subtitle ?? null,
+      status: "draft",
+      version: "0.1.0",
+      profile: profileId,
+      author,
+      audience: null,
+      language: "en",
+      publication_date: null,
+    });
+    await persistence.upsertMetadata({
+      slug,
+      description: data.subtitle ?? data.title,
+      keywords: [],
+      categories: [],
+      contributors: data.contributors ?? [],
+      publisher: "ASCEND Media",
+    });
+    await persistence.upsertVeraConfig({
+      slug,
+      enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
+      default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
+    });
+    await persistence.recordEvent({
+      slug,
+      event_type: "publication.created",
+      payload: { profile: profileId, source: "live-upload" },
+      actor: "system",
+    });
+    return { slug, created: true };
+  });
