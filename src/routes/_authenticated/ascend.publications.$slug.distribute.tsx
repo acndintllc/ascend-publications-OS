@@ -42,6 +42,22 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ]);
     return { pub, assets, queue, artifacts, slug: params.slug };
   },
+  errorComponent: ({ error, reset }) => (
+    <main style={{ padding: 32, fontFamily: "var(--am-font-ui)" }}>
+      <h1 style={{ fontFamily: "var(--am-font-display)" }}>Distribute page failed to load</h1>
+      <pre style={{ color: "#b91c1c", whiteSpace: "pre-wrap" }}>{error.message}</pre>
+      <button onClick={reset} style={{ marginTop: 12, padding: "8px 16px" }}>Retry</button>
+      <div style={{ marginTop: 12 }}>
+        <Link to="/ascend/publications">← Back to Operations</Link>
+      </div>
+    </main>
+  ),
+  notFoundComponent: () => (
+    <main style={{ padding: 32, fontFamily: "var(--am-font-ui)" }}>
+      <p>Publication not found.</p>
+      <Link to="/ascend/publications">← Operations</Link>
+    </main>
+  ),
   component: DistributeRoute,
 });
 
