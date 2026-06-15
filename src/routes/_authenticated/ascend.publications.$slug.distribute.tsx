@@ -26,7 +26,7 @@ import type { AssetRecord } from "@/publication/assets";
 import type { QueueRow } from "@/publication/queue";
 import type { ArtifactRow } from "@/publication/runner.server";
 
-export const Route = createFileRoute("/ascend/publications/$slug/distribute")({
+export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/distribute")({
   head: ({ params }) => ({
     meta: [
       { title: `Distribute — ${params.slug} — ASCEND` },

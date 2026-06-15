@@ -16,7 +16,7 @@ import {
   ReportBlock,
 } from "@/components/ascend/primitives";
 
-export const Route = createFileRoute("/ascend/proof")({
+export const Route = createFileRoute("/_authenticated/ascend/proof")({
   head: () => ({
     meta: [
       { title: "ASCEND — Proof of Cascade" },

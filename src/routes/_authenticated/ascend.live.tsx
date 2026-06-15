@@ -20,7 +20,7 @@ import type { BibEntry } from "@/manuscript/schema/aca";
 import type { VeraSidecar } from "@/manuscript/enrich/vera";
 
 
-export const Route = createFileRoute("/ascend/live")({
+export const Route = createFileRoute("/_authenticated/ascend/live")({
   head: () => ({
     meta: [
       { title: "ASCEND Live Preview — Drop a Manuscript" },
