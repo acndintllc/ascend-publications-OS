@@ -29,7 +29,7 @@ import { ASSET_KINDS, ASSET_LABELS, scoreAssets, type AssetKind, type AssetRecor
 import { EVENT_LABELS } from "@/publication/events";
 
 
-export const Route = createFileRoute("/ascend/publications/$slug")({
+export const Route = createFileRoute("/_authenticated/ascend/publications/$slug")({
   head: ({ params }) => ({
     meta: [{ title: `Edit ${params.slug} — ASCEND Operations` }],
   }),

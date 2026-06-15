@@ -5,7 +5,7 @@ import { getManuscript } from "@/manuscript/library";
 import type { ChapterRhythm, ValidationIssue, ValidationReport } from "@/manuscript/validate";
 import type { ACADocument } from "@/manuscript/schema/aca";
 
-export const Route = createFileRoute("/ascend/validate/$slug")({
+export const Route = createFileRoute("/_authenticated/ascend/validate/$slug")({
   loader: ({ params }) => {
     const entry = getManuscript(params.slug);
     if (!entry) throw notFound();

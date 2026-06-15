@@ -18,7 +18,7 @@ const searchSchema = z.object({
   mode: z.enum(MODES).optional(),
 });
 
-export const Route = createFileRoute("/ascend/reader/$slug")({
+export const Route = createFileRoute("/_authenticated/ascend/reader/$slug")({
   validateSearch: searchSchema,
   loader: async ({ params }) => {
     let doc: ACADocument | undefined;

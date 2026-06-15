@@ -36,7 +36,7 @@ import { ISBN_FORMATS } from "@/publication/isbn";
 import { SUBMISSION_STATES } from "@/publication/submissions";
 import { nextIsbnStates } from "@/publication/isbn-workflow";
 
-export const Route = createFileRoute("/ascend/publications/$slug/command")({
+export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/command")({
   head: ({ params }) => ({
     meta: [
       { title: `Command Center — ${params.slug} — ASCEND` },

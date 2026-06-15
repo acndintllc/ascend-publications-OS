@@ -8,7 +8,7 @@ import {
   type LibraryFailure,
 } from "@/manuscript/library";
 
-export const Route = createFileRoute("/ascend/library")({
+export const Route = createFileRoute("/_authenticated/ascend/library")({
   head: () => ({
     meta: [
       { title: "ASCEND Library — Manuscripts" },
