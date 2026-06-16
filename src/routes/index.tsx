@@ -1,7 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      throw redirect({ to: "/ascend/publications" });
+    }
+    throw redirect({ to: "/auth" });
+  },
   head: () => ({
     meta: [
       { title: "ASCEND Publishing OS — Internal Console" },
