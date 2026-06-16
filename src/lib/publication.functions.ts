@@ -3,6 +3,7 @@
    All admin imports happen inside handlers to keep client bundles clean. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireReader, requireEditor, requireAdmin } from "@/integrations/supabase/role-middleware";
 import { z } from "zod";
 import type { PublicationStatus } from "@/publication/status";
 
@@ -44,7 +45,7 @@ const veraConfigPatch = z.object({
 
 /** Idempotent seed from the build-time manuscript library. */
 export const seedFromLibrary = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireEditor]).handler(async () => {
   const { listManuscripts } = await import("@/manuscript/library");
   const persistence = await import("@/publication/persistence.server");
   const { getProfile } = await import("@/publication/profiles");
@@ -102,7 +103,7 @@ export const seedFromLibrary = createServerFn({ method: "POST" })
 
 
 export const listPublications = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireReader]).handler(async () => {
   const p = await import("@/publication/persistence.server");
   const [records, metas, veras] = await Promise.all([
     p.listRecords(), p.listMetadata(), p.listVeraConfigs(),
@@ -117,7 +118,7 @@ export const listPublications = createServerFn({ method: "GET" })
 });
 
 export const getPublication = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
@@ -129,7 +130,7 @@ export const getPublication = createServerFn({ method: "GET" })
   });
 
 export const updatePublicationRecord = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) => recordPatch.parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
@@ -148,7 +149,7 @@ export const updatePublicationRecord = createServerFn({ method: "POST" })
   });
 
 export const updatePublicationMetadata = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) => metadataPatch.parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
@@ -162,7 +163,7 @@ export const updatePublicationMetadata = createServerFn({ method: "POST" })
   });
 
 export const updatePublicationVera = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) => veraConfigPatch.parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
@@ -176,7 +177,7 @@ export const updatePublicationVera = createServerFn({ method: "POST" })
   });
 
 export const transitionPublicationStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), next: statusEnum, notes: z.string().optional() }).parse(d),
   )
@@ -213,7 +214,7 @@ const assetUploadSchema = z.object({
 });
 
 export const listPublicationAssets = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
@@ -221,13 +222,13 @@ export const listPublicationAssets = createServerFn({ method: "GET" })
   });
 
 export const listAllPublicationAssets = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireReader]).handler(async () => {
   const p = await import("@/publication/persistence.server");
   return p.listAllAssets();
 });
 
 export const uploadPublicationAsset = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) => assetUploadSchema.parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
@@ -251,7 +252,7 @@ export const uploadPublicationAsset = createServerFn({ method: "POST" })
   });
 
 export const deactivatePublicationAsset = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), id: z.string().uuid() }).parse(d),
   )
@@ -269,7 +270,7 @@ export const deactivatePublicationAsset = createServerFn({ method: "POST" })
 /* ─── 9F: event log server fn ────────────────────────────────────── */
 
 export const listPublicationEvents = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug: string; limit?: number }) =>
     z.object({ slug: z.string(), limit: z.number().int().positive().max(200).optional() }).parse(d),
   )
@@ -282,7 +283,7 @@ export const listPublicationEvents = createServerFn({ method: "GET" })
 /* ─── Phase 10A: storage-backed asset uploads ───────────────────── */
 
 export const createAssetUploadUrl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), kind: z.string(), filename: z.string().min(1) }).parse(d),
   )
@@ -298,7 +299,7 @@ const queueState = z.enum([
 ]);
 
 export const listDistributionQueue = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug?: string }) =>
     z.object({ slug: z.string().optional() }).parse(d),
   )
@@ -308,7 +309,7 @@ export const listDistributionQueue = createServerFn({ method: "GET" })
   });
 
 export const enqueueDistribution = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -336,7 +337,7 @@ export const enqueueDistribution = createServerFn({ method: "POST" })
   });
 
 export const updateDistributionEntry = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -403,7 +404,7 @@ export const updateDistributionEntry = createServerFn({ method: "POST" })
   });
 
 export const removeDistributionEntry = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({ id: z.string().uuid() }).parse(d),
   )
@@ -416,7 +417,7 @@ export const removeDistributionEntry = createServerFn({ method: "POST" })
 /* ─── Phase 13A/B — Artifact generation + registry ─────────────────── */
 
 export const generatePublicationArtifacts = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -436,7 +437,7 @@ export const generatePublicationArtifacts = createServerFn({ method: "POST" })
   });
 
 export const listPublicationArtifacts = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/runner.server");
@@ -451,7 +452,7 @@ export const listPublicationArtifacts = createServerFn({ method: "GET" })
   });
 
 export const signArtifactUrl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) => z.object({ path: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/runner.server");
@@ -463,7 +464,7 @@ export const signArtifactUrl = createServerFn({ method: "POST" })
 const runnerModeEnum = z.enum(["ok", "invalid_signature", "missing_artifact", "failed_generation"]);
 
 export const runReferencePdfRunner = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -489,7 +490,7 @@ export const runReferencePdfRunner = createServerFn({ method: "POST" })
 /* ─── PTL-025 Phase 14B — ISBN registry server fns ────────────────── */
 
 export const listIsbns = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -497,7 +498,7 @@ export const listIsbns = createServerFn({ method: "GET" })
   });
 
 export const assignIsbn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -523,7 +524,7 @@ export const assignIsbn = createServerFn({ method: "POST" })
   });
 
 export const updateIsbn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -538,7 +539,7 @@ export const updateIsbn = createServerFn({ method: "POST" })
   });
 
 export const deleteIsbn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -549,13 +550,13 @@ export const deleteIsbn = createServerFn({ method: "POST" })
 /* ─── PTL-025 Phase 14D — Vendor server fns ───────────────────────── */
 
 export const listVendors = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireReader]).handler(async () => {
   const r = await import("@/publication/registry-extra.server");
   return r.listVendors();
 });
 
 export const upsertVendor = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid().optional(),
@@ -574,7 +575,7 @@ export const upsertVendor = createServerFn({ method: "POST" })
   });
 
 export const deleteVendor = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -585,7 +586,7 @@ export const deleteVendor = createServerFn({ method: "POST" })
 /* ─── PTL-025 Phase 14C — Submission server fns ───────────────────── */
 
 export const listSubmissions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -593,7 +594,7 @@ export const listSubmissions = createServerFn({ method: "GET" })
   });
 
 export const createSubmission = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -617,7 +618,7 @@ export const createSubmission = createServerFn({ method: "POST" })
   });
 
 export const updateSubmission = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -643,7 +644,7 @@ export const updateSubmission = createServerFn({ method: "POST" })
 /* ─── PTL-025 Phase 14F — Publication audit ───────────────────────── */
 
 export const auditPublicationFn = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { auditPublication } = await import("@/publication/audit.server");
@@ -653,7 +654,7 @@ export const auditPublicationFn = createServerFn({ method: "GET" })
 /* ─── PTL-027 Phase 16A — Reference external KFX runner ───────────── */
 
 export const runReferenceKfxRunner = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -679,7 +680,7 @@ export const runReferenceKfxRunner = createServerFn({ method: "POST" })
 /* ─── PTL-027 Phase 16B — Submission package builder ──────────────── */
 
 export const buildPublicationSubmissionPackage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), platform: z.string() }).parse(d),
   )
@@ -691,7 +692,7 @@ export const buildPublicationSubmissionPackage = createServerFn({ method: "POST"
 /* ─── PTL-027 Phase 16C — Vendor secret report ────────────────────── */
 
 export const reportVendorSecretsFn = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireReader]).handler(async () => {
   const r = await import("@/publication/registry-extra.server");
   const { reportVendorSecrets } = await import("@/publication/vendor-secrets.server");
   const vendors = await r.listVendors();
@@ -701,7 +702,7 @@ export const reportVendorSecretsFn = createServerFn({ method: "GET" })
 /* ─── PTL-027 Phase 16D — ISBN lifecycle transition ───────────────── */
 
 export const transitionIsbn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -731,7 +732,7 @@ export const transitionIsbn = createServerFn({ method: "POST" })
 /* ─── PTL-028 Phase 17A — External KindleGen runner ───────────────── */
 
 export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -753,7 +754,7 @@ export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
   });
 
 export const listRunnerProvidersFn = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireReader]).handler(async () => {
   const { listProviders } = await import("@/publication/runner-provider");
   return listProviders().map((p) => ({
     id: p.id, kind: p.kind, label: p.label,
@@ -764,7 +765,7 @@ export const listRunnerProvidersFn = createServerFn({ method: "GET" })
 /* ─── PTL-028 Phase 17B — KDP submission adapter ──────────────────── */
 
 export const runKdpAdapterFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), live: z.boolean().optional() }).parse(d),
   )
@@ -776,7 +777,7 @@ export const runKdpAdapterFn = createServerFn({ method: "POST" })
 /* ─── PTL-028 Phase 17C — Publication dry-run ─────────────────────── */
 
 export const runPublicationDryRunFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), forceRegenerate: z.boolean().optional() }).parse(d),
   )
@@ -788,7 +789,7 @@ export const runPublicationDryRunFn = createServerFn({ method: "POST" })
 /* ─── PTL-029 Phase 18B — Kindle provider failover ────────────────── */
 
 export const runKindleFailoverFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -809,7 +810,7 @@ export const runKindleFailoverFn = createServerFn({ method: "POST" })
   });
 
 export const kindleProviderHealthFn = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth]).handler(async () => {
+  .middleware([requireReader]).handler(async () => {
   const { kindleProviderHealth } = await import("@/publication/kindle-orchestrator.server");
   return kindleProviderHealth();
 });
@@ -817,7 +818,7 @@ export const kindleProviderHealthFn = createServerFn({ method: "GET" })
 /* ─── PTL-029 Phase 18F — Governance gate ─────────────────────────── */
 
 export const evaluateGovernanceGateFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(), platform: z.string(),
@@ -833,7 +834,7 @@ export const evaluateGovernanceGateFn = createServerFn({ method: "POST" })
 /* ─── PTL-029 Phase 18A — Live KDP submission ─────────────────────── */
 
 export const runLiveKdpSubmissionFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdmin])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -850,7 +851,7 @@ export const runLiveKdpSubmissionFn = createServerFn({ method: "POST" })
 /* ─── PTL-029 Phase 18C — Readiness automation ────────────────────── */
 
 export const revalidateReadinessFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), trigger: z.string().optional() }).parse(d),
   )
@@ -914,7 +915,7 @@ function decodeBase64(b64: string): Uint8Array {
     publication-manuscripts bucket and tracked in publication_sources
     so the full publishing pipeline can resolve the slug. */
 export const registerUploadedPublication = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireEditor])
   .inputValidator((d: unknown) => registerUploadSchema.parse(d))
   .handler(async ({ data }) => {
     const persistence = await import("@/publication/persistence.server");
@@ -1008,7 +1009,7 @@ export const registerUploadedPublication = createServerFn({ method: "POST" })
 /** Server-side enriched-doc resolver for uploaded manuscripts. The reader
     route uses this when the bundled library has no entry for the slug. */
 export const loadManuscriptDoc = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireReader])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { resolveManuscriptForSlug } = await import("@/manuscript/resolver.server");
