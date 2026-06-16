@@ -162,7 +162,7 @@ function Home() {
                 color: "var(--am-color-ink-600)",
               }}
             >
-              Human Signal Preserved
+              Media is the Expression, Publication is Access
             </div>
           </div>
         </header>

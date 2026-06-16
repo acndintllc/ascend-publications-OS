@@ -62,19 +62,19 @@ export function BrandMark({
           >
             Ascend Publishing
           </span>
-          {tagline ? (
-            <span
-              style={{
-                fontFamily: "var(--am-font-ui, 'Inter Tight', sans-serif)",
-                fontSize: Math.max(9, Math.round(size * 0.22)),
-                letterSpacing: "0.28em",
-                textTransform: "uppercase",
-                color: sub,
-              }}
-            >
-              Human Signal Preserved
-            </span>
-          ) : null}
+            {tagline ? (
+              <span
+                style={{
+                  fontFamily: "var(--am-font-ui, 'Inter Tight', sans-serif)",
+                  fontSize: Math.max(9, Math.round(size * 0.22)),
+                  letterSpacing: "0.28em",
+                  textTransform: "uppercase",
+                  color: sub,
+                }}
+              >
+                Media is the Expression, Publication is Access
+              </span>
+            ) : null}
         </span>
       ) : null}
     </span>

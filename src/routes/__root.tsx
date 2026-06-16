@@ -81,28 +81,28 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ascend Publishing — Human Signal Preserved" },
-      {
-        name: "description",
-        content:
-          "Ascend Publishing — internal Publishing OS for manuscript ingestion, metadata, readiness, and distribution.",
-      },
-      { name: "author", content: "Ascend Publishing" },
-      { property: "og:site_name", content: "Ascend Publishing" },
-      { property: "og:title", content: "Ascend Publishing — Human Signal Preserved" },
-      {
-        property: "og:description",
-        content: "Internal Publishing OS for the Ascend Publishing imprint.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:image", content: logoAsset.url },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:image", content: logoAsset.url },
-      { name: "theme-color", content: "#000000" },
-    ],
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "Ascend Publishing — Media is the Expression, Publication is Access" },
+        {
+          name: "description",
+          content:
+            "Ascend Publishing — internal Publishing OS for manuscript ingestion, metadata, readiness, and distribution.",
+        },
+        { name: "author", content: "Ascend Publishing" },
+        { property: "og:site_name", content: "Ascend Publishing" },
+        { property: "og:title", content: "Ascend Publishing — Media is the Expression, Publication is Access" },
+        {
+          property: "og:description",
+          content: "Internal Publishing OS for the Ascend Publishing imprint.",
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: logoAsset.url },
+        { name: "twitter:card", content: "summary" },
+        { name: "twitter:image", content: logoAsset.url },
+        { name: "theme-color", content: "#000000" },
+      ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: logoAsset.url },
