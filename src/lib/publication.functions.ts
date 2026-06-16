@@ -1020,3 +1020,19 @@ export const loadManuscriptDoc = createServerFn({ method: "GET" })
     return { slug: r.slug, doc, source: r.source };
   });
 
+/** Resolve manuscript + validation report for a slug (bundled or uploaded). */
+export const loadManuscriptValidation = createServerFn({ method: "GET" })
+  .middleware([requireReader])
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { resolveManuscriptForSlug } = await import("@/manuscript/resolver.server");
+    const r = await resolveManuscriptForSlug(data.slug);
+    if (!r) return null;
+    const { enrich } = await import("@/manuscript/pipeline");
+    const { validateManuscript } = await import("@/manuscript/validate");
+    const { doc } = enrich(r.doc, { bib: r.bib, vera: r.veraSidecar });
+    const report = validateManuscript(doc, r.bib, r.veraSidecar);
+    return { slug: r.slug, doc, report, source: r.source };
+  });
+
+

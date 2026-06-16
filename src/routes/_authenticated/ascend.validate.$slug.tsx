@@ -6,11 +6,15 @@ import type { ChapterRhythm, ValidationIssue, ValidationReport } from "@/manuscr
 import type { ACADocument } from "@/manuscript/schema/aca";
 
 export const Route = createFileRoute("/_authenticated/ascend/validate/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const entry = getManuscript(params.slug);
-    if (!entry) throw notFound();
-    return { doc: entry.doc, report: entry.report, slug: entry.slug };
+    if (entry) return { doc: entry.doc, report: entry.report, slug: entry.slug };
+    const { loadManuscriptValidation } = await import("@/lib/publication.functions");
+    const res = await loadManuscriptValidation({ data: { slug: params.slug } });
+    if (!res) throw notFound();
+    return { doc: res.doc, report: res.report, slug: res.slug };
   },
+
   head: ({ loaderData }) => ({
     meta: [
       {
