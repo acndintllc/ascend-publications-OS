@@ -102,6 +102,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "twitter:card", content: "summary" },
         { name: "twitter:image", content: logoAsset.url },
         { name: "theme-color", content: "#000000" },
+        { name: "twitter:title", content: "Ascend Publishing — Media is the Expression, Publication is Access" },
+        { name: "description", content: "The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience." },
+        { property: "og:description", content: "The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience." },
+        { name: "twitter:description", content: "The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience." },
+        { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/bZWRdPf2QMSLZRqGHUc4Icyykcv2/social-images/social-1781591754777-ChatGPT_Image_Jun_16,_2026,_02_31_56_AM.webp" },
+        { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/bZWRdPf2QMSLZRqGHUc4Icyykcv2/social-images/social-1781591754777-ChatGPT_Image_Jun_16,_2026,_02_31_56_AM.webp" },
       ],
     links: [
       { rel: "stylesheet", href: appCss },
