@@ -2,6 +2,11 @@ import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router"
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { bootstrapMyRole } from "@/lib/roles.functions";
+
+async function tryBootstrap() {
+  try { await bootstrapMyRole(); } catch (e) { console.warn("bootstrapMyRole failed", e); }
+}
 
 
 export const Route = createFileRoute("/auth")({
@@ -18,8 +23,11 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/ascend/publications" });
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        await tryBootstrap();
+        navigate({ to: "/ascend/publications" });
+      }
     });
   }, [navigate]);
 
@@ -37,6 +45,7 @@ function AuthPage() {
           : {}),
       });
       if (error) throw error;
+      await tryBootstrap();
       router.invalidate();
       navigate({ to: "/ascend/publications" });
     } catch (e) {
