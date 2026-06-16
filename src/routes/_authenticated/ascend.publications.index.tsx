@@ -44,7 +44,7 @@ interface Row {
 }
 
 
-export const Route = createFileRoute("/_authenticated/ascend/publications")({
+export const Route = createFileRoute("/_authenticated/ascend/publications/")({
   head: () => ({
     meta: [
       { title: "ASCEND Publications — Operations" },
