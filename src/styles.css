@@ -314,3 +314,56 @@
     color: var(--color-foreground);
   }
 }
+
+/* ============================================================
+   ASCEND APP SHELL — universal dark chrome overrides.
+   Remaps the TIER-2 ink scale so existing route components
+   render legibly on jet-black surfaces with a soft bright-grey
+   foreground. The reader's Chapter primitive opts back into a
+   paper surface via the nested override below. */
+.ap-shell {
+  --am-chapter-bg: #000000;
+  --am-chapter-ink: #e8e8e8;
+  --am-color-ink-0: #000000;
+  --am-color-ink-50: #0a0a0a;
+  --am-color-ink-100: #141414;
+  --am-color-ink-200: #262626;
+  --am-color-ink-300: #3a3a3a;
+  --am-color-ink-400: #6a6a6a;
+  --am-color-ink-500: #a0a0a0;
+  --am-color-ink-600: #c4c4c4;
+  --am-color-ink-700: #d8d8d8;
+  --am-color-ink-800: #e8e8e8;
+  --am-color-ink-900: #f0f0f0;
+  --am-color-accent-500: #e8c07a;
+  --am-color-accent-600: #e8c07a;
+}
+
+.ap-shell a {
+  color: #5cbdb9;
+}
+
+/* Reader's manuscript surface keeps a paper/ink palette so the
+   book section stays bright and readable. Only the chrome around
+   it inherits the dark shell. */
+.ap-shell [data-am="chapter"] {
+  --am-chapter-bg: #f7f3ea;
+  --am-chapter-ink: #111111;
+  --am-color-ink-0: #ffffff;
+  --am-color-ink-50: #fbf8f1;
+  --am-color-ink-100: #efeadc;
+  --am-color-ink-200: #d8d2c1;
+  --am-color-ink-300: #a89f86;
+  --am-color-ink-400: #6a6354;
+  --am-color-ink-500: #4a4538;
+  --am-color-ink-600: #2f2c24;
+  --am-color-ink-700: #1c1a14;
+  --am-color-ink-800: #0f0e0a;
+  --am-color-ink-900: #000000;
+  color: #111111;
+}
+
+.ap-shell [data-am="chapter"] a {
+  color: inherit;
+}
+
