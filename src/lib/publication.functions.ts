@@ -268,6 +268,56 @@ export const uploadPublicationAsset = createServerFn({ method: "POST" })
     return { asset, replaced };
   });
 
+const assetFileUploadSchema = z.object({
+  slug: z.string(),
+  kind: z.string().min(1).max(60),
+  filename: z.string().min(1).max(200),
+  contentType: z.string().min(1).max(120),
+  contentBase64: z.string().min(1),
+  label: z.string().max(160).nullable().optional(),
+});
+
+export const uploadPublicationAssetFile = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .inputValidator((d: unknown) => assetFileUploadSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const safe = (s: string) => s.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
+    const extMatch = /\.[a-z0-9]+$/i.exec(data.filename);
+    const ext = extMatch ? extMatch[0].toLowerCase() : "";
+    const id = crypto.randomUUID();
+    const path = `${safe(data.slug)}/${safe(data.kind)}/${id}${ext}`;
+    const bin = atob(data.contentBase64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const up = await supabaseAdmin.storage.from("publication-assets")
+      .upload(path, bytes, { contentType: data.contentType, upsert: false });
+    if (up.error) throw new Error(`upload failed: ${up.error.message}`);
+
+    const storedUrl = `publication-assets/${path}`;
+    const { asset, replaced } = await p.uploadAsset({
+      slug: data.slug, kind: data.kind, url: storedUrl,
+      label: data.label ?? data.filename, ownerId: rec.owner_id,
+    });
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: replaced ? "asset.replaced" : "asset.uploaded",
+      payload: { kind: data.kind, version: asset.version, url: storedUrl, replaced_id: replaced?.id ?? null },
+      ownerId: rec.owner_id,
+    });
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "readiness.recomputed",
+      payload: { trigger: replaced ? "asset.replaced" : "asset.uploaded" },
+      ownerId: rec.owner_id,
+    });
+    return { asset, replaced };
+  });
+
 export const deactivatePublicationAsset = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .inputValidator((d: unknown) =>
