@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { isOwnerEmail } from "@/lib/owner";
+import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
 
 function destinationFor(email: string | null | undefined): "/ascend/publications" | "/dashboard" {
   return isOwnerEmail(email) ? "/ascend/publications" : "/dashboard";
