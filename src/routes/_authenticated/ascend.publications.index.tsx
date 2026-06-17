@@ -3,7 +3,6 @@
    / publication_vera_config tables via server functions. Seeds from
    the build-time manuscript library on every load (idempotent). */
 import * as React from "react";
-import { BrandMark } from "@/components/ascend/brand-mark";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   listPublications,
