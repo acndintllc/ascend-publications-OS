@@ -1090,3 +1090,338 @@ export const loadManuscriptValidation = createServerFn({ method: "GET" })
     const report = validateManuscript(doc, r.bib, r.veraSidecar);
     return { slug: r.slug, doc, report, source: r.source };
   });
+
+/* ─── Phase 22B — Creator Submission Package workflow ──────────────────
+   Extends the existing upload flow with: direct asset upload from the
+   browser (base64), full metadata in one call, submit-for-review, and
+   the OWNER review queue. Reuses publication-records, publication-assets,
+   publication-sources — no parallel system. */
+
+const SUBMISSION_STATES = [
+  "draft","submitted","needs_changes","approved",
+  "in_production","ready_for_distribution","published",
+] as const;
+const submissionStateEnum = z.enum(SUBMISSION_STATES);
+
+const fullMetadataSchema = z.object({
+  title: z.string().min(1).max(200),
+  subtitle: z.string().max(200).optional().nullable(),
+  author: z.string().min(1).max(200),
+  description: z.string().min(1).max(4000),
+  keywords: z.array(z.string().max(60)).max(20).optional(),
+  categories: z.array(z.string().max(120)).max(10).optional(),
+  contributors: z.array(z.string().max(120)).max(20).optional(),
+  publisher: z.string().max(120).optional(),
+  rights: z.string().max(400).optional().nullable(),
+  reading_level: z.string().max(60).optional().nullable(),
+  isbn: z.string().max(20).optional().nullable(),
+  series: z.string().max(120).optional().nullable(),
+  volume: z.number().int().positive().optional().nullable(),
+  audience: z.string().max(60).optional().nullable(),
+  language: z.string().max(10).default("en"),
+  profile: z.string().optional(),
+});
+
+const assetFileSchema = z.object({
+  kind: z.string().min(1).max(60),
+  filename: z.string().min(1).max(200),
+  contentBase64: z.string().min(1),
+  contentType: z.string().min(1).max(120),
+  label: z.string().max(160).optional().nullable(),
+});
+
+const submitPackageSchema = z.object({
+  slug: z.string().optional(),
+  metadata: fullMetadataSchema,
+  manuscript: z.object({
+    filename: z.string().min(1),
+    format: z.enum(["md","docx","pdf"]),
+    contentBase64: z.string().min(1),
+  }).optional(),
+  cover: assetFileSchema.optional(),
+  optionalAssets: z.array(assetFileSchema).max(20).optional(),
+  bibText: z.string().max(500_000).optional(),
+  veraJson: z.string().max(500_000).optional(),
+  submit: z.boolean().optional(), // true = move to submission queue
+});
+
+function safeName(s: string) {
+  return s.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
+}
+function extOf(filename: string): string {
+  const m = /\.[a-z0-9]+$/i.exec(filename);
+  return m ? m[0].toLowerCase() : "";
+}
+function decodeB64(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/** Create/update a publication, persist manuscript + metadata + cover +
+    optional assets in one call, optionally submit for ASCEND review. */
+export const submitCreatorPackage = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .inputValidator((d: unknown) => submitPackageSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const persistence = await import("@/publication/persistence.server");
+    const { getProfile } = await import("@/publication/profiles");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const meta = data.metadata;
+    const rawSlug = data.slug ? slugify(data.slug) : slugify(meta.title);
+    const slug = scopeSlugForUser(rawSlug, context.userId, context.isOwner);
+    const ownerId = context.userId;
+
+    const existing = await persistence.getRecord(slug);
+    if (existing && !context.isOwner && existing.owner_id && existing.owner_id !== ownerId) {
+      throw new Error("Forbidden: slug already in use");
+    }
+    const profileId = meta.profile ?? inferProfileFromSlug(slug);
+    const profile = getProfile(profileId);
+
+    // 1. Manuscript -> publication-manuscripts bucket + publication_sources
+    let sourcePersisted = false;
+    if (data.manuscript) {
+      const mb = supabaseAdmin.storage.from("publication-manuscripts");
+      const ext = data.manuscript.format === "docx" ? "docx"
+        : data.manuscript.format === "pdf" ? "pdf" : "md";
+      const storagePath = `${slug}/manuscript.${ext}`;
+      const ct = ext === "docx"
+        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        : ext === "pdf" ? "application/pdf" : "text/markdown";
+      const up = await mb.upload(storagePath, decodeB64(data.manuscript.contentBase64),
+        { contentType: ct, upsert: true });
+      if (up.error) throw new Error(`manuscript upload failed: ${up.error.message}`);
+
+      let bibPath: string | null = null;
+      if (data.bibText) {
+        bibPath = `${slug}/citations.bib`;
+        const ub = await mb.upload(bibPath, new TextEncoder().encode(data.bibText),
+          { contentType: "text/plain", upsert: true });
+        if (ub.error) throw new Error(`bib upload failed: ${ub.error.message}`);
+      }
+      let veraPath: string | null = null;
+      if (data.veraJson) {
+        veraPath = `${slug}/vera.json`;
+        const uv = await mb.upload(veraPath, new TextEncoder().encode(data.veraJson),
+          { contentType: "application/json", upsert: true });
+        if (uv.error) throw new Error(`vera upload failed: ${uv.error.message}`);
+      }
+      const { error: srcErr } = await supabaseAdmin
+        .from("publication_sources").upsert({
+          slug, format: data.manuscript.format,
+          storage_path: storagePath, bib_path: bibPath, vera_path: veraPath,
+          uploaded_at: new Date().toISOString(), owner_id: ownerId,
+        } as never);
+      if (srcErr) throw new Error(`source row insert failed: ${srcErr.message}`);
+      sourcePersisted = true;
+    } else if (!existing) {
+      throw new Error("Manuscript file is required for a new submission");
+    }
+
+    // 2. Upsert record + metadata + vera config
+    await persistence.upsertRecord({
+      slug,
+      title: meta.title,
+      subtitle: meta.subtitle ?? null,
+      series: meta.series ?? null,
+      volume: meta.volume ?? null,
+      status: existing?.status ?? "draft",
+      version: existing?.version ?? "0.1.0",
+      profile: profileId,
+      author: meta.author,
+      audience: meta.audience ?? null,
+      language: meta.language || "en",
+      publication_date: existing?.publication_date ?? null,
+    }, ownerId);
+    await persistence.upsertMetadata({
+      slug,
+      description: meta.description,
+      keywords: meta.keywords ?? [],
+      categories: meta.categories ?? [],
+      contributors: meta.contributors ?? [],
+      reading_level: meta.reading_level ?? null,
+      isbn: meta.isbn ?? null,
+      publisher: meta.publisher ?? "ASCEND Media",
+      rights: meta.rights ?? null,
+    }, ownerId);
+    await persistence.upsertVeraConfig({
+      slug,
+      enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
+      default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
+    }, ownerId);
+
+    if (!existing) {
+      await persistence.recordEvent({
+        slug, event_type: "publication.created",
+        payload: { profile: profileId, source: "creator-package", sourcePersisted },
+        actor: "creator", ownerId,
+      });
+    }
+
+    // 3. Cover + optional assets -> publication-assets bucket + publication_assets rows
+    const ab = supabaseAdmin.storage.from("publication-assets");
+    async function uploadAssetFile(a: z.infer<typeof assetFileSchema>) {
+      const ext = extOf(a.filename);
+      const id = crypto.randomUUID();
+      const path = `${slug}/${safeName(a.kind)}/${id}${ext}`;
+      const up = await ab.upload(path, decodeB64(a.contentBase64),
+        { contentType: a.contentType, upsert: false });
+      if (up.error) throw new Error(`${a.kind} upload failed: ${up.error.message}`);
+      const storedUrl = `publication-assets/${path}`;
+      const { asset, replaced } = await persistence.uploadAsset({
+        slug, kind: a.kind, url: storedUrl,
+        label: a.label ?? a.filename, ownerId,
+      });
+      await persistence.recordEvent({
+        slug, event_type: replaced ? "asset.replaced" : "asset.uploaded",
+        payload: { kind: a.kind, version: asset.version, url: storedUrl, source: "creator-package" },
+        actor: "creator", ownerId,
+      });
+      return asset;
+    }
+    const uploadedAssets: string[] = [];
+    if (data.cover) {
+      const kind = data.cover.kind || "front-cover";
+      const ca = await uploadAssetFile({ ...data.cover, kind });
+      uploadedAssets.push(ca.id);
+    }
+    for (const a of data.optionalAssets ?? []) {
+      const ua = await uploadAssetFile(a);
+      uploadedAssets.push(ua.id);
+    }
+
+    // 4. Optionally flip submission_status to 'submitted'
+    let submission_status: typeof SUBMISSION_STATES[number] =
+      ((existing as unknown as { submission_status?: typeof SUBMISSION_STATES[number] } | null)?.submission_status) ?? "draft";
+    let submitted = false;
+    if (data.submit) {
+      const { error: stErr } = await supabaseAdmin
+        .from("publication_records")
+        .update({
+          submission_status: "submitted",
+          submitted_at: new Date().toISOString(),
+          review_notes: null,
+        } as never)
+        .eq("slug", slug);
+      if (stErr) throw new Error(`submission flip failed: ${stErr.message}`);
+      submission_status = "submitted";
+      submitted = true;
+      await persistence.recordEvent({
+        slug, event_type: "status.changed",
+        payload: { submission_status: "submitted", source: "creator-package" },
+        actor: "creator", ownerId,
+      });
+    }
+
+    return {
+      slug, created: !existing,
+      sourcePersisted, uploadedAssets, submission_status, submitted,
+    };
+  });
+
+/** Creator: flip an existing draft to submitted for ASCEND review. */
+export const submitForReview = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .inputValidator((d: unknown) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("publication_records")
+      .update({
+        submission_status: "submitted",
+        submitted_at: new Date().toISOString(),
+        review_notes: null,
+      } as never)
+      .eq("slug", data.slug);
+    if (error) throw new Error(error.message);
+    await p.recordEvent({
+      slug: data.slug, event_type: "status.changed",
+      payload: { submission_status: "submitted" },
+      actor: "creator", ownerId: rec.owner_id,
+    });
+    return { ok: true };
+  });
+
+/** OWNER review action: approve / request changes / advance lifecycle. */
+export const reviewSubmission = createServerFn({ method: "POST" })
+  .middleware([requireOwner])
+  .inputValidator((d: unknown) => z.object({
+    slug: z.string(),
+    action: submissionStateEnum,
+    notes: z.string().max(2000).optional().nullable(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const rec = await p.getRecord(data.slug);
+    if (!rec) throw new Error(`Unknown publication: ${data.slug}`);
+    const patch: Record<string, unknown> = {
+      submission_status: data.action,
+      review_notes: data.notes ?? null,
+    };
+    const { error } = await supabaseAdmin
+      .from("publication_records").update(patch as never).eq("slug", data.slug);
+    if (error) throw new Error(error.message);
+    await p.recordEvent({
+      slug: data.slug, event_type: "status.changed",
+      payload: { submission_status: data.action, review_notes: data.notes ?? null },
+      actor: "admin", ownerId: rec.owner_id,
+    });
+    return { ok: true };
+  });
+
+/** OWNER review queue: all submitted/in-flight packages with readiness. */
+export const listSubmissionQueue = createServerFn({ method: "GET" })
+  .middleware([requireOwner])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const p = await import("@/publication/persistence.server");
+    const { scoreAssets } = await import("@/publication/assets");
+    const { data: recs, error } = await supabaseAdmin
+      .from("publication_records")
+      .select("*")
+      .in("submission_status", [
+        "submitted","needs_changes","approved",
+        "in_production","ready_for_distribution",
+      ])
+      .order("submitted_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const rows = (recs ?? []) as unknown as Array<{
+      slug: string; title: string; author: string; profile: string;
+      owner_id: string | null; submission_status: string;
+      submitted_at: string | null; review_notes: string | null;
+      last_updated: string;
+    }>;
+
+    const enriched = await Promise.all(rows.map(async (r) => {
+      const [meta, assets] = await Promise.all([
+        p.getMetadata(r.slug), p.listAssets(r.slug),
+      ]);
+      const readiness = scoreAssets(r.profile, assets);
+      // Pull creator email via Admin API
+      let creatorEmail: string | null = null;
+      if (r.owner_id) {
+        try {
+          const { data: u } = await supabaseAdmin.auth.admin.getUserById(r.owner_id);
+          creatorEmail = u?.user?.email ?? null;
+        } catch { /* ignore */ }
+      }
+      const missingMeta: string[] = [];
+      if (!meta?.description?.trim()) missingMeta.push("description");
+      if (!meta?.keywords?.length) missingMeta.push("keywords");
+      if (!meta?.categories?.length) missingMeta.push("categories");
+      if (!meta?.rights) missingMeta.push("rights");
+      return {
+        record: r,
+        creatorEmail,
+        readiness,
+        missingMeta,
+        hasCover: assets.some((a) => a.is_active && /cover/i.test(a.kind)),
+      };
+    }));
+    return enriched;
+  });
