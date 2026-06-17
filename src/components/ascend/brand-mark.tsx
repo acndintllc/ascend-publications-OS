@@ -18,7 +18,7 @@ interface BrandMarkProps {
 export function BrandMark({
   size = 88,
   showWordmark = true,
-  tone = "dark",
+  tone = "light",
   asLink = true,
   to = "/",
   tagline = false,
