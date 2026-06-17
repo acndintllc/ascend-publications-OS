@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/ascend/admin/queue")({
   }),
   loader: async (): Promise<{ rows: QueueRow[]; error: string | null }> => {
     try {
-      const rows = await listSubmissionQueue();
+      const rows = (await listSubmissionQueue()) as unknown as QueueRow[];
       return { rows, error: null };
     } catch (e) {
       return { rows: [], error: e instanceof Error ? e.message : String(e) };
