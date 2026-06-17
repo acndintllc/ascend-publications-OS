@@ -343,10 +343,14 @@
   color: #5cbdb9;
 }
 
-/* Reader's manuscript surface keeps a paper/ink palette so the
-   book section stays bright and readable. Only the chrome around
-   it inherits the dark shell. */
-.ap-shell [data-am="chapter"] {
+/* Paper-surface preview ONLY for the export-format modes (PDF,
+   ebook, kindle). The on-screen reading modes — web-reader,
+   cinematic, operational ("script") — stay fully black with
+   light text so the reader renders as a single unified surface
+   (no split black/white layout). */
+.ap-shell [data-mode="pdf"] [data-am="chapter"],
+.ap-shell [data-mode="ebook"] [data-am="chapter"],
+.ap-shell [data-mode="kindle"] [data-am="chapter"] {
   --am-chapter-bg: #f7f3ea;
   --am-chapter-ink: #111111;
   --am-color-ink-0: #ffffff;
@@ -363,7 +367,34 @@
   color: #111111;
 }
 
-.ap-shell [data-am="chapter"] a {
+.ap-shell [data-mode="pdf"] [data-am="chapter"] a,
+.ap-shell [data-mode="ebook"] [data-am="chapter"] a,
+.ap-shell [data-mode="kindle"] [data-am="chapter"] a {
   color: inherit;
+}
+
+/* Script/reading modes: force a single black surface end-to-end.
+   Overrides cinematic/web-reader dark-overlay tier-1 references
+   so the chapter, nav, and outer wrapper all paint pure black
+   with the same light-grey body ink across the full viewport. */
+.ap-shell [data-mode="web-reader"],
+.ap-shell [data-mode="cinematic"],
+.ap-shell [data-mode="operational"] {
+  --am-chapter-bg: #000000;
+  --am-chapter-ink: #e8e8e8;
+  --am-body-ink: #e8e8e8;
+  --am-dialogue-ink: #ffffff;
+  --am-sidebar-bg: #0a0a0a;
+  --am-sidebar-ink: #e8e8e8;
+  --am-callout-bg: #0a0a0a;
+  --am-citation-bg: #0a0a0a;
+  --am-vera-bg: #0a0a0a;
+  --am-research-bg: #0a0a0a;
+  --am-appendix-bg: #0a0a0a;
+  --am-appendix-ink: #e8e8e8;
+  --am-footnote-ink: #c4c4c4;
+  --am-sourcenote-ink: #a0a0a0;
+  background: #000000;
+  color: #e8e8e8;
 }
 
