@@ -168,24 +168,27 @@ function AuthPage() {
   const isVerifyPending = mode === "verify-pending";
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#000000", color: "#ffffff", padding: 24, fontFamily: "Inter Tight Variable, system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#000000", border: "1px solid #ffffff", borderRadius: 16, padding: 32 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBlockEnd: 20 }}>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#000000", color: "#e8e8e8", padding: 24, fontFamily: "Inter Tight Variable, system-ui, sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "#0a0a0a", border: "1px solid #262626", borderRadius: 16, padding: 36 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBlockEnd: 18 }}>
           <img
             src={ASCEND_LOGO_URL}
             alt="Ascend Publishing"
-            width={140}
-            height={140}
-            style={{ width: 140, height: 140, objectFit: "contain", borderRadius: 18, background: "#000000", display: "block" }}
+            width={120}
+            height={120}
+            style={{ width: 120, height: 120, objectFit: "contain", display: "block" }}
           />
         </div>
-        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 30, marginBlockEnd: 4, color: "#ffffff", textAlign: "center" }}>Ascend Publishing</h1>
-        <p style={{ color: "#ffffff", opacity: 0.85, fontSize: 14, marginBlockEnd: 24, textAlign: "center" }}>
+        <h1 style={{ fontFamily: "Fraunces Variable, Fraunces, serif", fontSize: 30, margin: 0, marginBlockEnd: 4, color: "#e8c07a", textAlign: "center" }}>Ascend Publishing</h1>
+        <p style={{ color: "#5cbdb9", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", marginBlockEnd: 6, textAlign: "center" }}>
+          Media is the Expression, Publication is the Access
+        </p>
+        <p style={{ color: "#a0a0a0", fontSize: 13, marginBlockEnd: 24, textAlign: "center" }}>
           {isVerifyPending
             ? "Verify your email address."
             : mode === "sign-in"
-            ? "Sign in to the internal console."
-            : "Create an account."}
+            ? "Sign in to your publishing workspace."
+            : "Create your publishing account."}
         </p>
 
         {!isVerifyPending && (
