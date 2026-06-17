@@ -287,7 +287,25 @@ function UserDashboard() {
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, color: FG, fontSize: 15 }}>{record.title}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 600, color: FG, fontSize: 15 }}>{record.title}</div>
+                        {(() => {
+                          const ss = (record as unknown as { submission_status?: string }).submission_status ?? "draft";
+                          const palette: Record<string, string> = {
+                            draft: MUTED, submitted: GOLD, needs_changes: "#fca5a5",
+                            approved: TEAL, in_production: "#a78bfa",
+                            ready_for_distribution: "#86efac", published: TEAL,
+                          };
+                          const c = palette[ss] ?? MUTED;
+                          return (
+                            <span style={{
+                              fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase",
+                              padding: "2px 8px", borderRadius: 999,
+                              border: `1px solid ${c}`, color: c,
+                            }}>{ss.replace(/_/g, " ")}</span>
+                          );
+                        })()}
+                      </div>
                       <div style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>
                         {record.author} · {record.status} · v{record.version}
                       </div>
