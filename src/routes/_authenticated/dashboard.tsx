@@ -8,6 +8,8 @@ import {
   registerUploadedPublication,
 } from "@/lib/publication.functions";
 
+type PubEntry = Awaited<ReturnType<typeof listPublications>>[number];
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
@@ -15,10 +17,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  loader: async () => {
+  loader: async (): Promise<{ pubs: PubEntry[]; error: string | null }> => {
     try {
       const pubs = await listPublications();
-      return { pubs, error: null as string | null };
+      return { pubs, error: null };
     } catch (e) {
       return { pubs: [], error: e instanceof Error ? e.message : String(e) };
     }
