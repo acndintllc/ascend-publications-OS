@@ -117,7 +117,7 @@ function UserDashboard() {
               type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
-                navigate({ to: "/" });
+                window.location.assign("/auth");
               }}
               style={{
                 padding: "8px 14px",
