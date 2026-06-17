@@ -24,6 +24,7 @@ export type Database = {
           is_active: boolean
           kind: string
           media_type: string
+          owner_id: string | null
           slug: string
           source_queue_id: string | null
           status: Database["public"]["Enums"]["artifact_status"]
@@ -43,6 +44,7 @@ export type Database = {
           is_active?: boolean
           kind: string
           media_type: string
+          owner_id?: string | null
           slug: string
           source_queue_id?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
@@ -62,6 +64,7 @@ export type Database = {
           is_active?: boolean
           kind?: string
           media_type?: string
+          owner_id?: string | null
           slug?: string
           source_queue_id?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
@@ -82,6 +85,7 @@ export type Database = {
           kind: string
           label: string | null
           notes: string | null
+          owner_id: string | null
           replaces_id: string | null
           slug: string
           uploaded_at: string
@@ -95,6 +99,7 @@ export type Database = {
           kind: string
           label?: string | null
           notes?: string | null
+          owner_id?: string | null
           replaces_id?: string | null
           slug: string
           uploaded_at?: string
@@ -108,6 +113,7 @@ export type Database = {
           kind?: string
           label?: string | null
           notes?: string | null
+          owner_id?: string | null
           replaces_id?: string | null
           slug?: string
           uploaded_at?: string
@@ -138,6 +144,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          owner_id: string | null
           payload: Json
           slug: string
           state: Database["public"]["Enums"]["distribution_queue_state"]
@@ -151,6 +158,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           payload?: Json
           slug: string
           state?: Database["public"]["Enums"]["distribution_queue_state"]
@@ -164,6 +172,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           payload?: Json
           slug?: string
           state?: Database["public"]["Enums"]["distribution_queue_state"]
@@ -179,6 +188,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          owner_id: string | null
           payload: Json
           slug: string
         }
@@ -187,6 +197,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          owner_id?: string | null
           payload?: Json
           slug: string
         }
@@ -195,6 +206,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          owner_id?: string | null
           payload?: Json
           slug?: string
         }
@@ -216,6 +228,7 @@ export type Database = {
           id: string
           isbn: string
           notes: string | null
+          owner_id: string | null
           slug: string
           status: string
         }
@@ -226,6 +239,7 @@ export type Database = {
           id?: string
           isbn: string
           notes?: string | null
+          owner_id?: string | null
           slug: string
           status?: string
         }
@@ -236,6 +250,7 @@ export type Database = {
           id?: string
           isbn?: string
           notes?: string | null
+          owner_id?: string | null
           slug?: string
           status?: string
         }
@@ -248,6 +263,7 @@ export type Database = {
           description: string
           isbn: string | null
           keywords: string[]
+          owner_id: string | null
           publisher: string
           reading_level: string | null
           rights: string | null
@@ -260,6 +276,7 @@ export type Database = {
           description?: string
           isbn?: string | null
           keywords?: string[]
+          owner_id?: string | null
           publisher?: string
           reading_level?: string | null
           rights?: string | null
@@ -272,6 +289,7 @@ export type Database = {
           description?: string
           isbn?: string | null
           keywords?: string[]
+          owner_id?: string | null
           publisher?: string
           reading_level?: string | null
           rights?: string | null
@@ -295,6 +313,7 @@ export type Database = {
           created_at: string
           language: string
           last_updated: string
+          owner_id: string | null
           profile: string
           publication_date: string | null
           series: string | null
@@ -311,6 +330,7 @@ export type Database = {
           created_at?: string
           language?: string
           last_updated?: string
+          owner_id?: string | null
           profile?: string
           publication_date?: string | null
           series?: string | null
@@ -327,6 +347,7 @@ export type Database = {
           created_at?: string
           language?: string
           last_updated?: string
+          owner_id?: string | null
           profile?: string
           publication_date?: string | null
           series?: string | null
@@ -343,6 +364,7 @@ export type Database = {
         Row: {
           bib_path: string | null
           format: string
+          owner_id: string | null
           slug: string
           storage_path: string
           uploaded_at: string
@@ -351,6 +373,7 @@ export type Database = {
         Insert: {
           bib_path?: string | null
           format: string
+          owner_id?: string | null
           slug: string
           storage_path: string
           uploaded_at?: string
@@ -359,6 +382,7 @@ export type Database = {
         Update: {
           bib_path?: string | null
           format?: string
+          owner_id?: string | null
           slug?: string
           storage_path?: string
           uploaded_at?: string
@@ -372,6 +396,7 @@ export type Database = {
           id: string
           isbn: string | null
           notes: string | null
+          owner_id: string | null
           platform: string
           queue_id: string | null
           response_payload: Json
@@ -386,6 +411,7 @@ export type Database = {
           id?: string
           isbn?: string | null
           notes?: string | null
+          owner_id?: string | null
           platform: string
           queue_id?: string | null
           response_payload?: Json
@@ -400,6 +426,7 @@ export type Database = {
           id?: string
           isbn?: string | null
           notes?: string | null
+          owner_id?: string | null
           platform?: string
           queue_id?: string | null
           response_payload?: Json
@@ -463,6 +490,7 @@ export type Database = {
           config: Json
           default_voice: string | null
           enabled_kinds: string[]
+          owner_id: string | null
           slug: string
           updated_at: string
         }
@@ -470,6 +498,7 @@ export type Database = {
           config?: Json
           default_voice?: string | null
           enabled_kinds?: string[]
+          owner_id?: string | null
           slug: string
           updated_at?: string
         }
@@ -477,6 +506,7 @@ export type Database = {
           config?: Json
           default_voice?: string | null
           enabled_kinds?: string[]
+          owner_id?: string | null
           slug?: string
           updated_at?: string
         }
@@ -495,6 +525,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          owner_id: string | null
           slug: string
           status: Database["public"]["Enums"]["publication_status"]
           version: string
@@ -503,6 +534,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           slug: string
           status: Database["public"]["Enums"]["publication_status"]
           version: string
@@ -511,6 +543,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["publication_status"]
           version?: string
