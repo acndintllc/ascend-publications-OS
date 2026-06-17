@@ -112,7 +112,7 @@ function AdminQueue() {
           </div>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: "28px 0 0", display: "grid", gap: 14 }}>
-            {rows.map((r) => {
+            {(rows as QueueRow[]).map((r: QueueRow) => {
               const s = r.record.submission_status;
               const color = STATUS_COLORS[s] ?? MUTED;
               const missing: string[] = [
