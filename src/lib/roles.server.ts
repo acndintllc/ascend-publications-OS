@@ -1,6 +1,6 @@
 /* Role helpers — server-only. Never import in client code. */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { OWNER_EMAIL } from "@/lib/owner";
+import { ownerEmailList, isOwnerEmail } from "@/lib/owner.server";
 
 export type AppRole = "ceo" | "admin" | "editor" | "reader";
 
@@ -39,7 +39,7 @@ export async function assertRole(
 /** Resolve bootstrap admin emails from env (comma-separated, case-insensitive). */
 export function bootstrapEmails(): string[] {
   // Owner identity is hard-coded; env allowlist is no longer used.
-  return [OWNER_EMAIL];
+  return ownerEmailList();
 }
 
 /** Owner bootstrap: if email matches OWNER_EMAIL and no roles exist,
@@ -48,7 +48,7 @@ export async function bootstrapIfEligible(
   userId: string,
   email: string | null | undefined,
 ): Promise<{ bootstrapped: boolean; roles: AppRole[] }> {
-  const { isOwnerEmail } = await import("@/lib/owner");
+  // isOwnerEmail imported above (server-only).
   const existing = await fetchUserRoles(userId);
   if (!isOwnerEmail(email) || existing.includes("ceo")) {
     return { bootstrapped: false, roles: existing };

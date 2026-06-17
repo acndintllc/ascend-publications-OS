@@ -2,7 +2,7 @@
    OWNER/USER access model — no roles, no hierarchy. Email is the truth. */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isOwnerEmail, getAccessTypeForEmail } from "@/lib/owner";
+import { isOwnerEmail, getAccessTypeForEmail } from "@/lib/owner.server";
 
 /** Return who the caller is and whether they are the OWNER. */
 export const getMyRole = createServerFn({ method: "GET" })

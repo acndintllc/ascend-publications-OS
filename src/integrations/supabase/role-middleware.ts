@@ -13,7 +13,7 @@
 */
 import { createMiddleware } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isOwnerEmail } from "@/lib/owner";
+import { isOwnerEmail } from "@/lib/owner.server";
 
 export type AccessType = "owner" | "user";
 

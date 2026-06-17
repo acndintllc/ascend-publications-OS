@@ -2,11 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { isOwnerEmail } from "@/lib/owner";
+import { getMyRole } from "@/lib/roles.functions";
 import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
 
-function destinationFor(email: string | null | undefined): "/ascend/publications" | "/dashboard" {
-  return isOwnerEmail(email) ? "/ascend/publications" : "/dashboard";
+async function destinationForCurrentUser(): Promise<"/ascend/publications" | "/dashboard"> {
+  try {
+    const role = await getMyRole();
+    return role.isOwner ? "/ascend/publications" : "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
 }
 
 function goTo(path: string) {
@@ -46,7 +51,7 @@ function AuthPage() {
           window.history.replaceState(null, "", window.location.pathname + window.location.search);
           return;
         }
-        goTo(destinationFor(data.user.email));
+        goTo(await destinationForCurrentUser());
       }
     }
     handleHash();
@@ -54,8 +59,8 @@ function AuthPage() {
 
   // If already signed in when landing here, send them onward.
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) goTo(destinationFor(data.user.email));
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) goTo(await destinationForCurrentUser());
     });
   }, [navigate]);
 
@@ -83,7 +88,7 @@ function AuthPage() {
           password,
         });
         if (error) throw error;
-        goTo(destinationFor(data.user?.email ?? email));
+        goTo(await destinationForCurrentUser());
         return;
       }
 
@@ -99,7 +104,7 @@ function AuthPage() {
 
       // Auto-confirm path: session exists immediately
       if (data.session) {
-        goTo(destinationFor(data.user?.email ?? email));
+        goTo(await destinationForCurrentUser());
         return;
       }
 
@@ -121,7 +126,7 @@ function AuthPage() {
         setBusy(false);
         return;
       }
-      goTo(destinationFor(siData.user?.email ?? email));
+      goTo(await destinationForCurrentUser());
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Authentication failed");
       setBusy(false);
@@ -162,7 +167,7 @@ function AuthPage() {
     }
     if (result.redirected) return;
     const { data } = await supabase.auth.getUser();
-    goTo(destinationFor(data.user?.email));
+    goTo(await destinationForCurrentUser());
   }
 
   const isVerifyPending = mode === "verify-pending";

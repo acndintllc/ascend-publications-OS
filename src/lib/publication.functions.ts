@@ -276,7 +276,7 @@ export const deactivatePublicationAsset = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
     const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
-    const asset = await p.deactivateAsset(data.id);
+    const asset = await p.deactivateAsset(data.id, data.slug);
     await p.recordEvent({
       slug: data.slug,
       event_type: "asset.deactivated",

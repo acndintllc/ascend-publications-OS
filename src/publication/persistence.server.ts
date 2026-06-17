@@ -225,12 +225,16 @@ export async function uploadAsset(input: {
   return { asset: inserted as unknown as AssetRecord, replaced: prior };
 }
 
-export async function deactivateAsset(id: string): Promise<AssetRecord> {
-  const { data, error } = await supabaseAdmin
+export async function deactivateAsset(id: string, slug?: string): Promise<AssetRecord> {
+  let q = supabaseAdmin
     .from("publication_assets")
     .update({ is_active: false } as never)
-    .eq("id", id)
-    .select("*").single();
+    .eq("id", id);
+  // Defence-in-depth: when the caller knows the owning slug, require the
+  // asset row to belong to that slug. Prevents an authenticated user from
+  // passing a slug they DO own together with someone else's asset UUID.
+  if (slug) q = q.eq("slug", slug);
+  const { data, error } = await q.select("*").single();
   if (error) throw new Error(error.message);
   return data as unknown as AssetRecord;
 }
