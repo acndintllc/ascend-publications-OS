@@ -16,15 +16,15 @@ interface BrandMarkProps {
 }
 
 export function BrandMark({
-  size = 48,
+  size = 88,
   showWordmark = true,
   tone = "light",
   asLink = true,
   to = "/",
   tagline = false,
 }: BrandMarkProps) {
-  const ink = tone === "dark" ? "#f4e6c1" : "var(--am-color-ink-800, #1a1a1a)";
-  const sub = tone === "dark" ? "#3fb8a5" : "var(--am-color-ink-500, #666)";
+  const ink = tone === "dark" ? "#ffffff" : "#000000";
+  const sub = tone === "dark" ? "#ffffff" : "#000000";
 
   const inner = (
     <span

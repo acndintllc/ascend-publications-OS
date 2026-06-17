@@ -81,7 +81,7 @@ function UserDashboard() {
     <main
       style={{
         minHeight: "100dvh",
-        background: "#0a0a0a",
+        background: "#000000",
         color: "#fff",
         padding: "48px 24px",
         fontFamily: "Inter Tight Variable, system-ui, sans-serif",
@@ -93,7 +93,7 @@ function UserDashboard() {
             <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 32, margin: 0 }}>
               {isOwner ? "Owner Workspace" : "Your Dashboard"}
             </h1>
-            <p style={{ color: "#888", fontSize: 13, marginBlock: "4px 0" }}>{user.email}</p>
+            <p style={{ color: "#ffffff", fontSize: 13, marginBlock: "4px 0" }}>{user.email}</p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             {isOwner && (
@@ -102,7 +102,7 @@ function UserDashboard() {
                 style={{
                   padding: "8px 14px",
                   borderRadius: 8,
-                  border: "1px solid #2a2a2a",
+                  border: "1px solid #ffffff",
                   background: "#fff",
                   color: "#000",
                   fontSize: 12,
@@ -122,9 +122,9 @@ function UserDashboard() {
               style={{
                 padding: "8px 14px",
                 borderRadius: 8,
-                border: "1px solid #2a2a2a",
+                border: "1px solid #ffffff",
                 background: "transparent",
-                color: "#a0a0a0",
+                color: "#ffffff",
                 cursor: "pointer",
                 fontSize: 12,
               }}
@@ -139,8 +139,8 @@ function UserDashboard() {
           style={{
             padding: 24,
             borderRadius: 12,
-            border: "1px solid #1f1f1f",
-            background: "#111",
+            border: "1px solid #ffffff",
+            background: "#000000",
             marginBlockEnd: 32,
           }}
         >
@@ -152,14 +152,14 @@ function UserDashboard() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #2a2a2a", background: "#0a0a0a", color: "#fff" }}
+              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #ffffff", background: "#000000", color: "#fff" }}
             />
             <input
               type="file"
               accept=".md,.markdown,.txt,.docx"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               required
-              style={{ color: "#a0a0a0", fontSize: 13 }}
+              style={{ color: "#ffffff", fontSize: 13 }}
             />
             <button
               type="submit"
@@ -189,7 +189,7 @@ function UserDashboard() {
           </h2>
           {error && <div style={{ color: "#fca5a5", fontSize: 13, marginBlockEnd: 12 }}>{error}</div>}
           {pubs.length === 0 ? (
-            <p style={{ color: "#666", fontSize: 13 }}>
+            <p style={{ color: "#ffffff", fontSize: 13 }}>
               You haven't registered any manuscripts yet.
             </p>
           ) : (
@@ -200,8 +200,8 @@ function UserDashboard() {
                   style={{
                     padding: 16,
                     borderRadius: 10,
-                    border: "1px solid #1f1f1f",
-                    background: "#111",
+                    border: "1px solid #ffffff",
+                    background: "#000000",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -210,23 +210,23 @@ function UserDashboard() {
                 >
                   <div>
                     <div style={{ fontWeight: 600 }}>{record.title}</div>
-                    <div style={{ color: "#888", fontSize: 12 }}>
+                    <div style={{ color: "#ffffff", fontSize: 12 }}>
                       {record.author} · {record.status} · v{record.version}
                     </div>
-                    <code style={{ fontSize: 11, color: "#555" }}>{record.slug}</code>
+                    <code style={{ fontSize: 11, color: "#ffffff" }}>{record.slug}</code>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <Link
                       to="/ascend/reader/$slug"
                       params={{ slug: record.slug }}
-                      style={{ fontSize: 12, color: "#a0a0a0", textDecoration: "underline" }}
+                      style={{ fontSize: 12, color: "#ffffff", textDecoration: "underline" }}
                     >
                       read
                     </Link>
                     <Link
                       to="/ascend/validate/$slug"
                       params={{ slug: record.slug }}
-                      style={{ fontSize: 12, color: "#a0a0a0", textDecoration: "underline" }}
+                      style={{ fontSize: 12, color: "#ffffff", textDecoration: "underline" }}
                     >
                       validate
                     </Link>
@@ -238,14 +238,14 @@ function UserDashboard() {
         </section>
 
         {!isOwner && (
-          <p style={{ color: "#666", fontSize: 12, marginBlockStart: 32 }}>
+          <p style={{ color: "#ffffff", fontSize: 12, marginBlockStart: 32 }}>
             Owner-only admin pages (vendor settings, ISBN management, governance, KDP) are
             not available from this dashboard.
           </p>
         )}
 
         <p style={{ marginBlockStart: 24 }}>
-          <Link to="/" style={{ color: "#888", fontSize: 12 }}>← Back to landing</Link>
+          <Link to="/" style={{ color: "#ffffff", fontSize: 12 }}>← Back to landing</Link>
         </p>
       </div>
     </main>

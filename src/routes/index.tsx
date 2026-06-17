@@ -41,48 +41,49 @@ function Landing() {
         minHeight: "100dvh",
         display: "grid",
         placeItems: "center",
-        background: "#000",
-        color: "#fff",
+        background: "#000000",
+        color: "#ffffff",
         padding: 24,
         fontFamily: "Inter Tight Variable, system-ui, sans-serif",
       }}
     >
-      <div style={{ textAlign: "center", maxWidth: 460 }}>
+      <div style={{ textAlign: "center", maxWidth: 520 }}>
         <img
           src={ASCEND_LOGO_URL}
           alt="Ascend Publishing"
-          width={160}
-          height={160}
+          width={260}
+          height={260}
           style={{
-            width: 160,
-            height: 160,
+            width: 260,
+            height: 260,
             objectFit: "contain",
-            borderRadius: 20,
-            background: "#000",
-            padding: 6,
+            borderRadius: 24,
+            background: "#000000",
+            padding: 8,
             marginInline: "auto",
-            marginBlockEnd: 24,
+            marginBlockEnd: 28,
+            display: "block",
           }}
         />
-        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 34, margin: 0 }}>
+        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 44, margin: 0, color: "#ffffff" }}>
           Ascend Publishing
         </h1>
-        <p style={{ color: "#a0a0a0", fontSize: 14, marginBlock: "8px 28px" }}>
+        <p style={{ color: "#ffffff", fontSize: 15, marginBlock: "10px 32px", opacity: 0.9 }}>
           Media is the Expression, Publication is Access.
         </p>
 
         {loading ? (
-          <div style={{ color: "#666", fontSize: 13 }}>Loading…</div>
+          <div style={{ color: "#ffffff", fontSize: 14, opacity: 0.7 }}>Loading…</div>
         ) : email ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Link
               to={owner ? "/ascend/publications" : "/dashboard"}
               style={{
-                padding: "12px 18px",
+                padding: "14px 20px",
                 borderRadius: 10,
-                background: "#fff",
-                color: "#000",
-                fontWeight: 600,
+                background: "#ffffff",
+                color: "#000000",
+                fontWeight: 700,
                 textDecoration: "none",
               }}
             >
@@ -95,13 +96,13 @@ function Landing() {
                 window.location.assign("/auth");
               }}
               style={{
-                padding: "10px 14px",
+                padding: "12px 16px",
                 borderRadius: 10,
-                border: "1px solid #2a2a2a",
+                border: "1px solid #ffffff",
                 background: "transparent",
-                color: "#a0a0a0",
+                color: "#ffffff",
                 cursor: "pointer",
-                fontSize: 13,
+                fontSize: 14,
               }}
             >
               Sign out ({email})
@@ -112,11 +113,11 @@ function Landing() {
             to="/auth"
             style={{
               display: "inline-block",
-              padding: "12px 22px",
+              padding: "14px 26px",
               borderRadius: 10,
-              background: "#fff",
-              color: "#000",
-              fontWeight: 600,
+              background: "#ffffff",
+              color: "#000000",
+              fontWeight: 700,
               textDecoration: "none",
             }}
           >
