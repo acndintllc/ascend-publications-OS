@@ -110,26 +110,40 @@ function UserDashboard() {
         </p>
 
         {isOwner && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link
               to="/ascend/publications"
               style={{
-                padding: "10px 16px",
-                borderRadius: 8,
-                border: `1px solid ${GOLD}`,
-                background: "transparent",
-                color: GOLD,
-                fontSize: 12,
-                fontWeight: 600,
-                textDecoration: "none",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
+                padding: "10px 16px", borderRadius: 8, border: `1px solid ${GOLD}`,
+                background: "transparent", color: GOLD, fontSize: 12, fontWeight: 600,
+                textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
               }}
             >
-              Open Owner Console →
+              Owner Console →
+            </Link>
+            <Link
+              to="/ascend/admin/queue"
+              style={{
+                padding: "10px 16px", borderRadius: 8, border: `1px solid ${TEAL}`,
+                background: "transparent", color: TEAL, fontSize: 12, fontWeight: 600,
+                textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
+            >
+              Submission Queue →
             </Link>
           </div>
         )}
+
+        <div style={{ marginTop: isOwner ? 24 : 16 }}>
+          <Link to="/ascend/submit" style={{
+            padding: "12px 22px", borderRadius: 8, border: "none",
+            background: GOLD, color: "#111", fontSize: 12, fontWeight: 700,
+            textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
+            display: "inline-block",
+          }}>
+            + Submit a Package
+          </Link>
+        </div>
 
         {/* Upload card */}
         <section
@@ -273,7 +287,25 @@ function UserDashboard() {
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, color: FG, fontSize: 15 }}>{record.title}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 600, color: FG, fontSize: 15 }}>{record.title}</div>
+                        {(() => {
+                          const ss = (record as unknown as { submission_status?: string }).submission_status ?? "draft";
+                          const palette: Record<string, string> = {
+                            draft: MUTED, submitted: GOLD, needs_changes: "#fca5a5",
+                            approved: TEAL, in_production: "#a78bfa",
+                            ready_for_distribution: "#86efac", published: TEAL,
+                          };
+                          const c = palette[ss] ?? MUTED;
+                          return (
+                            <span style={{
+                              fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase",
+                              padding: "2px 8px", borderRadius: 999,
+                              border: `1px solid ${c}`, color: c,
+                            }}>{ss.replace(/_/g, " ")}</span>
+                          );
+                        })()}
+                      </div>
                       <div style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>
                         {record.author} · {record.status} · v{record.version}
                       </div>
