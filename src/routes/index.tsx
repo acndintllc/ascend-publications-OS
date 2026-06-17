@@ -92,7 +92,7 @@ function Landing() {
               type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
-                navigate({ to: "/" });
+                window.location.assign("/auth");
               }}
               style={{
                 padding: "10px 14px",
