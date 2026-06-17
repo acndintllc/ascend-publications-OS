@@ -2,7 +2,7 @@ import * as React from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
 import { supabase } from "@/integrations/supabase/client";
-import { isOwnerEmail } from "@/lib/owner";
+import { getMyRole } from "@/lib/roles.functions";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -23,16 +23,29 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const navigate = useNavigate();
   const [email, setEmail] = React.useState<string | null | undefined>(undefined);
+  const [owner, setOwner] = React.useState<boolean>(false);
 
   React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    async function refresh(currentEmail: string | null) {
+      setEmail(currentEmail);
+      if (!currentEmail) {
+        setOwner(false);
+        return;
+      }
+      try {
+        const role = await getMyRole();
+        setOwner(!!role.isOwner);
+      } catch {
+        setOwner(false);
+      }
+    }
+    supabase.auth.getUser().then(({ data }) => refresh(data.user?.email ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setEmail(session?.user?.email ?? null);
+      refresh(session?.user?.email ?? null);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const owner = isOwnerEmail(email);
   const loading = email === undefined;
 
   return (
