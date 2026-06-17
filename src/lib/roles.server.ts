@@ -1,5 +1,6 @@
 /* Role helpers — server-only. Never import in client code. */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { OWNER_EMAIL } from "@/lib/owner";
 
 export type AppRole = "ceo" | "admin" | "editor" | "reader";
 
@@ -38,7 +39,6 @@ export async function assertRole(
 /** Resolve bootstrap admin emails from env (comma-separated, case-insensitive). */
 export function bootstrapEmails(): string[] {
   // Owner identity is hard-coded; env allowlist is no longer used.
-  const { OWNER_EMAIL } = require("@/lib/owner");
   return [OWNER_EMAIL];
 }
 
