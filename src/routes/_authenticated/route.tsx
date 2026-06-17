@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { isOwnerEmail } from "@/lib/owner";
+import { AppShell } from "@/components/ascend/app-shell";
 
 /** Routes inside /ascend/* that are strictly OWNER-only. USERs trying to
     reach these are redirected to their dashboard. USERs are allowed to use
@@ -27,5 +28,9 @@ export const Route = createFileRoute("/_authenticated")({
     }
     return { user: data.user, isOwner };
   },
-  component: () => <Outlet />,
+  component: () => (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  ),
 });

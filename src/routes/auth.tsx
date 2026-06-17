@@ -168,24 +168,27 @@ function AuthPage() {
   const isVerifyPending = mode === "verify-pending";
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#000000", color: "#ffffff", padding: 24, fontFamily: "Inter Tight Variable, system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#000000", border: "1px solid #ffffff", borderRadius: 16, padding: 32 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBlockEnd: 20 }}>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#000000", color: "#e8e8e8", padding: 24, fontFamily: "Inter Tight Variable, system-ui, sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 460, background: "#0a0a0a", border: "1px solid #262626", borderRadius: 16, padding: 36 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBlockEnd: 18 }}>
           <img
             src={ASCEND_LOGO_URL}
             alt="Ascend Publishing"
-            width={140}
-            height={140}
-            style={{ width: 140, height: 140, objectFit: "contain", borderRadius: 18, background: "#000000", display: "block" }}
+            width={120}
+            height={120}
+            style={{ width: 120, height: 120, objectFit: "contain", display: "block" }}
           />
         </div>
-        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 30, marginBlockEnd: 4, color: "#ffffff", textAlign: "center" }}>Ascend Publishing</h1>
-        <p style={{ color: "#ffffff", opacity: 0.85, fontSize: 14, marginBlockEnd: 24, textAlign: "center" }}>
+        <h1 style={{ fontFamily: "Fraunces Variable, Fraunces, serif", fontSize: 30, margin: 0, marginBlockEnd: 4, color: "#e8c07a", textAlign: "center" }}>Ascend Publishing</h1>
+        <p style={{ color: "#5cbdb9", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", marginBlockEnd: 6, textAlign: "center" }}>
+          Media is the Expression, Publication is the Access
+        </p>
+        <p style={{ color: "#a0a0a0", fontSize: 13, marginBlockEnd: 24, textAlign: "center" }}>
           {isVerifyPending
             ? "Verify your email address."
             : mode === "sign-in"
-            ? "Sign in to the internal console."
-            : "Create an account."}
+            ? "Sign in to your publishing workspace."
+            : "Create your publishing account."}
         </p>
 
         {!isVerifyPending && (
@@ -193,18 +196,18 @@ function AuthPage() {
             <button
               type="button"
               onClick={handleGoogle}
-              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #ffffff", background: "#000000", color: "#ffffff", cursor: "pointer", marginBlockEnd: 16, fontWeight: 600 }}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #3a3a3a", background: "#000000", color: "#e8e8e8", cursor: "pointer", marginBlockEnd: 16, fontWeight: 600, fontFamily: "inherit" }}
             >
               Continue with Google
             </button>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#ffffff", opacity: 0.7, fontSize: 11, marginBlockEnd: 16 }}>
-              <div style={{ flex: 1, height: 1, background: "#ffffff", opacity: 0.4 }} /> OR <div style={{ flex: 1, height: 1, background: "#ffffff", opacity: 0.4 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#6a6a6a", fontSize: 11, marginBlockEnd: 16, letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              <div style={{ flex: 1, height: 1, background: "#262626" }} /> or <div style={{ flex: 1, height: 1, background: "#262626" }} />
             </div>
           </>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input
             type="email"
             placeholder="you@example.com"
@@ -213,7 +216,7 @@ function AuthPage() {
             required
             autoComplete="email"
             readOnly={isVerifyPending}
-            style={{ padding: "12px 12px", borderRadius: 10, border: "1px solid #ffffff", background: "#000000", color: "#ffffff", opacity: isVerifyPending ? 0.7 : 1 }}
+            style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid #262626", background: "#000000", color: "#e8e8e8", opacity: isVerifyPending ? 0.7 : 1, fontFamily: "inherit", fontSize: 14 }}
           />
           {!isVerifyPending && (
             <input
@@ -224,17 +227,17 @@ function AuthPage() {
               required
               minLength={6}
               autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-              style={{ padding: "12px 12px", borderRadius: 10, border: "1px solid #ffffff", background: "#000000", color: "#ffffff" }}
+              style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid #262626", background: "#000000", color: "#e8e8e8", fontFamily: "inherit", fontSize: 14 }}
             />
           )}
-          {err && <div style={{ color: "#ffffff", background: "#330000", padding: "8px 10px", borderRadius: 8, fontSize: 13 }}>{err}</div>}
-          {info && <div style={{ color: "#000000", background: "#ffffff", padding: "8px 10px", borderRadius: 8, fontSize: 13 }}>{info}</div>}
+          {err && <div style={{ color: "#fca5a5", background: "#1a0808", border: "1px solid #5a1a1a", padding: "10px 12px", borderRadius: 8, fontSize: 13 }}>{err}</div>}
+          {info && <div style={{ color: "#86efac", background: "#081a0c", border: "1px solid #1a5a2a", padding: "10px 12px", borderRadius: 8, fontSize: 13 }}>{info}</div>}
 
           {!isVerifyPending ? (
             <button
               type="submit"
               disabled={busy}
-              style={{ padding: "12px 14px", borderRadius: 10, border: "none", background: "#ffffff", color: "#000000", fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}
+              style={{ padding: "12px 14px", borderRadius: 10, border: "none", background: "#e8c07a", color: "#111111", fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 13 }}
             >
               {busy ? "…" : mode === "sign-in" ? "Sign in" : "Create account"}
             </button>
@@ -243,7 +246,7 @@ function AuthPage() {
               type="button"
               onClick={handleResend}
               disabled={busy || resendCooldown > 0}
-              style={{ padding: "12px 14px", borderRadius: 10, border: "none", background: "#ffffff", color: "#000000", fontWeight: 700, cursor: "pointer", opacity: busy || resendCooldown > 0 ? 0.6 : 1 }}
+              style={{ padding: "12px 14px", borderRadius: 10, border: "none", background: "#e8c07a", color: "#111111", fontWeight: 700, cursor: "pointer", opacity: busy || resendCooldown > 0 ? 0.6 : 1, fontFamily: "inherit", letterSpacing: "0.08em", textTransform: "uppercase", fontSize: 13 }}
             >
               {busy ? "…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend confirmation email"}
             </button>
@@ -254,7 +257,7 @@ function AuthPage() {
           <button
             type="button"
             onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
-            style={{ marginBlockStart: 16, color: "#ffffff", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center" }}
+            style={{ marginBlockStart: 16, color: "#5cbdb9", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center", fontFamily: "inherit" }}
           >
             {mode === "sign-in" ? "Need an account? Sign up" : "Have an account? Sign in"}
           </button>
@@ -268,11 +271,18 @@ function AuthPage() {
               setInfo(null);
               setErr(null);
             }}
-            style={{ marginBlockStart: 16, color: "#ffffff", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center" }}
+            style={{ marginBlockStart: 16, color: "#5cbdb9", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center", fontFamily: "inherit" }}
           >
             Back to sign in
           </button>
         )}
+      </div>
+
+      <div style={{ maxWidth: 520, marginTop: 28, textAlign: "center", color: "#a0a0a0", fontSize: 12, lineHeight: 1.6 }}>
+        <div style={{ fontFamily: "Fraunces Variable, Fraunces, serif", fontSize: 15, color: "#e8c07a", marginBottom: 8 }}>
+          Own your voice. Let us help the world hear it.
+        </div>
+        The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience.
       </div>
     </div>
   );

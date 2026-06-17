@@ -1,6 +1,5 @@
 /* /ascend/library — manuscript index (Phase 3C + 6A). */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BrandMark } from "@/components/ascend/brand-mark";
 import {
   listFailures,
   listManuscripts,
@@ -36,9 +35,8 @@ function LibraryRoute() {
     >
       <div style={{ maxWidth: "var(--am-chapter-measure)", marginInline: "auto" }}>
         <header style={{ marginBlockEnd: "var(--am-silence-md)" }}>
-          <div style={{ marginBlockEnd: "var(--am-space-5)" }}>
-            <BrandMark size={96} tone="dark" tagline />
-          </div>
+
+
           <div
             style={{
               fontFamily: "var(--am-font-ui)",
