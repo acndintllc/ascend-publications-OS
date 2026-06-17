@@ -1,9 +1,12 @@
 /* PTL-021 Phase 9A/9B — server functions for the Publication Operations layer.
-   No auth middleware: permissions are deferred to Phase 9D per spec.
-   All admin imports happen inside handlers to keep client bundles clean. */
+   OWNER/USER access model:
+   - requireUser  → any authenticated user. Per-handler ownership check via
+                    assertOwns() before mutating or reading per-slug data.
+   - requireOwner → owner-only admin surfaces (vendors / ISBNs / KDP /
+                    governance / distribution queue / system reports). */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requireReader, requireEditor, requireAdmin } from "@/integrations/supabase/role-middleware";
+import { requireUser, requireOwner } from "@/integrations/supabase/role-middleware";
+import { scopeSlugForUser } from "@/lib/owner";
 import { z } from "zod";
 import type { PublicationStatus } from "@/publication/status";
 
@@ -43,12 +46,13 @@ const veraConfigPatch = z.object({
   default_voice: z.string().nullable().optional(),
 });
 
-/** Idempotent seed from the build-time manuscript library. */
+/** OWNER-only: seed bundled library manuscripts into the publications table. */
 export const seedFromLibrary = createServerFn({ method: "POST" })
-  .middleware([requireEditor]).handler(async () => {
+  .middleware([requireOwner]).handler(async ({ context }) => {
   const { listManuscripts } = await import("@/manuscript/library");
   const persistence = await import("@/publication/persistence.server");
   const { getProfile } = await import("@/publication/profiles");
+  const ownerId = context.userId;
 
   function inferProfile(slug: string): string {
     if (/research|signal|report|emotion/i.test(slug)) return "research";
@@ -76,7 +80,7 @@ export const seedFromLibrary = createServerFn({ method: "POST" })
       audience: null,
       language: "en",
       publication_date: null,
-    });
+    }, ownerId);
     await persistence.upsertMetadata({
       slug: entry.slug,
       description: fm.subtitle ?? fm.title,
@@ -84,17 +88,18 @@ export const seedFromLibrary = createServerFn({ method: "POST" })
       categories: [],
       contributors: fm.authors.slice(1),
       publisher: "ASCEND Media",
-    });
+    }, ownerId);
     await persistence.upsertVeraConfig({
       slug: entry.slug,
       enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
       default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
-    });
+    }, ownerId);
     await persistence.recordEvent({
       slug: entry.slug,
       event_type: "publication.created",
       payload: { profile: profileId, source: "library-seed" },
       actor: "system",
+      ownerId,
     });
     inserted++;
   }
@@ -103,10 +108,11 @@ export const seedFromLibrary = createServerFn({ method: "POST" })
 
 
 export const listPublications = createServerFn({ method: "GET" })
-  .middleware([requireReader]).handler(async () => {
+  .middleware([requireUser]).handler(async ({ context }) => {
   const p = await import("@/publication/persistence.server");
+  const scope = context.isOwner ? null : context.userId;
   const [records, metas, veras] = await Promise.all([
-    p.listRecords(), p.listMetadata(), p.listVeraConfigs(),
+    p.listRecords(scope), p.listMetadata(scope), p.listVeraConfigs(scope),
   ]);
   const mIx = new Map(metas.map((m) => [m.slug, m]));
   const vIx = new Map(veras.map((v) => [v.slug, v]));
@@ -118,10 +124,11 @@ export const listPublications = createServerFn({ method: "GET" })
 });
 
 export const getPublication = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const [record, metadata, vera] = await Promise.all([
       p.getRecord(data.slug), p.getMetadata(data.slug), p.getVeraConfig(data.slug),
     ]);
@@ -130,11 +137,11 @@ export const getPublication = createServerFn({ method: "GET" })
   });
 
 export const updatePublicationRecord = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) => recordPatch.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
-    const before = await p.getRecord(data.slug);
+    const before = await p.assertOwns(data.slug, context.userId, context.isOwner);
     await p.upsertRecord(data);
     const profileChanged =
       data.profile !== undefined && before && before.profile !== data.profile;
@@ -144,53 +151,58 @@ export const updatePublicationRecord = createServerFn({ method: "POST" })
       payload: profileChanged
         ? { from: before?.profile, to: data.profile }
         : { fields: Object.keys(data).filter((k) => k !== "slug") },
+      ownerId: before.owner_id,
     });
     return { ok: true };
   });
 
 export const updatePublicationMetadata = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) => metadataPatch.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
+    const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
     await p.upsertMetadata(data);
     await p.recordEvent({
       slug: data.slug,
       event_type: "metadata.updated",
       payload: { fields: Object.keys(data).filter((k) => k !== "slug") },
+      ownerId: rec.owner_id,
     });
     return { ok: true };
   });
 
 export const updatePublicationVera = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) => veraConfigPatch.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
+    const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
     await p.upsertVeraConfig(data);
     await p.recordEvent({
       slug: data.slug,
       event_type: "vera.updated",
       payload: { enabled_kinds: data.enabled_kinds, default_voice: data.default_voice },
+      ownerId: rec.owner_id,
     });
     return { ok: true };
   });
 
 export const transitionPublicationStatus = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), next: statusEnum, notes: z.string().optional() }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
-    const before = await p.getRecord(data.slug);
+    const before = await p.assertOwns(data.slug, context.userId, context.isOwner);
     await p.transitionStatus(data.slug, data.next as PublicationStatus, data.notes);
     await p.recordEvent({
       slug: data.slug,
       event_type: "status.changed",
       payload: { from: before?.status, to: data.next, notes: data.notes ?? null },
+      ownerId: before.owner_id,
     });
-    // PTL-029 Phase 18C — automatic readiness revalidation.
     try {
       const { revalidateReadiness } = await import("@/publication/readiness-automation.server");
       await revalidateReadiness(data.slug, "status.changed");
@@ -198,6 +210,7 @@ export const transitionPublicationStatus = createServerFn({ method: "POST" })
       await p.recordEvent({
         slug: data.slug, event_type: "readiness.recomputed",
         payload: { trigger: "status.changed", auto_failed: true, error: String(e) },
+        ownerId: before.owner_id,
       });
     }
     return { ok: true };
@@ -214,25 +227,27 @@ const assetUploadSchema = z.object({
 });
 
 export const listPublicationAssets = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     return p.listAssets(data.slug);
   });
 
 export const listAllPublicationAssets = createServerFn({ method: "GET" })
-  .middleware([requireReader]).handler(async () => {
+  .middleware([requireUser]).handler(async ({ context }) => {
   const p = await import("@/publication/persistence.server");
-  return p.listAllAssets();
+  return p.listAllAssets(context.isOwner ? null : context.userId);
 });
 
 export const uploadPublicationAsset = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) => assetUploadSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
-    const { asset, replaced } = await p.uploadAsset(data);
+    const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
+    const { asset, replaced } = await p.uploadAsset({ ...data, ownerId: rec.owner_id });
     await p.recordEvent({
       slug: data.slug,
       event_type: replaced ? "asset.replaced" : "asset.uploaded",
@@ -242,27 +257,31 @@ export const uploadPublicationAsset = createServerFn({ method: "POST" })
         url: data.url,
         replaced_id: replaced?.id ?? null,
       },
+      ownerId: rec.owner_id,
     });
     await p.recordEvent({
       slug: data.slug,
       event_type: "readiness.recomputed",
       payload: { trigger: replaced ? "asset.replaced" : "asset.uploaded" },
+      ownerId: rec.owner_id,
     });
     return { asset, replaced };
   });
 
 export const deactivatePublicationAsset = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), id: z.string().uuid() }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
+    const rec = await p.assertOwns(data.slug, context.userId, context.isOwner);
     const asset = await p.deactivateAsset(data.id);
     await p.recordEvent({
       slug: data.slug,
       event_type: "asset.deactivated",
       payload: { id: data.id, kind: asset.kind, version: asset.version },
+      ownerId: rec.owner_id,
     });
     return { asset };
   });
@@ -270,12 +289,13 @@ export const deactivatePublicationAsset = createServerFn({ method: "POST" })
 /* ─── 9F: event log server fn ────────────────────────────────────── */
 
 export const listPublicationEvents = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string; limit?: number }) =>
     z.object({ slug: z.string(), limit: z.number().int().positive().max(200).optional() }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     return p.listEvents(data.slug, data.limit ?? 50);
   });
 
@@ -283,23 +303,25 @@ export const listPublicationEvents = createServerFn({ method: "GET" })
 /* ─── Phase 10A: storage-backed asset uploads ───────────────────── */
 
 export const createAssetUploadUrl = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), kind: z.string(), filename: z.string().min(1) }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const s = await import("@/publication/storage.server");
     return s.createSignedUpload(data);
   });
 
-/* ─── Phase 10C: distribution queue ─────────────────────────────── */
+/* ─── Phase 10C: distribution queue — OWNER-only admin surface ──── */
 
 const queueState = z.enum([
   "queued","processing","blocked","ready","submitted","failed",
 ]);
 
 export const listDistributionQueue = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireOwner])
   .inputValidator((d: { slug?: string }) =>
     z.object({ slug: z.string().optional() }).parse(d),
   )
@@ -309,7 +331,7 @@ export const listDistributionQueue = createServerFn({ method: "GET" })
   });
 
 export const enqueueDistribution = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -337,7 +359,7 @@ export const enqueueDistribution = createServerFn({ method: "POST" })
   });
 
 export const updateDistributionEntry = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -368,7 +390,6 @@ export const updateDistributionEntry = createServerFn({ method: "POST" })
       payload: { queue_id: row.id, state: row.state, transition: true },
     });
 
-    // Phase 13C — Automated preparation on transition to "ready".
     if (row.state === "ready" && !row.artifact_url) {
       try {
         const { runArtifactGenerationForSlug } = await import("@/publication/runner-orchestrator.server");
@@ -404,7 +425,7 @@ export const updateDistributionEntry = createServerFn({ method: "POST" })
   });
 
 export const removeDistributionEntry = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({ id: z.string().uuid() }).parse(d),
   )
@@ -417,7 +438,7 @@ export const removeDistributionEntry = createServerFn({ method: "POST" })
 /* ─── Phase 13A/B — Artifact generation + registry ─────────────────── */
 
 export const generatePublicationArtifacts = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -426,7 +447,9 @@ export const generatePublicationArtifacts = createServerFn({ method: "POST" })
       actor: z.string().optional(),
     }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { runArtifactGenerationForSlug } = await import("@/publication/runner-orchestrator.server");
     return runArtifactGenerationForSlug({
       slug: data.slug,
@@ -437,12 +460,13 @@ export const generatePublicationArtifacts = createServerFn({ method: "POST" })
   });
 
 export const listPublicationArtifacts = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const r = await import("@/publication/runner.server");
     const rows = await r.listArtifacts(data.slug);
-    // Pre-sign active artifacts (others omitted to keep payload bounded).
     const signed: Record<string, string> = {};
     for (const a of rows.filter((x) => x.is_active)) {
       const url = await r.signArtifact(a.storage_path);
@@ -452,7 +476,7 @@ export const listPublicationArtifacts = createServerFn({ method: "GET" })
   });
 
 export const signArtifactUrl = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) => z.object({ path: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/runner.server");
@@ -464,7 +488,7 @@ export const signArtifactUrl = createServerFn({ method: "POST" })
 const runnerModeEnum = z.enum(["ok", "invalid_signature", "missing_artifact", "failed_generation"]);
 
 export const runReferencePdfRunner = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -473,7 +497,9 @@ export const runReferencePdfRunner = createServerFn({ method: "POST" })
       actor: z.string().optional(),
     }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
     const origin = new URL(req.url).origin;
@@ -487,10 +513,10 @@ export const runReferencePdfRunner = createServerFn({ method: "POST" })
     });
   });
 
-/* ─── PTL-025 Phase 14B — ISBN registry server fns ────────────────── */
+/* ─── PTL-025 Phase 14B — ISBN registry — OWNER-only ──────────────── */
 
 export const listIsbns = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireOwner])
   .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -498,7 +524,7 @@ export const listIsbns = createServerFn({ method: "GET" })
   });
 
 export const assignIsbn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -524,7 +550,7 @@ export const assignIsbn = createServerFn({ method: "POST" })
   });
 
 export const updateIsbn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -539,7 +565,7 @@ export const updateIsbn = createServerFn({ method: "POST" })
   });
 
 export const deleteIsbn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -547,16 +573,16 @@ export const deleteIsbn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/* ─── PTL-025 Phase 14D — Vendor server fns ───────────────────────── */
+/* ─── PTL-025 Phase 14D — Vendor server fns — OWNER-only ─────────── */
 
 export const listVendors = createServerFn({ method: "GET" })
-  .middleware([requireReader]).handler(async () => {
+  .middleware([requireOwner]).handler(async () => {
   const r = await import("@/publication/registry-extra.server");
   return r.listVendors();
 });
 
 export const upsertVendor = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid().optional(),
@@ -575,7 +601,7 @@ export const upsertVendor = createServerFn({ method: "POST" })
   });
 
 export const deleteVendor = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -583,10 +609,10 @@ export const deleteVendor = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/* ─── PTL-025 Phase 14C — Submission server fns ───────────────────── */
+/* ─── PTL-025 Phase 14C — Submission server fns — OWNER-only ─────── */
 
 export const listSubmissions = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireOwner])
   .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
     const r = await import("@/publication/registry-extra.server");
@@ -594,7 +620,7 @@ export const listSubmissions = createServerFn({ method: "GET" })
   });
 
 export const createSubmission = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -618,7 +644,7 @@ export const createSubmission = createServerFn({ method: "POST" })
   });
 
 export const updateSubmission = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -644,9 +670,11 @@ export const updateSubmission = createServerFn({ method: "POST" })
 /* ─── PTL-025 Phase 14F — Publication audit ───────────────────────── */
 
 export const auditPublicationFn = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { auditPublication } = await import("@/publication/audit.server");
     return auditPublication(data.slug);
   });
@@ -654,7 +682,7 @@ export const auditPublicationFn = createServerFn({ method: "GET" })
 /* ─── PTL-027 Phase 16A — Reference external KFX runner ───────────── */
 
 export const runReferenceKfxRunner = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -663,7 +691,9 @@ export const runReferenceKfxRunner = createServerFn({ method: "POST" })
       actor: z.string().optional(),
     }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
     const origin = new URL(req.url).origin;
@@ -677,10 +707,10 @@ export const runReferenceKfxRunner = createServerFn({ method: "POST" })
     });
   });
 
-/* ─── PTL-027 Phase 16B — Submission package builder ──────────────── */
+/* ─── PTL-027 Phase 16B — Submission package builder — OWNER ──────── */
 
 export const buildPublicationSubmissionPackage = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), platform: z.string() }).parse(d),
   )
@@ -689,20 +719,20 @@ export const buildPublicationSubmissionPackage = createServerFn({ method: "POST"
     return buildSubmissionPackage(data.slug, data.platform as never);
   });
 
-/* ─── PTL-027 Phase 16C — Vendor secret report ────────────────────── */
+/* ─── PTL-027 Phase 16C — Vendor secret report — OWNER ────────────── */
 
 export const reportVendorSecretsFn = createServerFn({ method: "GET" })
-  .middleware([requireReader]).handler(async () => {
+  .middleware([requireOwner]).handler(async () => {
   const r = await import("@/publication/registry-extra.server");
   const { reportVendorSecrets } = await import("@/publication/vendor-secrets.server");
   const vendors = await r.listVendors();
   return reportVendorSecrets(vendors);
 });
 
-/* ─── PTL-027 Phase 16D — ISBN lifecycle transition ───────────────── */
+/* ─── PTL-027 Phase 16D — ISBN lifecycle transition — OWNER ───────── */
 
 export const transitionIsbn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       id: z.string().uuid(),
@@ -732,7 +762,7 @@ export const transitionIsbn = createServerFn({ method: "POST" })
 /* ─── PTL-028 Phase 17A — External KindleGen runner ───────────────── */
 
 export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -740,7 +770,9 @@ export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
       actor: z.string().optional(),
     }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
     const origin = new URL(req.url).origin;
@@ -754,7 +786,7 @@ export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
   });
 
 export const listRunnerProvidersFn = createServerFn({ method: "GET" })
-  .middleware([requireReader]).handler(async () => {
+  .middleware([requireOwner]).handler(async () => {
   const { listProviders } = await import("@/publication/runner-provider");
   return listProviders().map((p) => ({
     id: p.id, kind: p.kind, label: p.label,
@@ -762,10 +794,10 @@ export const listRunnerProvidersFn = createServerFn({ method: "GET" })
   }));
 });
 
-/* ─── PTL-028 Phase 17B — KDP submission adapter ──────────────────── */
+/* ─── PTL-028 Phase 17B — KDP submission adapter — OWNER ──────────── */
 
 export const runKdpAdapterFn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), live: z.boolean().optional() }).parse(d),
   )
@@ -777,11 +809,13 @@ export const runKdpAdapterFn = createServerFn({ method: "POST" })
 /* ─── PTL-028 Phase 17C — Publication dry-run ─────────────────────── */
 
 export const runPublicationDryRunFn = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), forceRegenerate: z.boolean().optional() }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { runPublicationDryRun } = await import("@/publication/dry-run.server");
     return runPublicationDryRun({ slug: data.slug, forceRegenerate: data.forceRegenerate });
   });
@@ -789,7 +823,7 @@ export const runPublicationDryRunFn = createServerFn({ method: "POST" })
 /* ─── PTL-029 Phase 18B — Kindle provider failover ────────────────── */
 
 export const runKindleFailoverFn = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -798,7 +832,9 @@ export const runKindleFailoverFn = createServerFn({ method: "POST" })
       actor: z.string().optional(),
     }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { getRequest } = await import("@tanstack/react-start/server");
     const origin = new URL(getRequest().url).origin;
     const { runKindleWithFailover } = await import("@/publication/kindle-orchestrator.server");
@@ -810,15 +846,15 @@ export const runKindleFailoverFn = createServerFn({ method: "POST" })
   });
 
 export const kindleProviderHealthFn = createServerFn({ method: "GET" })
-  .middleware([requireReader]).handler(async () => {
+  .middleware([requireOwner]).handler(async () => {
   const { kindleProviderHealth } = await import("@/publication/kindle-orchestrator.server");
   return kindleProviderHealth();
 });
 
-/* ─── PTL-029 Phase 18F — Governance gate ─────────────────────────── */
+/* ─── PTL-029 Phase 18F — Governance gate — OWNER ─────────────────── */
 
 export const evaluateGovernanceGateFn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(), platform: z.string(),
@@ -831,10 +867,10 @@ export const evaluateGovernanceGateFn = createServerFn({ method: "POST" })
     return evaluateGovernanceGate(data);
   });
 
-/* ─── PTL-029 Phase 18A — Live KDP submission ─────────────────────── */
+/* ─── PTL-029 Phase 18A — Live KDP submission — OWNER ─────────────── */
 
 export const runLiveKdpSubmissionFn = createServerFn({ method: "POST" })
-  .middleware([requireAdmin])
+  .middleware([requireOwner])
   .inputValidator((d: unknown) =>
     z.object({
       slug: z.string(),
@@ -851,11 +887,13 @@ export const runLiveKdpSubmissionFn = createServerFn({ method: "POST" })
 /* ─── PTL-029 Phase 18C — Readiness automation ────────────────────── */
 
 export const revalidateReadinessFn = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) =>
     z.object({ slug: z.string(), trigger: z.string().optional() }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
     const { revalidateReadiness } = await import("@/publication/readiness-automation.server");
     return revalidateReadiness(data.slug, data.trigger ?? "manual");
   });
@@ -868,7 +906,6 @@ export const revalidateReadinessFn = createServerFn({ method: "POST" })
 const manuscriptUploadSchema = z.object({
   filename: z.string().min(1),
   format: z.enum(["md", "docx"]),
-  /** Base64-encoded bytes for docx, or raw text for md (also base64-safe). */
   contentBase64: z.string().min(1),
 });
 
@@ -910,20 +947,20 @@ function decodeBase64(b64: string): Uint8Array {
 }
 
 /** Create (or return existing) publication record from an ad-hoc upload.
-    Idempotent by slug. When `manuscript` is provided the source file
-    (and optional bib/vera companions) are persisted to the
-    publication-manuscripts bucket and tracked in publication_sources
-    so the full publishing pipeline can resolve the slug. */
+    USER uploads get a per-user slug prefix so their namespace never collides
+    with other users or with bundled library manuscripts. OWNER uploads keep
+    their raw slug. owner_id is stamped on every related row. */
 export const registerUploadedPublication = createServerFn({ method: "POST" })
-  .middleware([requireEditor])
+  .middleware([requireUser])
   .inputValidator((d: unknown) => registerUploadSchema.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const persistence = await import("@/publication/persistence.server");
     const { getProfile } = await import("@/publication/profiles");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const slug = data.slug ? slugify(data.slug) : slugify(data.title);
+    const rawSlug = data.slug ? slugify(data.slug) : slugify(data.title);
+    const slug = scopeSlugForUser(rawSlug, context.userId, context.isOwner);
+    const ownerId = context.userId;
 
-    // Persist manuscript source bytes (if provided) — idempotent overwrite.
     let sourcePersisted = false;
     if (data.manuscript) {
       const bucket = supabaseAdmin.storage.from("publication-manuscripts");
@@ -962,13 +999,20 @@ export const registerUploadedPublication = createServerFn({ method: "POST" })
           bib_path: bibPath,
           vera_path: veraPath,
           uploaded_at: new Date().toISOString(),
+          owner_id: ownerId,
         } as never);
       if (srcErr) throw new Error(`source row insert failed: ${srcErr.message}`);
       sourcePersisted = true;
     }
 
     const existing = await persistence.getRecord(slug);
-    if (existing) return { slug, created: false, sourcePersisted };
+    if (existing) {
+      // Prevent take-over: if a different user owns this slug, reject.
+      if (!context.isOwner && existing.owner_id && existing.owner_id !== ownerId) {
+        throw new Error("Forbidden: slug already in use");
+      }
+      return { slug, created: false, sourcePersisted };
+    }
     const profileId = data.profile ?? inferProfileFromSlug(slug);
     const profile = getProfile(profileId);
     const author = data.author ?? "Unknown";
@@ -983,7 +1027,7 @@ export const registerUploadedPublication = createServerFn({ method: "POST" })
       audience: null,
       language: "en",
       publication_date: null,
-    });
+    }, ownerId);
     await persistence.upsertMetadata({
       slug,
       description: data.subtitle ?? data.title,
@@ -991,27 +1035,34 @@ export const registerUploadedPublication = createServerFn({ method: "POST" })
       categories: [],
       contributors: data.contributors ?? [],
       publisher: "ASCEND Media",
-    });
+    }, ownerId);
     await persistence.upsertVeraConfig({
       slug,
       enabled_kinds: profile?.behavior.vera.blocksAllowed ?? [],
       default_voice: profile?.behavior.vera.defaultVoice ?? "VERA",
-    });
+    }, ownerId);
     await persistence.recordEvent({
       slug,
       event_type: "publication.created",
       payload: { profile: profileId, source: "live-upload", sourcePersisted },
       actor: "system",
+      ownerId,
     });
     return { slug, created: true, sourcePersisted };
   });
 
-/** Server-side enriched-doc resolver for uploaded manuscripts. The reader
-    route uses this when the bundled library has no entry for the slug. */
+/** Server-side enriched-doc resolver. Bundled library is open to any auth;
+    DB-backed slugs require ownership. */
 export const loadManuscriptDoc = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Ownership gate when slug is in DB; bundled-only slugs are non-PII content.
+    const p = await import("@/publication/persistence.server");
+    const rec = await p.getRecord(data.slug);
+    if (rec && !context.isOwner && rec.owner_id !== context.userId) {
+      throw new Error("Forbidden: you do not own this manuscript");
+    }
     const { resolveManuscriptForSlug } = await import("@/manuscript/resolver.server");
     const r = await resolveManuscriptForSlug(data.slug);
     if (!r) return null;
@@ -1020,11 +1071,16 @@ export const loadManuscriptDoc = createServerFn({ method: "GET" })
     return { slug: r.slug, doc, source: r.source };
   });
 
-/** Resolve manuscript + validation report for a slug (bundled or uploaded). */
+/** Resolve manuscript + validation report. Same ownership rule as loadManuscriptDoc. */
 export const loadManuscriptValidation = createServerFn({ method: "GET" })
-  .middleware([requireReader])
+  .middleware([requireUser])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const p = await import("@/publication/persistence.server");
+    const rec = await p.getRecord(data.slug);
+    if (rec && !context.isOwner && rec.owner_id !== context.userId) {
+      throw new Error("Forbidden: you do not own this manuscript");
+    }
     const { resolveManuscriptForSlug } = await import("@/manuscript/resolver.server");
     const r = await resolveManuscriptForSlug(data.slug);
     if (!r) return null;
@@ -1034,5 +1090,3 @@ export const loadManuscriptValidation = createServerFn({ method: "GET" })
     const report = validateManuscript(doc, r.bib, r.veraSidecar);
     return { slug: r.slug, doc, report, source: r.source };
   });
-
-

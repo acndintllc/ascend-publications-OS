@@ -1,7 +1,17 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { bootstrapMyRole } from "@/lib/roles.functions";
 import { isOwnerEmail } from "@/lib/owner";
+
+/** Routes inside /ascend/* that are strictly OWNER-only. USERs trying to
+    reach these are redirected to their dashboard. USERs are allowed to use
+    /ascend/reader/$slug and /ascend/validate/$slug for their OWN manuscripts —
+    the server functions backing those routes enforce per-row ownership. */
+const OWNER_ONLY_PREFIXES = [
+  "/ascend/publications",
+  "/ascend/library",
+  "/ascend/live",
+  "/ascend/proof",
+];
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -10,14 +20,12 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
     }
-    // Fire-and-forget owner bootstrap (idempotent).
-    bootstrapMyRole().catch((e) => console.warn("bootstrapMyRole failed", e));
-    // /ascend/* is owner-only. Non-owners get pushed to their dashboard.
     const path = location.pathname;
-    if (path.startsWith("/ascend") && !isOwnerEmail(data.user.email)) {
+    const isOwner = isOwnerEmail(data.user.email);
+    if (!isOwner && OWNER_ONLY_PREFIXES.some((p) => path === p || path.startsWith(p + "/") || path.startsWith(p))) {
       throw redirect({ to: "/dashboard" });
     }
-    return { user: data.user };
+    return { user: data.user, isOwner };
   },
   component: () => <Outlet />,
 });
