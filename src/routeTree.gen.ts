@@ -24,6 +24,7 @@ import { Route as ApiPublicRenderCallbackRouteImport } from './routes/api/public
 import { Route as AuthenticatedAscendValidateSlugRouteImport } from './routes/_authenticated/ascend.validate.$slug'
 import { Route as AuthenticatedAscendReaderSlugRouteImport } from './routes/_authenticated/ascend.reader.$slug'
 import { Route as AuthenticatedAscendPublicationsSlugRouteImport } from './routes/_authenticated/ascend.publications.$slug'
+import { Route as AuthenticatedAscendAdminQueueRouteImport } from './routes/_authenticated/ascend.admin.queue'
 import { Route as AuthenticatedAscendPublicationsSlugDistributeRouteImport } from './routes/_authenticated/ascend.publications.$slug.distribute'
 import { Route as AuthenticatedAscendPublicationsSlugCommandRouteImport } from './routes/_authenticated/ascend.publications.$slug.command'
 
@@ -108,6 +109,12 @@ const AuthenticatedAscendPublicationsSlugRoute =
     path: '/ascend/publications/$slug',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAscendAdminQueueRoute =
+  AuthenticatedAscendAdminQueueRouteImport.update({
+    id: '/ascend/admin/queue',
+    path: '/ascend/admin/queue',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAscendPublicationsSlugDistributeRoute =
   AuthenticatedAscendPublicationsSlugDistributeRouteImport.update({
     id: '/distribute',
@@ -129,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/ascend/live': typeof AuthenticatedAscendLiveRoute
   '/ascend/proof': typeof AuthenticatedAscendProofRoute
   '/ascend/submit': typeof AuthenticatedAscendSubmitRoute
+  '/ascend/admin/queue': typeof AuthenticatedAscendAdminQueueRoute
   '/ascend/publications/$slug': typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   '/ascend/reader/$slug': typeof AuthenticatedAscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AuthenticatedAscendValidateSlugRoute
@@ -147,6 +155,7 @@ export interface FileRoutesByTo {
   '/ascend/live': typeof AuthenticatedAscendLiveRoute
   '/ascend/proof': typeof AuthenticatedAscendProofRoute
   '/ascend/submit': typeof AuthenticatedAscendSubmitRoute
+  '/ascend/admin/queue': typeof AuthenticatedAscendAdminQueueRoute
   '/ascend/publications/$slug': typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   '/ascend/reader/$slug': typeof AuthenticatedAscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AuthenticatedAscendValidateSlugRoute
@@ -167,6 +176,7 @@ export interface FileRoutesById {
   '/_authenticated/ascend/live': typeof AuthenticatedAscendLiveRoute
   '/_authenticated/ascend/proof': typeof AuthenticatedAscendProofRoute
   '/_authenticated/ascend/submit': typeof AuthenticatedAscendSubmitRoute
+  '/_authenticated/ascend/admin/queue': typeof AuthenticatedAscendAdminQueueRoute
   '/_authenticated/ascend/publications/$slug': typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   '/_authenticated/ascend/reader/$slug': typeof AuthenticatedAscendReaderSlugRoute
   '/_authenticated/ascend/validate/$slug': typeof AuthenticatedAscendValidateSlugRoute
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/ascend/live'
     | '/ascend/proof'
     | '/ascend/submit'
+    | '/ascend/admin/queue'
     | '/ascend/publications/$slug'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/ascend/live'
     | '/ascend/proof'
     | '/ascend/submit'
+    | '/ascend/admin/queue'
     | '/ascend/publications/$slug'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
@@ -224,6 +236,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ascend/live'
     | '/_authenticated/ascend/proof'
     | '/_authenticated/ascend/submit'
+    | '/_authenticated/ascend/admin/queue'
     | '/_authenticated/ascend/publications/$slug'
     | '/_authenticated/ascend/reader/$slug'
     | '/_authenticated/ascend/validate/$slug'
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAscendPublicationsSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ascend/admin/queue': {
+      id: '/_authenticated/ascend/admin/queue'
+      path: '/ascend/admin/queue'
+      fullPath: '/ascend/admin/queue'
+      preLoaderRoute: typeof AuthenticatedAscendAdminQueueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ascend/publications/$slug/distribute': {
       id: '/_authenticated/ascend/publications/$slug/distribute'
       path: '/distribute'
@@ -392,6 +412,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAscendLiveRoute: typeof AuthenticatedAscendLiveRoute
   AuthenticatedAscendProofRoute: typeof AuthenticatedAscendProofRoute
   AuthenticatedAscendSubmitRoute: typeof AuthenticatedAscendSubmitRoute
+  AuthenticatedAscendAdminQueueRoute: typeof AuthenticatedAscendAdminQueueRoute
   AuthenticatedAscendPublicationsSlugRoute: typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   AuthenticatedAscendReaderSlugRoute: typeof AuthenticatedAscendReaderSlugRoute
   AuthenticatedAscendValidateSlugRoute: typeof AuthenticatedAscendValidateSlugRoute
@@ -404,6 +425,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAscendLiveRoute: AuthenticatedAscendLiveRoute,
   AuthenticatedAscendProofRoute: AuthenticatedAscendProofRoute,
   AuthenticatedAscendSubmitRoute: AuthenticatedAscendSubmitRoute,
+  AuthenticatedAscendAdminQueueRoute: AuthenticatedAscendAdminQueueRoute,
   AuthenticatedAscendPublicationsSlugRoute:
     AuthenticatedAscendPublicationsSlugRouteWithChildren,
   AuthenticatedAscendReaderSlugRoute: AuthenticatedAscendReaderSlugRoute,

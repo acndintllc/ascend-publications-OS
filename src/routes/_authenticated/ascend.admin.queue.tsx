@@ -3,7 +3,21 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { listSubmissionQueue, reviewSubmission } from "@/lib/publication.functions";
 
-type QueueRow = Awaited<ReturnType<typeof listSubmissionQueue>>[number];
+interface QueueRow {
+  record: {
+    slug: string; title: string; author: string; profile: string;
+    owner_id: string | null; submission_status:
+      "draft"|"submitted"|"needs_changes"|"approved"|"in_production"|"ready_for_distribution"|"published";
+    submitted_at: string | null; review_notes: string | null; last_updated: string;
+  };
+  creatorEmail: string | null;
+  readiness: {
+    score: number; scoreWithRecommended: number; ready: boolean;
+    missingRequired: string[]; missingRecommended: string[];
+  };
+  missingMeta: string[];
+  hasCover: boolean;
+}
 
 export const Route = createFileRoute("/_authenticated/ascend/admin/queue")({
   head: () => ({
