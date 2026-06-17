@@ -553,10 +553,11 @@ function AssetsSection({
 }) {
   const [assets, setAssets] = React.useState<AssetRecord[]>(initial);
   const [kind, setKind] = React.useState<AssetKind>("front-cover");
-  const [url, setUrl] = React.useState("");
+  const [file, setFile] = React.useState<File | null>(null);
   const [label, setLabel] = React.useState("");
   const [busy, setBusy] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => setAssets(initial), [initial]);
 
@@ -565,15 +566,29 @@ function AssetsSection({
   for (const a of assets) if (a.is_active) activeByKind.set(a.kind, a);
 
   const upload = async () => {
-    if (!url) return setErr("URL required");
+    if (!file) return setErr("Choose a file to upload");
     setBusy("upload");
     setErr(null);
     try {
-      const res = await uploadPublicationAsset({
-        data: { slug, kind, url, label: label || null },
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let bin = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < buf.length; i += chunk) {
+        bin += String.fromCharCode.apply(null, Array.from(buf.subarray(i, i + chunk)));
+      }
+      const contentBase64 = btoa(bin);
+      const res = await uploadPublicationAssetFile({
+        data: {
+          slug, kind,
+          filename: file.name,
+          contentType: file.type || "application/octet-stream",
+          contentBase64,
+          label: label || null,
+        },
       });
       setAssets((prev) => [res.asset, ...prev.map((a) => a.id === res.replaced?.id ? { ...a, is_active: false } : a)]);
-      setUrl(""); setLabel("");
+      setFile(null); setLabel("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       onChange();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -610,22 +625,36 @@ function AssetsSection({
         )}
       </div>
 
+      <p style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)", color: "var(--am-color-ink-500)", marginBlockEnd: "var(--am-space-3)" }}>
+        Upload directly from your device — images, PDFs, or any file. No URL needed.
+      </p>
       <div style={{ ...fieldRow, gridTemplateColumns: "160px 1fr 1fr auto" }}>
         <select value={kind} onChange={(e) => setKind(e.target.value as AssetKind)} style={inputStyle}>
           {ASSET_KINDS.map((k) => (
             <option key={k} value={k}>{ASSET_LABELS[k]}</option>
           ))}
         </select>
-        <input style={inputStyle} placeholder="https://… image URL" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,application/pdf"
+          style={inputStyle}
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
         <input style={inputStyle} placeholder="label (optional)" value={label} onChange={(e) => setLabel(e.target.value)} />
         <button
           onClick={upload}
-          disabled={busy === "upload"}
+          disabled={busy === "upload" || !file}
           style={{ ...inputStyle, width: "auto", cursor: "pointer", background: "var(--am-color-accent-500)", color: "var(--am-color-ink-0)", borderColor: "var(--am-color-accent-500)" }}
         >
-          {busy === "upload" ? "Saving…" : (activeByKind.has(kind) ? "Replace" : "Upload")}
+          {busy === "upload" ? "Uploading…" : (activeByKind.has(kind) ? "Replace" : "Upload")}
         </button>
       </div>
+      {file && (
+        <div style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)", color: "var(--am-color-ink-500)", marginBlockEnd: "var(--am-space-3)" }}>
+          ✓ {file.name} ({Math.round(file.size / 1024)} KB)
+        </div>
+      )}
 
       {err && <div style={{ color: "#b91c1c", fontFamily: "var(--am-font-ui)", marginBlockEnd: "var(--am-space-3)" }}>✗ {err}</div>}
 
