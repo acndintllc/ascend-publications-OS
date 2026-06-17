@@ -232,7 +232,7 @@ function UserDashboard() {
                     </Link>
                   </div>
                 </li>
-              ))}
+              ); })}
             </ul>
           )}
         </section>
