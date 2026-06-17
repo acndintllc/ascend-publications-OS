@@ -1,37 +1,37 @@
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { bootstrapMyRole } from "@/lib/roles.functions";
 import { isOwnerEmail } from "@/lib/owner";
-
-async function tryBootstrap() {
-  try { await bootstrapMyRole(); } catch (e) { console.warn("bootstrapMyRole failed", e); }
-}
 
 function destinationFor(email: string | null | undefined): "/ascend/publications" | "/dashboard" {
   return isOwnerEmail(email) ? "/ascend/publications" : "/dashboard";
 }
 
+/** Hard navigation guarantees the new Supabase session is read from
+ *  localStorage by the next route's auth gate. SPA navigate races with
+ *  session persistence and intermittently bounces back to /auth. */
+function goTo(path: string) {
+  window.location.assign(path);
+}
+
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const router = useRouter();
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // If already signed in when landing here, send them onward.
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (data.user) {
-        await tryBootstrap();
-        navigate({ to: destinationFor(data.user.email) });
-      }
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) goTo(destinationFor(data.user.email));
     });
   }, [navigate]);
 
@@ -49,12 +49,14 @@ function AuthPage() {
           : {}),
       });
       if (error) throw error;
-      await tryBootstrap();
-      router.invalidate();
-      navigate({ to: destinationFor(data.user?.email ?? email) });
+      if (mode === "sign-up" && !data.session) {
+        setErr("Account created. Check your email to confirm, then sign in.");
+        setBusy(false);
+        return;
+      }
+      goTo(destinationFor(data.user?.email ?? email));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Authentication failed");
-    } finally {
       setBusy(false);
     }
   }
@@ -64,7 +66,14 @@ function AuthPage() {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/",
     });
-    if (result.error) setErr(result.error.message);
+    if (result.error) {
+      setErr(result.error.message);
+      return;
+    }
+    if (result.redirected) return;
+    // Tokens received inline — hard-redirect to the right dashboard.
+    const { data } = await supabase.auth.getUser();
+    goTo(destinationFor(data.user?.email));
   }
 
   return (
