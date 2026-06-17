@@ -49,9 +49,17 @@ function AuthPage() {
           : {}),
       });
       if (error) throw error;
+      // With auto-confirm enabled, sign-up returns a session immediately.
+      // Fallback: if no session (confirmation still required), sign in.
       if (mode === "sign-up" && !data.session) {
-        setErr("Account created. Check your email to confirm, then sign in.");
-        setBusy(false);
+        const { error: siErr, data: siData } = await supabase.auth.signInWithPassword({ email, password });
+        if (siErr) {
+          setErr("Account created. Please sign in.");
+          setBusy(false);
+          setMode("sign-in");
+          return;
+        }
+        goTo(destinationFor(siData.user?.email ?? email));
         return;
       }
       goTo(destinationFor(data.user?.email ?? email));
