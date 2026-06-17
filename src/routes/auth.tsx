@@ -3,11 +3,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { bootstrapMyRole } from "@/lib/roles.functions";
+import { isOwnerEmail } from "@/lib/owner";
 
 async function tryBootstrap() {
   try { await bootstrapMyRole(); } catch (e) { console.warn("bootstrapMyRole failed", e); }
 }
 
+function destinationFor(email: string | null | undefined): "/ascend/publications" | "/dashboard" {
+  return isOwnerEmail(email) ? "/ascend/publications" : "/dashboard";
+}
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -26,7 +30,7 @@ function AuthPage() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
         await tryBootstrap();
-        navigate({ to: "/ascend/publications" });
+        navigate({ to: destinationFor(data.user.email) });
       }
     });
   }, [navigate]);
@@ -37,17 +41,17 @@ function AuthPage() {
     setErr(null);
     try {
       const fn = mode === "sign-in" ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-      const { error } = await fn.call(supabase.auth, {
+      const { error, data } = await fn.call(supabase.auth, {
         email,
         password,
         ...(mode === "sign-up"
-          ? { options: { emailRedirectTo: window.location.origin + "/ascend/publications" } }
+          ? { options: { emailRedirectTo: window.location.origin + "/" } }
           : {}),
       });
       if (error) throw error;
       await tryBootstrap();
       router.invalidate();
-      navigate({ to: "/ascend/publications" });
+      navigate({ to: destinationFor(data.user?.email ?? email) });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Authentication failed");
     } finally {
@@ -58,7 +62,7 @@ function AuthPage() {
   async function handleGoogle() {
     setErr(null);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/ascend/publications",
+      redirect_uri: window.location.origin + "/",
     });
     if (result.error) setErr(result.error.message);
   }

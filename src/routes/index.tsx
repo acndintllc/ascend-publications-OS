@@ -1,285 +1,128 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import * as React from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ASCEND_LOGO_URL } from "@/components/ascend/brand-mark";
 import { supabase } from "@/integrations/supabase/client";
+import { isOwnerEmail } from "@/lib/owner";
 
 export const Route = createFileRoute("/")({
   ssr: false,
-  beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
-      throw redirect({ to: "/ascend/publications" });
-    }
-    throw redirect({ to: "/auth" });
-  },
   head: () => ({
     meta: [
-      { title: "ASCEND Publishing OS — Internal Console" },
+      { title: "ASCEND Publishing OS — Sign in" },
       {
         name: "description",
         content:
-          "Internal admin console for the ASCEND Publishing OS: ingest manuscripts, manage publications, run readiness audits, and trigger distribution.",
+          "ASCEND Publishing OS — sign in to your creator dashboard or owner console.",
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: Home,
+  component: Landing,
 });
 
-interface Entry {
-  to: string;
-  title: string;
-  desc: string;
-  cta: string;
-}
+function Landing() {
+  const navigate = useNavigate();
+  const [email, setEmail] = React.useState<string | null | undefined>(undefined);
 
-const PRIMARY: Entry[] = [
-  {
-    to: "/ascend/publications",
-    title: "Publication Operations",
-    desc: "Persistent dashboard of every publication. Status, profile, export readiness, VERA config, assets, distribution.",
-    cta: "Open dashboard →",
-  },
-  {
-    to: "/ascend/live",
-    title: "Ingest a Manuscript",
-    desc: "Drop manuscript.md or manuscript.docx (plus optional citations.bib and vera.json) to preview through the full pipeline in your browser. Nothing is uploaded.",
-    cta: "Open ingest →",
-  },
-  {
-    to: "/ascend/library",
-    title: "Manuscript Library",
-    desc: "Build-time manuscript catalog auto-seeded into the publication store on first dashboard load.",
-    cta: "Open library →",
-  },
-];
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setEmail(session?.user?.email ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
-const SECONDARY: Entry[] = [
-  {
-    to: "/ascend/proof",
-    title: "Tier-1 Proof",
-    desc: "Validate semantic primitives and rendering proofs.",
-    cta: "Open proof →",
-  },
-];
+  const owner = isOwnerEmail(email);
+  const loading = email === undefined;
 
-function Card({ entry, primary }: { entry: Entry; primary?: boolean }) {
-  return (
-    <Link
-      to={entry.to}
-      style={{
-        display: "block",
-        padding: primary ? "var(--am-space-6)" : "var(--am-space-5)",
-        borderRadius: 12,
-        border: "1px solid var(--am-color-ink-200)",
-        background: "var(--am-color-ink-0)",
-        textDecoration: "none",
-        color: "inherit",
-        transition: "transform 120ms ease, border-color 120ms ease",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "var(--am-font-display)",
-          fontSize: primary ? "var(--am-type-600)" : "var(--am-type-500)",
-          lineHeight: "var(--am-leading-tight)",
-          marginBlockEnd: "var(--am-space-3)",
-        }}
-      >
-        {entry.title}
-      </div>
-      <p
-        style={{
-          fontFamily: "var(--am-font-ui)",
-          color: "var(--am-color-ink-600)",
-          fontSize: "var(--am-type-200)",
-          margin: 0,
-          marginBlockEnd: "var(--am-space-4)",
-        }}
-      >
-        {entry.desc}
-      </p>
-      <div
-        style={{
-          fontFamily: "var(--am-font-ui)",
-          fontSize: "var(--am-type-200)",
-          letterSpacing: "var(--am-tracking-wide)",
-          color: "var(--am-color-accent-500, #0a66ff)",
-        }}
-      >
-        {entry.cta}
-      </div>
-    </Link>
-  );
-}
-
-function Home() {
   return (
     <main
       style={{
         minHeight: "100dvh",
-        background: "var(--am-chapter-bg)",
-        color: "var(--am-chapter-ink)",
-        paddingBlock: "var(--am-silence-lg)",
-        paddingInline: "var(--am-space-6)",
+        display: "grid",
+        placeItems: "center",
+        background: "#000",
+        color: "#fff",
+        padding: 24,
+        fontFamily: "Inter Tight Variable, system-ui, sans-serif",
       }}
     >
-      <div style={{ maxWidth: 1100, marginInline: "auto" }}>
-        <header
+      <div style={{ textAlign: "center", maxWidth: 460 }}>
+        <img
+          src={ASCEND_LOGO_URL}
+          alt="Ascend Publishing"
+          width={160}
+          height={160}
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            gap: "var(--am-space-6)",
-            marginBlockEnd: "var(--am-silence-md)",
+            width: 160,
+            height: 160,
+            objectFit: "contain",
+            borderRadius: 20,
+            background: "#000",
+            padding: 6,
+            marginInline: "auto",
+            marginBlockEnd: 24,
           }}
-        >
-          <img
-            src={ASCEND_LOGO_URL}
-            alt="Ascend Publishing"
-            width={320}
-            height={320}
-            style={{
-              width: 320,
-              height: 320,
-              objectFit: "contain",
-              borderRadius: 24,
-              background: "#000",
-              padding: 8,
-              boxShadow: "0 16px 64px rgba(0,0,0,0.28)",
-            }}
-          />
-          <div>
-            <div
-              style={{
-                fontFamily: "var(--am-font-ui)",
-                letterSpacing: "var(--am-tracking-widest)",
-                textTransform: "uppercase",
-                fontSize: "var(--am-sourcenote-size)",
-                color: "var(--am-color-ink-500)",
-                marginBlockEnd: "var(--am-space-2)",
-              }}
-            >
-              Ascend Publishing · Internal Console
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--am-font-ui)",
-                fontSize: "var(--am-type-100)",
-                letterSpacing: "0.28em",
-                textTransform: "uppercase",
-                color: "var(--am-color-ink-600)",
-              }}
-            >
-              Media is the Expression, Publication is Access
-            </div>
-          </div>
-        </header>
-        <h1
-          style={{
-            fontFamily: "var(--am-font-display)",
-            fontSize: "var(--am-type-800)",
-            margin: 0,
-            marginBlockEnd: "var(--am-space-3)",
-          }}
-        >
-          Publishing OS
+        />
+        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 34, margin: 0 }}>
+          Ascend Publishing
         </h1>
-        <p
-          style={{
-            fontFamily: "var(--am-font-ui)",
-            fontSize: "var(--am-type-300)",
-            color: "var(--am-color-ink-600)",
-            maxWidth: 720,
-            marginBlockEnd: "var(--am-silence-md)",
-          }}
-        >
-          Internal control surface for manuscript ingestion, publication
-          lifecycle, metadata, assets, readiness audits, artifact
-          generation, and distribution. Backend logic is not exposed to
-          the public web.
+        <p style={{ color: "#a0a0a0", fontSize: 14, marginBlock: "8px 28px" }}>
+          Media is the Expression, Publication is Access.
         </p>
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "var(--am-space-5)",
-            marginBlockEnd: "var(--am-silence-md)",
-          }}
-        >
-          {PRIMARY.map((e) => (
-            <Card key={e.to} entry={e} primary />
-          ))}
-        </section>
-
-        <h2
-          style={{
-            fontFamily: "var(--am-font-display)",
-            fontSize: "var(--am-type-500)",
-            margin: 0,
-            marginBlockEnd: "var(--am-space-4)",
-          }}
-        >
-          Workflow
-        </h2>
-        <ol
-          style={{
-            fontFamily: "var(--am-font-ui)",
-            fontSize: "var(--am-type-200)",
-            color: "var(--am-color-ink-600)",
-            paddingInlineStart: "var(--am-space-5)",
-            marginBlockEnd: "var(--am-silence-md)",
-            lineHeight: 1.7,
-          }}
-        >
-          <li>
-            Add a manuscript directory under <code>/manuscripts/&lt;slug&gt;/</code>{" "}
-            with <code>manuscript.md</code> or <code>.docx</code> (plus optional{" "}
-            <code>citations.bib</code> and <code>vera.json</code>), or drop
-            files into <Link to="/ascend/live">Ingest</Link> for a transient
-            preview.
-          </li>
-          <li>
-            Open <Link to="/ascend/publications">Publication Operations</Link>{" "}
-            — new manuscripts auto-seed on first load.
-          </li>
-          <li>
-            Click a title to edit metadata, transition status, configure
-            VERA, upload assets, and run the readiness audit.
-          </li>
-          <li>
-            Use the publication's <em>Distribute</em> tab to plan exports,
-            register ISBNs, and queue vendor submissions; use{" "}
-            <em>Command Center</em> for runners, governance, and live
-            submission.
-          </li>
-        </ol>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: "var(--am-space-5)",
-          }}
-        >
-          {SECONDARY.map((e) => (
-            <Card key={e.to} entry={e} />
-          ))}
-        </section>
-
-        <p
-          style={{
-            marginBlockStart: "var(--am-silence-md)",
-            fontFamily: "var(--am-font-ui)",
-            fontSize: "var(--am-type-100)",
-            color: "var(--am-color-ink-500)",
-          }}
-        >
-          This console is <code>noindex</code>. Vendor credentials and live
-          submission adapters require server-side secrets and are not
-          callable from this page.
-        </p>
+        {loading ? (
+          <div style={{ color: "#666", fontSize: 13 }}>Loading…</div>
+        ) : email ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Link
+              to={owner ? "/ascend/publications" : "/dashboard"}
+              style={{
+                padding: "12px 18px",
+                borderRadius: 10,
+                background: "#fff",
+                color: "#000",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              {owner ? "Continue to Owner Dashboard" : "Continue to Dashboard"}
+            </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate({ to: "/" });
+              }}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid #2a2a2a",
+                background: "transparent",
+                color: "#a0a0a0",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              Sign out ({email})
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/auth"
+            style={{
+              display: "inline-block",
+              padding: "12px 22px",
+              borderRadius: 10,
+              background: "#fff",
+              color: "#000",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Sign in or create an account
+          </Link>
+        )}
       </div>
     </main>
   );

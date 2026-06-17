@@ -1,5 +1,6 @@
 /* Role helpers — server-only. Never import in client code. */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { OWNER_EMAIL } from "@/lib/owner";
 
 export type AppRole = "ceo" | "admin" | "editor" | "reader";
 
@@ -37,35 +38,25 @@ export async function assertRole(
 
 /** Resolve bootstrap admin emails from env (comma-separated, case-insensitive). */
 export function bootstrapEmails(): string[] {
-  return (process.env.ASCEND_BOOTSTRAP_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
+  // Owner identity is hard-coded; env allowlist is no longer used.
+  return [OWNER_EMAIL];
 }
 
-/** If user's email matches the bootstrap allowlist and they have no roles,
-    grant CEO + Admin. Idempotent. Returns resolved roles. */
+/** Owner bootstrap: if email matches OWNER_EMAIL and no roles exist,
+    grant 'ceo' (legacy marker for owner). Idempotent. */
 export async function bootstrapIfEligible(
   userId: string,
   email: string | null | undefined,
 ): Promise<{ bootstrapped: boolean; roles: AppRole[] }> {
-  const emails = bootstrapEmails();
+  const { isOwnerEmail } = await import("@/lib/owner");
   const existing = await fetchUserRoles(userId);
-  const normalized = (email ?? "").toLowerCase();
-  const eligible = normalized && emails.includes(normalized);
-  if (!eligible || existing.length > 0) {
+  if (!isOwnerEmail(email) || existing.includes("ceo")) {
     return { bootstrapped: false, roles: existing };
   }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error } = await supabaseAdmin
     .from("user_roles")
-    .upsert(
-      [
-        { user_id: userId, role: "ceo" },
-        { user_id: userId, role: "admin" },
-      ],
-      { onConflict: "user_id,role" },
-    );
+    .upsert([{ user_id: userId, role: "ceo" }], { onConflict: "user_id,role" });
   if (error) throw error;
-  return { bootstrapped: true, roles: ["ceo", "admin"] };
+  return { bootstrapped: true, roles: Array.from(new Set([...existing, "ceo" as AppRole])) };
 }
