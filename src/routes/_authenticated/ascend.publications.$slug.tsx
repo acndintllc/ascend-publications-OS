@@ -10,7 +10,7 @@ import {
   updatePublicationVera,
   transitionPublicationStatus,
   listPublicationAssets,
-  uploadPublicationAsset,
+  uploadPublicationAssetFile,
   deactivatePublicationAsset,
   listPublicationEvents,
 } from "@/lib/publication.functions";
