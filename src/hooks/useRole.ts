@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyRole } from "@/lib/roles.functions";
-import { isOwnerEmail } from "@/lib/owner";
+import { isOwnerEmail, type AccessType } from "@/lib/owner";
 
-export type AppRole = "ceo" | "admin" | "editor" | "reader";
-
-/** Simplified access model hook: OWNER vs USER.
-    Legacy role flags are kept for back-compat with existing UI checks. */
+/** Binary access model: OWNER vs USER.
+    Returns the access type plus convenience flags. No legacy role flags. */
 export function useRole() {
   const fetchRole = useServerFn(getMyRole);
   const q = useQuery({
@@ -15,23 +13,14 @@ export function useRole() {
     staleTime: 60_000,
   });
   const email = q.data?.email ?? null;
-  const roles = (q.data?.roles ?? []) as AppRole[];
-  const isOwner = isOwnerEmail(email) || roles.includes("ceo");
+  const isOwner = isOwnerEmail(email);
   const isUser = !!email && !isOwner;
-  const has = (allowed: AppRole[]) => roles.some((r) => allowed.includes(r));
+  const accessType: AccessType | null = email ? (isOwner ? "owner" : "user") : null;
   return {
     ...q,
     email,
-    roles,
-    role: (q.data?.role ?? null) as AppRole | null,
     isOwner,
     isUser,
-    has,
-    // Legacy aliases — map all elevated checks to owner.
-    isCeo: isOwner,
-    isAdmin: isOwner,
-    canEdit: isOwner,
-    canRead: !!email,
-    atLeast: (_min: AppRole) => isOwner,
+    accessType,
   };
 }
