@@ -150,7 +150,7 @@ function PublicationsRoute() {
     >
       <div style={{ maxWidth: 1200, marginInline: "auto" }}>
         <div style={{ marginBlockEnd: "var(--am-space-5)" }}>
-          <BrandMark size={52} tagline />
+          <BrandMark size={96} tone="dark" tagline />
         </div>
         <div
           style={{
