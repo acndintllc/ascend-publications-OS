@@ -316,9 +316,12 @@ export type Database = {
           owner_id: string | null
           profile: string
           publication_date: string | null
+          review_notes: string | null
           series: string | null
           slug: string
           status: Database["public"]["Enums"]["publication_status"]
+          submission_status: Database["public"]["Enums"]["submission_state"]
+          submitted_at: string | null
           subtitle: string | null
           title: string
           version: string
@@ -333,9 +336,12 @@ export type Database = {
           owner_id?: string | null
           profile?: string
           publication_date?: string | null
+          review_notes?: string | null
           series?: string | null
           slug: string
           status?: Database["public"]["Enums"]["publication_status"]
+          submission_status?: Database["public"]["Enums"]["submission_state"]
+          submitted_at?: string | null
           subtitle?: string | null
           title: string
           version?: string
@@ -350,9 +356,12 @@ export type Database = {
           owner_id?: string | null
           profile?: string
           publication_date?: string | null
+          review_notes?: string | null
           series?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["publication_status"]
+          submission_status?: Database["public"]["Enums"]["submission_state"]
+          submitted_at?: string | null
           subtitle?: string | null
           title?: string
           version?: string
@@ -619,6 +628,14 @@ export type Database = {
         | "ready"
         | "published"
         | "archived"
+      submission_state:
+        | "draft"
+        | "submitted"
+        | "needs_changes"
+        | "approved"
+        | "in_production"
+        | "ready_for_distribution"
+        | "published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -770,6 +787,15 @@ export const Constants = {
         "ready",
         "published",
         "archived",
+      ],
+      submission_state: [
+        "draft",
+        "submitted",
+        "needs_changes",
+        "approved",
+        "in_production",
+        "ready_for_distribution",
+        "published",
       ],
     },
   },
