@@ -59,7 +59,7 @@ function AuthPage() {
 
   // If already signed in when landing here, send them onward.
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) goTo(await destinationForCurrentUser());
     });
   }, [navigate]);
