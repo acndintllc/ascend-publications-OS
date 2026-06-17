@@ -117,8 +117,8 @@ function AdminQueue() {
               const color = STATUS_COLORS[s] ?? MUTED;
               const missing: string[] = [
                 ...(r.hasCover ? [] : ["cover"]),
-                ...r.readiness.missingRequired.map((k) => `asset:${k}`),
-                ...r.missingMeta.map((m) => `meta:${m}`),
+                ...r.readiness.missingRequired.map((k: string) => `asset:${k}`),
+                ...r.missingMeta.map((m: string) => `meta:${m}`),
               ];
               const readiness = Math.round(r.readiness.scoreWithRecommended * 100);
               return (
