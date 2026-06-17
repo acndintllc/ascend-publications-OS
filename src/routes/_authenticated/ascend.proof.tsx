@@ -113,8 +113,6 @@ function ProofPage() {
           fontSize: "var(--am-type-200)",
         }}
       >
-        <BrandMark size={72} />
-        <span style={{ color: "var(--am-color-ink-400)" }}>·</span>
         <strong style={{ letterSpacing: "var(--am-tracking-widest)", textTransform: "uppercase" }}>
           ASCEND · Proof
         </strong>
