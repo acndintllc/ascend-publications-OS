@@ -168,10 +168,19 @@ function AuthPage() {
   const isVerifyPending = mode === "verify-pending";
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#000", color: "#fff", padding: 24, fontFamily: "Inter Tight Variable, system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 380, background: "#0a0a0a", border: "1px solid #1f1f1f", borderRadius: 16, padding: 32 }}>
-        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 28, marginBlockEnd: 4 }}>Ascend Publishing</h1>
-        <p style={{ color: "#a0a0a0", fontSize: 13, marginBlockEnd: 24 }}>
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#000000", color: "#ffffff", padding: 24, fontFamily: "Inter Tight Variable, system-ui, sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 420, background: "#000000", border: "1px solid #ffffff", borderRadius: 16, padding: 32 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBlockEnd: 20 }}>
+          <img
+            src={ASCEND_LOGO_URL}
+            alt="Ascend Publishing"
+            width={140}
+            height={140}
+            style={{ width: 140, height: 140, objectFit: "contain", borderRadius: 18, background: "#000000", display: "block" }}
+          />
+        </div>
+        <h1 style={{ fontFamily: "Fraunces Variable, serif", fontSize: 30, marginBlockEnd: 4, color: "#ffffff", textAlign: "center" }}>Ascend Publishing</h1>
+        <p style={{ color: "#ffffff", opacity: 0.85, fontSize: 14, marginBlockEnd: 24, textAlign: "center" }}>
           {isVerifyPending
             ? "Verify your email address."
             : mode === "sign-in"
@@ -184,13 +193,13 @@ function AuthPage() {
             <button
               type="button"
               onClick={handleGoogle}
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid #2a2a2a", background: "#111", color: "#fff", cursor: "pointer", marginBlockEnd: 16 }}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #ffffff", background: "#000000", color: "#ffffff", cursor: "pointer", marginBlockEnd: 16, fontWeight: 600 }}
             >
               Continue with Google
             </button>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#555", fontSize: 11, marginBlockEnd: 16 }}>
-              <div style={{ flex: 1, height: 1, background: "#1f1f1f" }} /> OR <div style={{ flex: 1, height: 1, background: "#1f1f1f" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#ffffff", opacity: 0.7, fontSize: 11, marginBlockEnd: 16 }}>
+              <div style={{ flex: 1, height: 1, background: "#ffffff", opacity: 0.4 }} /> OR <div style={{ flex: 1, height: 1, background: "#ffffff", opacity: 0.4 }} />
             </div>
           </>
         )}
@@ -204,7 +213,7 @@ function AuthPage() {
             required
             autoComplete="email"
             readOnly={isVerifyPending}
-            style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #2a2a2a", background: "#111", color: "#fff", opacity: isVerifyPending ? 0.6 : 1 }}
+            style={{ padding: "12px 12px", borderRadius: 10, border: "1px solid #ffffff", background: "#000000", color: "#ffffff", opacity: isVerifyPending ? 0.7 : 1 }}
           />
           {!isVerifyPending && (
             <input
@@ -215,17 +224,17 @@ function AuthPage() {
               required
               minLength={6}
               autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-              style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #2a2a2a", background: "#111", color: "#fff" }}
+              style={{ padding: "12px 12px", borderRadius: 10, border: "1px solid #ffffff", background: "#000000", color: "#ffffff" }}
             />
           )}
-          {err && <div style={{ color: "#ff6b6b", fontSize: 12 }}>{err}</div>}
-          {info && <div style={{ color: "#4ade80", fontSize: 12 }}>{info}</div>}
+          {err && <div style={{ color: "#ffffff", background: "#330000", padding: "8px 10px", borderRadius: 8, fontSize: 13 }}>{err}</div>}
+          {info && <div style={{ color: "#000000", background: "#ffffff", padding: "8px 10px", borderRadius: 8, fontSize: 13 }}>{info}</div>}
 
           {!isVerifyPending ? (
             <button
               type="submit"
               disabled={busy}
-              style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: "#fff", color: "#000", fontWeight: 600, cursor: "pointer", opacity: busy ? 0.6 : 1 }}
+              style={{ padding: "12px 14px", borderRadius: 10, border: "none", background: "#ffffff", color: "#000000", fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}
             >
               {busy ? "…" : mode === "sign-in" ? "Sign in" : "Create account"}
             </button>
@@ -234,7 +243,7 @@ function AuthPage() {
               type="button"
               onClick={handleResend}
               disabled={busy || resendCooldown > 0}
-              style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: "#fff", color: "#000", fontWeight: 600, cursor: "pointer", opacity: busy || resendCooldown > 0 ? 0.6 : 1 }}
+              style={{ padding: "12px 14px", borderRadius: 10, border: "none", background: "#ffffff", color: "#000000", fontWeight: 700, cursor: "pointer", opacity: busy || resendCooldown > 0 ? 0.6 : 1 }}
             >
               {busy ? "…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend confirmation email"}
             </button>
@@ -245,7 +254,7 @@ function AuthPage() {
           <button
             type="button"
             onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
-            style={{ marginBlockStart: 16, color: "#a0a0a0", fontSize: 12, background: "none", border: "none", cursor: "pointer" }}
+            style={{ marginBlockStart: 16, color: "#ffffff", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center" }}
           >
             {mode === "sign-in" ? "Need an account? Sign up" : "Have an account? Sign in"}
           </button>
@@ -259,7 +268,7 @@ function AuthPage() {
               setInfo(null);
               setErr(null);
             }}
-            style={{ marginBlockStart: 16, color: "#a0a0a0", fontSize: 12, background: "none", border: "none", cursor: "pointer" }}
+            style={{ marginBlockStart: 16, color: "#ffffff", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center" }}
           >
             Back to sign in
           </button>
