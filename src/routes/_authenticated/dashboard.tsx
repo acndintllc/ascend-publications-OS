@@ -194,7 +194,7 @@ function UserDashboard() {
             </p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
-              {pubs.map(({ record }) => (
+              {pubs.map((entry: PubEntry) => { const record = entry.record; return (
                 <li
                   key={record.slug}
                   style={{
