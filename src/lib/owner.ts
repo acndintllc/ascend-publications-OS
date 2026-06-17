@@ -1,18 +1,9 @@
-/* Single source of truth for the OWNER/USER access model.
-   Owner is matched by email (case-insensitive). Everyone else is USER. */
-export const OWNER_EMAIL = "acndintllc@gmail.com";
+/* Client-safe access-model helpers. The privileged owner email is NOT
+   exported from this module — it lives in `owner.server.ts` and is never
+   bundled into the browser. The client learns whether the current user is
+   the owner exclusively via the `getMyRole` server function. */
 
 export type AccessType = "owner" | "user";
-
-export function isOwnerEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return email.trim().toLowerCase() === OWNER_EMAIL;
-}
-
-/** Derive the access type from an email. */
-export function getAccessTypeForEmail(email: string | null | undefined): AccessType {
-  return isOwnerEmail(email) ? "owner" : "user";
-}
 
 /** Short, stable user-slug prefix so each USER has their own slug namespace.
     OWNER uploads keep their raw slug (no prefix). */
