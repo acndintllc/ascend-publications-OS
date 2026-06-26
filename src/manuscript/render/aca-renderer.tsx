@@ -18,6 +18,7 @@ import {
 } from "@/components/ascend/primitives";
 import { VERA_BLOCKS } from "@/publication/vera-blocks";
 import type { VeraBlockKind } from "@/publication/profiles";
+import { VERA_ROLES, type VeraRole } from "@/publication/vera-role";
 import type { ACABlock, ACADocument, ACAInline, VeraNote } from "../schema/aca";
 
 const VERA_ACCENTS: Record<VeraBlockKind, string> = {
@@ -32,6 +33,7 @@ const VERA_ACCENTS: Record<VeraBlockKind, string> = {
 
 interface VeraPolicy {
   allowedKinds?: VeraBlockKind[]; // undefined = allow all
+  role?: VeraRole;                // undefined defaults to "interpretation"
 }
 
 function renderVera(note: VeraNote, policy: VeraPolicy): React.ReactNode {
