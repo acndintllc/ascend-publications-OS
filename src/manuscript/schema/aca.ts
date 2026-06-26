@@ -60,6 +60,8 @@ export interface VeraNote {
     | "vera-language-bridge";
   /** Required when the publication profile flags this kind as factual. */
   source?: string;
+  /** Phase 2 — optional short editorial title for the interpretation block. */
+  title?: string;
 }
 
 export interface ReadingStats {
