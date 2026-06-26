@@ -44,6 +44,7 @@ const veraConfigPatch = z.object({
   slug: z.string(),
   enabled_kinds: z.array(z.string()).optional(),
   default_voice: z.string().nullable().optional(),
+  vera_role: z.enum(["none", "interpretation", "narrator", "character"]).optional(),
 });
 
 /** OWNER-only: seed bundled library manuscripts into the publications table. */
