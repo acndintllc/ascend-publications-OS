@@ -70,7 +70,7 @@ function inline(nodes: ACAInline[]): string {
     .join("");
 }
 
-function block(b: ACABlock): string {
+function block(b: ACABlock, ctx: { emitVera: boolean }): string {
   switch (b.kind) {
     case "chapter-opener":
       return `<header class="am-chapter-opener"${b.eyebrow ? "" : ""}>${
@@ -79,11 +79,9 @@ function block(b: ACABlock): string {
     case "section":
       return `<section class="am-section">${
         b.title ? `<h2 class="am-section-title">${inline(b.title)}</h2>` : ""
-      }${b.children.map(block).join("")}</section>`;
+      }${b.children.map((c) => block(c, ctx)).join("")}</section>`;
     case "body": {
-      const vera = b.vera
-        ? `<aside class="am-vera" epub:type="annotation"><p class="am-vera-label">${esc(b.vera.voice)} · ${esc(b.vera.id)}</p><p>${esc(b.vera.body)}</p></aside>`
-        : "";
+      const vera = ctx.emitVera && b.vera ? renderVeraXhtml(b.vera) : "";
       return `<p class="am-body">${inline(b.children)}</p>${vera}`;
     }
     case "dialogue":
@@ -91,13 +89,13 @@ function block(b: ACABlock): string {
     case "pullquote":
       return `<blockquote class="am-pullquote">${inline(b.children)}${b.cite ? `<cite>${esc(b.cite)}</cite>` : ""}</blockquote>`;
     case "sidebar":
-      return `<aside class="am-sidebar" epub:type="sidebar">${b.title ? `<h3>${esc(b.title)}</h3>` : ""}${b.children.map(block).join("")}</aside>`;
+      return `<aside class="am-sidebar" epub:type="sidebar">${b.title ? `<h3>${esc(b.title)}</h3>` : ""}${b.children.map((c) => block(c, ctx)).join("")}</aside>`;
     case "callout":
-      return `<aside class="am-callout">${b.children.map(block).join("")}</aside>`;
+      return `<aside class="am-callout">${b.children.map((c) => block(c, ctx)).join("")}</aside>`;
     case "citation":
       return `<p class="am-citation">${esc(b.value)}</p>`;
     case "report":
-      return `<section class="am-report">${b.children.map(block).join("")}</section>`;
+      return `<section class="am-report">${b.children.map((c) => block(c, ctx)).join("")}</section>`;
     case "scene-break":
       return `<hr class="am-scene-break" />`;
     case "footnote":
@@ -105,8 +103,16 @@ function block(b: ACABlock): string {
   }
 }
 
-export function renderChapterXHTML(doc: ACADocument): string {
-  const body = doc.blocks.map(block).join("\n");
+export interface RenderXhtmlOptions {
+  /** Phase 2 — when omitted, defaults to "interpretation" (legacy behavior). */
+  veraRole?: VeraRole;
+}
+
+export function renderChapterXHTML(doc: ACADocument, opts: RenderXhtmlOptions = {}): string {
+  const role = normalizeVeraRole(opts.veraRole ?? "interpretation");
+  const ctx = { emitVera: VERA_ROLES[role].rendersInterpretationBlocks };
+  const body = doc.blocks.map((b) => block(b, ctx)).join("\n");
+
   const fns = doc.footnotes.length
     ? `<section class="am-footnotes" epub:type="footnotes"><h2>Footnotes</h2>${doc.footnotes
         .map(
