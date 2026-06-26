@@ -124,24 +124,46 @@ main {
   margin: 0 0 0.75em 0;
 }
 
-/* VERA note */
+/* VERA Interpretation block (Phase 2 — editorial) */
 .am-vera {
-  margin: 1.25em 0;
-  padding: 0.875em 1em;
-  background: #faf6ed;
-  border-left: 3px solid #8b5a3c;
+  margin: 1.5em 0;
+  padding: 1em 0;
+  border-top: 1px solid #c9c4ba;
+  border-bottom: 1px solid #c9c4ba;
   font-family: "Inter Tight", sans-serif;
-  font-size: 0.85em;
-  color: #333;
+  font-size: 0.9em;
+  color: #2a2a2a;
   page-break-inside: avoid;
   break-inside: avoid;
 }
 .am-vera-label {
   margin: 0 0 0.5em 0;
   font-size: 0.7em;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #8b5a3c;
+  color: #6a6a6a;
+}
+.am-vera-mark {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.am-vera-title {
+  margin: 0 0 0.5em 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.25;
+}
+.am-vera-body p {
+  margin: 0;
+  line-height: 1.55;
+}
+.am-vera-source {
+  margin: 0.75em 0 0 0;
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  color: #6a6a6a;
 }
 
 /* Citation block */
