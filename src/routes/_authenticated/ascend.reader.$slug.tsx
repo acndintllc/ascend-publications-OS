@@ -32,17 +32,23 @@ export const Route = createFileRoute("/_authenticated/ascend/reader/$slug")({
       doc = res.doc as ACADocument;
     }
     // Phase 9C — VERA allow-list from publication_vera_config (DB).
+    // VERA Role Engine — interpretation/narrator/character/none.
     let allowedVeraKinds: string[] | undefined;
+    let veraRole: "none" | "interpretation" | "narrator" | "character" = "interpretation";
     try {
       const { getPublication } = await import("@/lib/publication.functions");
       const detail = await getPublication({ data: { slug: params.slug } });
       if (detail?.vera?.enabled_kinds?.length) {
         allowedVeraKinds = detail.vera.enabled_kinds;
       }
+      const r = (detail?.vera as { vera_role?: string } | null | undefined)?.vera_role;
+      if (r === "none" || r === "interpretation" || r === "narrator" || r === "character") {
+        veraRole = r;
+      }
     } catch {
       // Publication not seeded yet — render unrestricted.
     }
-    return { doc, slug: params.slug, allowedVeraKinds };
+    return { doc, slug: params.slug, allowedVeraKinds, veraRole };
   },
   head: ({ loaderData }) => ({
     meta: loaderData
@@ -73,10 +79,11 @@ export const Route = createFileRoute("/_authenticated/ascend/reader/$slug")({
 });
 
 function ReaderRoute() {
-  const { doc, allowedVeraKinds } = Route.useLoaderData() as {
+  const { doc, allowedVeraKinds, veraRole } = Route.useLoaderData() as {
     doc: ACADocument;
     slug: string;
     allowedVeraKinds?: string[];
+    veraRole?: "none" | "interpretation" | "narrator" | "character";
   };
   const search = Route.useSearch();
   const [mode, setMode] = React.useState<Mode>(search.mode ?? doc.frontmatter.mode);
@@ -213,6 +220,7 @@ function ReaderRoute() {
         <RenderManuscript
           doc={doc}
           allowedVeraKinds={allowedVeraKinds as never}
+          veraRole={veraRole}
         />
       </Chapter>
     </div>
