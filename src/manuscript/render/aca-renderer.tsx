@@ -37,6 +37,11 @@ interface VeraPolicy {
 }
 
 function renderVera(note: VeraNote, policy: VeraPolicy): React.ReactNode {
+  const role = policy.role ?? "interpretation";
+  // Per VERA Role Engine: only "interpretation" emits styled components.
+  // "none", "narrator", and "character" preserve manuscript as authored —
+  // suppress all VERA UI entirely.
+  if (!VERA_ROLES[role].rendersInterpretationBlocks) return null;
   const kind: VeraBlockKind = (note.kind ?? "vera-note") as VeraBlockKind;
   const spec = VERA_BLOCKS[kind];
   if (policy.allowedKinds && !policy.allowedKinds.includes(kind)) {
