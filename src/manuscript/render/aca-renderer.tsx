@@ -1,7 +1,10 @@
 /* ACA → React renderer (PTL-008 §5 web-reader path, Phase 3B + 9C)
    PTL-022: VERA block kinds are gated by an optional allow-list (per
    publication profile / per-publication vera_config). When a kind is
-   suppressed by policy, a minimal fallback marker renders instead. */
+   suppressed by policy, a minimal fallback marker renders instead.
+   Phase 2: when the publication's vera_role is "interpretation", the
+   allowed block renders through the editorial <VeraInterpretation />
+   component (premium / minimal / dark-compatible). */
 import * as React from "react";
 import {
   Body,
@@ -16,20 +19,14 @@ import {
   Section,
   Sidebar,
 } from "@/components/ascend/primitives";
+import {
+  VeraInterpretation,
+  veraTypeFromKind,
+} from "@/components/ascend/vera-interpretation";
 import { VERA_BLOCKS } from "@/publication/vera-blocks";
 import type { VeraBlockKind } from "@/publication/profiles";
 import { VERA_ROLES, type VeraRole } from "@/publication/vera-role";
 import type { ACABlock, ACADocument, ACAInline, VeraNote } from "../schema/aca";
-
-const VERA_ACCENTS: Record<VeraBlockKind, string> = {
-  "vera-note": "var(--am-vera-accent)",
-  "vera-explain": "#2563eb",
-  "vera-insight": "#7c3aed",
-  "vera-question": "#0891b2",
-  "vera-research-prompt": "#059669",
-  "vera-learning-prompt": "#d97706",
-  "vera-language-bridge": "#db2777",
-};
 
 interface VeraPolicy {
   allowedKinds?: VeraBlockKind[]; // undefined = allow all
@@ -64,72 +61,44 @@ function renderVera(note: VeraNote, policy: VeraPolicy): React.ReactNode {
       </aside>
     );
   }
-  const accent = VERA_ACCENTS[kind];
   const missingSource = spec?.requiresSource && !note.source;
   return (
-    <aside
-      data-am="vera-block"
-      data-vera-kind={kind}
-      data-vera-interactive={spec?.interactive ? "true" : undefined}
-      style={{
-        marginBlockStart: "var(--am-space-5)",
-        padding: "var(--am-space-5)",
-        background: "var(--am-vera-bg)",
-        borderInlineStart: `var(--am-border-thick) solid ${accent}`,
-        borderRadius: "var(--am-radius-sm)",
-        fontFamily: "var(--am-font-ui)",
-        fontSize: "var(--am-type-200)",
-        color: "var(--am-color-ink-700)",
-      }}
+    <VeraInterpretation
+      type={veraTypeFromKind(kind)}
+      title={note.title}
+      source={note.source}
+      id={note.id}
     >
-      <div
-        style={{
-          letterSpacing: "var(--am-vera-label)",
-          textTransform: "uppercase",
-          color: accent,
-          fontSize: "var(--am-sourcenote-size)",
-          marginBlockEnd: "var(--am-space-3)",
-        }}
-      >
-        {note.voice} · {spec?.label ?? kind} · {note.id}
-      </div>
-      <div>{note.body}</div>
-      {note.source ? (
-        <div
-          style={{
-            marginBlockStart: "var(--am-space-3)",
-            fontSize: "var(--am-sourcenote-size)",
-            color: "var(--am-color-ink-500)",
-          }}
-        >
-          Source: {note.source}
-        </div>
-      ) : null}
+      <p style={{ margin: 0 }}>{note.body}</p>
       {missingSource ? (
-        <div
+        <p
           style={{
+            margin: 0,
             marginBlockStart: "var(--am-space-3)",
             fontSize: "var(--am-sourcenote-size)",
             color: "#b45309",
           }}
         >
-          ⚠ {spec.label} requires a source citation.
-        </div>
+          ⚠ {spec?.label ?? "VERA"} requires a source citation.
+        </p>
       ) : null}
       {spec?.interactive ? (
-        <div
+        <p
           style={{
+            margin: 0,
             marginBlockStart: "var(--am-space-3)",
             fontSize: "var(--am-sourcenote-size)",
             color: "var(--am-color-ink-500)",
+            letterSpacing: "var(--am-tracking-wide)",
           }}
         >
           ↳ Interactive prompt — reader response expected.
-        </div>
+        </p>
       ) : null}
-    </aside>
+    </VeraInterpretation>
   );
 }
+
 
 function renderInline(nodes: ACAInline[]): React.ReactNode {
   return nodes.map((n, i) => {
