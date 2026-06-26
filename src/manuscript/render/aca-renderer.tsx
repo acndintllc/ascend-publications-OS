@@ -234,12 +234,14 @@ function renderBlock(b: ACABlock, key: React.Key, policy: VeraPolicy): React.Rea
 export function RenderManuscript({
   doc,
   allowedVeraKinds,
+  veraRole,
 }: {
   doc: ACADocument;
   allowedVeraKinds?: VeraBlockKind[];
+  veraRole?: VeraRole;
 }) {
   const bib = doc.enrichment?.bibliography ?? [];
-  const policy: VeraPolicy = { allowedKinds: allowedVeraKinds };
+  const policy: VeraPolicy = { allowedKinds: allowedVeraKinds, role: veraRole };
   return (
     <>
       {doc.blocks.map((b, i) => renderBlock(b, i, policy))}
