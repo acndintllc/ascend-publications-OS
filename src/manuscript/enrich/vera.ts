@@ -20,7 +20,7 @@ export function attachVera(blocks: ACABlock[], sidecar: VeraSidecar | undefined)
         const ix = bodyIx++;
         const note = noteByAnchor.get(ix);
         return note
-          ? { ...b, vera: { id: note.id, voice: note.voice, body: note.body, kind: note.kind, source: note.source } }
+          ? { ...b, vera: { id: note.id, voice: note.voice, body: note.body, kind: note.kind, source: note.source, title: note.title } }
           : b;
       }
       if (b.kind === "section" || b.kind === "sidebar" || b.kind === "callout" || b.kind === "report") {
@@ -32,6 +32,7 @@ export function attachVera(blocks: ACABlock[], sidecar: VeraSidecar | undefined)
   const out = walk(blocks);
   return {
     blocks: out,
-    notes: sidecar.notes.map(({ id, voice, body, kind, source }) => ({ id, voice, body, kind, source })),
+    notes: sidecar.notes.map(({ id, voice, body, kind, source, title }) => ({ id, voice, body, kind, source, title })),
   };
+
 }
