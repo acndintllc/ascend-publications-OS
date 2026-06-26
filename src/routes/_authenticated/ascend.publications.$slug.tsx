@@ -458,6 +458,29 @@ function PublicationDetailRoute() {
             <code>{profileAllowed.join(", ") || "—"}</code>
           </p>
           <div style={fieldRow}>
+            <label style={labelStyle}>VERA role</label>
+            <div>
+              <select
+                style={inputStyle}
+                value={veraRole}
+                onChange={(e) => setVeraRole(e.target.value as VeraRole)}
+              >
+                {VERA_ROLE_IDS.map((id) => (
+                  <option key={id} value={id}>{VERA_ROLES[id].label}</option>
+                ))}
+              </select>
+              <p style={{
+                marginTop: "var(--am-space-2)",
+                marginBottom: 0,
+                fontFamily: "var(--am-font-ui)",
+                fontSize: "var(--am-type-100)",
+                color: "var(--am-color-ink-500)",
+              }}>
+                {VERA_ROLES[veraRole].description}
+              </p>
+            </div>
+          </div>
+          <div style={fieldRow}>
             <label style={labelStyle}>Default voice</label>
             <input
               style={inputStyle}
