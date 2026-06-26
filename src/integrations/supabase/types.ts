@@ -502,6 +502,7 @@ export type Database = {
           owner_id: string | null
           slug: string
           updated_at: string
+          vera_role: string
         }
         Insert: {
           config?: Json
@@ -510,6 +511,7 @@ export type Database = {
           owner_id?: string | null
           slug: string
           updated_at?: string
+          vera_role?: string
         }
         Update: {
           config?: Json
@@ -518,6 +520,7 @@ export type Database = {
           owner_id?: string | null
           slug?: string
           updated_at?: string
+          vera_role?: string
         }
         Relationships: [
           {

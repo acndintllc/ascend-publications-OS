@@ -18,6 +18,7 @@ import {
 } from "@/components/ascend/primitives";
 import { VERA_BLOCKS } from "@/publication/vera-blocks";
 import type { VeraBlockKind } from "@/publication/profiles";
+import { VERA_ROLES, type VeraRole } from "@/publication/vera-role";
 import type { ACABlock, ACADocument, ACAInline, VeraNote } from "../schema/aca";
 
 const VERA_ACCENTS: Record<VeraBlockKind, string> = {
@@ -32,9 +33,15 @@ const VERA_ACCENTS: Record<VeraBlockKind, string> = {
 
 interface VeraPolicy {
   allowedKinds?: VeraBlockKind[]; // undefined = allow all
+  role?: VeraRole;                // undefined defaults to "interpretation"
 }
 
 function renderVera(note: VeraNote, policy: VeraPolicy): React.ReactNode {
+  const role = policy.role ?? "interpretation";
+  // Per VERA Role Engine: only "interpretation" emits styled components.
+  // "none", "narrator", and "character" preserve manuscript as authored —
+  // suppress all VERA UI entirely.
+  if (!VERA_ROLES[role].rendersInterpretationBlocks) return null;
   const kind: VeraBlockKind = (note.kind ?? "vera-note") as VeraBlockKind;
   const spec = VERA_BLOCKS[kind];
   if (policy.allowedKinds && !policy.allowedKinds.includes(kind)) {
@@ -227,12 +234,14 @@ function renderBlock(b: ACABlock, key: React.Key, policy: VeraPolicy): React.Rea
 export function RenderManuscript({
   doc,
   allowedVeraKinds,
+  veraRole,
 }: {
   doc: ACADocument;
   allowedVeraKinds?: VeraBlockKind[];
+  veraRole?: VeraRole;
 }) {
   const bib = doc.enrichment?.bibliography ?? [];
-  const policy: VeraPolicy = { allowedKinds: allowedVeraKinds };
+  const policy: VeraPolicy = { allowedKinds: allowedVeraKinds, role: veraRole };
   return (
     <>
       {doc.blocks.map((b, i) => renderBlock(b, i, policy))}

@@ -43,6 +43,7 @@ export interface DbVeraConfig {
   slug: string;
   enabled_kinds: string[];
   default_voice: string | null;
+  vera_role: string;
   owner_id: string | null;
 }
 
@@ -97,7 +98,7 @@ export async function getMetadata(slug: string): Promise<DbMetadata | null> {
 export async function getVeraConfig(slug: string): Promise<DbVeraConfig | null> {
   const { data, error } = await supabaseAdmin
     .from("publication_vera_config")
-    .select("slug, enabled_kinds, default_voice, owner_id")
+    .select("slug, enabled_kinds, default_voice, vera_role, owner_id")
     .eq("slug", slug).maybeSingle();
   if (error) throw new Error(error.message);
   return (data as unknown as DbVeraConfig) ?? null;
@@ -105,7 +106,7 @@ export async function getVeraConfig(slug: string): Promise<DbVeraConfig | null> 
 
 export async function listVeraConfigs(ownerId: string | null = null): Promise<DbVeraConfig[]> {
   let q = supabaseAdmin.from("publication_vera_config")
-    .select("slug, enabled_kinds, default_voice, owner_id");
+    .select("slug, enabled_kinds, default_voice, vera_role, owner_id");
   q = applyOwnerScope(q, ownerId);
   const { data, error } = await q;
   if (error) throw new Error(error.message);

@@ -1,0 +1,1 @@
+ALTER TABLE public.publication_vera_config ADD COLUMN IF NOT EXISTS vera_role text NOT NULL DEFAULT 'interpretation';
