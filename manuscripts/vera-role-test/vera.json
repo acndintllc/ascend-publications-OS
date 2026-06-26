@@ -1,0 +1,20 @@
+{
+  "notes": [
+    {
+      "id": "vt1",
+      "voice": "VERA-INTERP",
+      "kind": "vera-insight",
+      "title": "The cost of certainty",
+      "source": "ASCEND interpretation log, 2026",
+      "body": "When a reader treats interpretation as fact, the interpretation hardens into doctrine. VERA's role is to keep the seam visible so the reader can still choose.",
+      "anchor": 1
+    },
+    {
+      "id": "vt2",
+      "voice": "VERA-INTERP",
+      "kind": "vera-note",
+      "body": "Interpretation without a title should still feel calm and restrained — the eyebrow and rule do the framing work on their own.",
+      "anchor": 2
+    }
+  ]
+}
