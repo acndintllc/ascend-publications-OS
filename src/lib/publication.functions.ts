@@ -1366,11 +1366,75 @@ export const submitCreatorPackage = createServerFn({ method: "POST" })
       });
     }
 
+    // 5. Compute filter_report (asset readiness + metadata completeness) and
+    //    persist a publication_record_versions snapshot. New record = v1;
+    //    update = current_version + 1. last_activity_at always bumped.
+    const { scoreAssets } = await import("@/publication/assets");
+    const [freshRecord, freshMeta, freshAssets] = await Promise.all([
+      persistence.getRecord(slug),
+      persistence.getMetadata(slug),
+      persistence.listAssets(slug),
+    ]);
+    const readiness = scoreAssets(profileId, freshAssets);
+    const missingMeta: string[] = [];
+    if (!freshMeta?.description?.trim()) missingMeta.push("description");
+    if (!freshMeta?.keywords?.length) missingMeta.push("keywords");
+    if (!freshMeta?.categories?.length) missingMeta.push("categories");
+    if (!freshMeta?.rights) missingMeta.push("rights");
+    const hasCover = freshAssets.some((a) => a.is_active && /cover/i.test(a.kind));
+    const filterReport = {
+      ready: readiness.ready && missingMeta.length === 0 && hasCover,
+      score: readiness.score,
+      scoreWithRecommended: readiness.scoreWithRecommended,
+      missingRequired: readiness.missingRequired,
+      missingRecommended: readiness.missingRecommended,
+      missingMeta,
+      hasCover,
+      computed_at: new Date().toISOString(),
+    };
+
+    const prevVersion =
+      ((existing as unknown as { current_version?: number } | null)?.current_version) ?? 0;
+    const nextVersion = existing ? prevVersion + 1 : 1;
+    const nowIso = new Date().toISOString();
+
+    const { error: verErr } = await supabaseAdmin
+      .from("publication_record_versions")
+      .insert({
+        slug,
+        owner_id: ownerId,
+        version: nextVersion,
+        snapshot: {
+          record: freshRecord,
+          metadata: freshMeta,
+          assets: freshAssets.filter((a) => a.is_active).map((a) => ({
+            kind: a.kind, version: a.version, url: a.url, label: a.label,
+          })),
+          submission_status,
+          sourcePersisted,
+          uploadedAssets,
+        } as never,
+        filter_report: filterReport as never,
+      } as never);
+    if (verErr) throw new Error(`version snapshot failed: ${verErr.message}`);
+
+    const { error: bumpErr } = await supabaseAdmin
+      .from("publication_records")
+      .update({
+        current_version: nextVersion,
+        last_activity_at: nowIso,
+        filter_report: filterReport as never,
+      } as never)
+      .eq("slug", slug);
+    if (bumpErr) throw new Error(`record bump failed: ${bumpErr.message}`);
+
     return {
       slug, created: !existing,
       sourcePersisted, uploadedAssets, submission_status, submitted,
+      version: nextVersion, filterReport,
     };
   });
+
 
 /** Creator: flip an existing draft to submitted for ASCEND review. */
 export const submitForReview = createServerFn({ method: "POST" })
