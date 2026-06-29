@@ -113,7 +113,7 @@ function PackageDetailRoute() {
           <p style={{ color: MUTED, fontSize: 13 }}>No saved versions yet.</p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
-            {versions.map((v) => {
+            {versions.map((v: typeof versions[number]) => {
               const isOpen = openId === v.id;
               const fr = (v.filter_report ?? null) as null | {
                 ready?: boolean; score?: number;
