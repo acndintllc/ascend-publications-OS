@@ -335,10 +335,14 @@ function UserDashboard() {
                       </div>
                       <div style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>
                         {record.author} · {record.status} · v{record.version}
+                        {(() => {
+                          const cv = (record as unknown as { current_version?: number | null }).current_version;
+                          return cv && cv > 0 ? ` · package v${cv}` : null;
+                        })()}
                       </div>
                       <code style={{ fontSize: 11, color: MUTED }}>{record.slug}</code>
                     </div>
-                    <div style={{ display: "flex", gap: 14, flexShrink: 0 }}>
+                    <div style={{ display: "flex", gap: 14, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
                       <Link
                         to="/ascend/reader/$slug"
                         params={{ slug: record.slug }}
@@ -353,7 +357,22 @@ function UserDashboard() {
                       >
                         Validate →
                       </Link>
+                      <Link
+                        to="/ascend/submit"
+                        search={{ slug: record.slug }}
+                        style={{ fontSize: 12, color: GOLD, textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase" }}
+                      >
+                        Update Package →
+                      </Link>
+                      <Link
+                        to="/ascend/packages/$slug"
+                        params={{ slug: record.slug }}
+                        style={{ fontSize: 12, color: TEAL, textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase" }}
+                      >
+                        History →
+                      </Link>
                     </div>
+
                   </li>
                 );
               })}
