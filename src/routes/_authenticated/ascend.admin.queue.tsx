@@ -1,7 +1,10 @@
 import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { listSubmissionQueue, reviewSubmission } from "@/lib/publication.functions";
+import { listSubmissionQueue, reviewSubmission, listPackageVersions } from "@/lib/publication.functions";
+
+type VersionRow = Awaited<ReturnType<typeof listPackageVersions>>[number];
+
 
 interface QueueRow {
   record: {
