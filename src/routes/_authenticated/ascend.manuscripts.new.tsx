@@ -52,9 +52,9 @@ function NewManuscript() {
       const format: "md" | "docx" | "pdf" =
         name.endsWith(".docx") ? "docx" : name.endsWith(".pdf") ? "pdf" : "md";
       const contentBase64 = await fileToBase64(file);
-      const res = await submit({
+      const res = (await submit({
         data: { title: title.trim(), filename: file.name, format, contentBase64 },
-      });
+      })) as { manuscriptId: string };
       navigate({ to: "/ascend/manuscripts/$id", params: { id: res.manuscriptId } });
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : "Submission failed");

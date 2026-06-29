@@ -21,6 +21,16 @@ const resubmitSchema = z.object({
   contentBase64: z.string().min(1),
 });
 
+export interface ManuscriptReport {
+  issues: Array<{ severity: string; code: string; message: string }>;
+  unresolvedCitations: string[];
+  orphanVeraAnchors: number[];
+  rhythm: Array<{
+    index: number; title: string; words: number; paragraphs: number;
+    sections: number; pullquotes: number; dialogue: number;
+  }>;
+}
+
 function b64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
@@ -31,9 +41,8 @@ function b64ToBytes(b64: string): Uint8Array {
 async function runValidation(
   format: "md" | "docx" | "pdf",
   bytes: Uint8Array,
-): Promise<{ report: Record<string, unknown>; status: "report_ready" }> {
+): Promise<{ report: ManuscriptReport; status: "report_ready" }> {
   if (format === "pdf") {
-    // No structural validation for PDFs — accept and report informational.
     return {
       report: {
         issues: [{ severity: "info", code: "PDF000", message: "PDF accepted without structural validation." }],
@@ -50,17 +59,14 @@ async function runValidation(
       format === "docx"
         ? pipeline.ingestDocx(bytes)
         : pipeline.ingestMarkdown(new TextDecoder().decode(bytes));
-    return { report: result.report as unknown as Record<string, unknown>, status: "report_ready" };
+    return { report: result.report as ManuscriptReport, status: "report_ready" };
   } catch (e) {
     return {
       report: {
-        issues: [
-          {
-            severity: "error",
-            code: "PARSE000",
-            message: `Failed to parse manuscript: ${e instanceof Error ? e.message : String(e)}`,
-          },
-        ],
+        issues: [{
+          severity: "error", code: "PARSE000",
+          message: `Failed to parse manuscript: ${e instanceof Error ? e.message : String(e)}`,
+        }],
         unresolvedCitations: [],
         orphanVeraAnchors: [],
         rhythm: [],

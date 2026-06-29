@@ -32,7 +32,7 @@ const RED = "#fca5a5";
 
 function AdminManuscripts() {
   const { rows, error } = Route.useLoaderData();
-  const staleCount = rows.filter((r) => r.stale).length;
+  const staleCount = rows.filter((r: Row) => r.stale).length;
 
   return (
     <main style={{ padding: "40px 24px", color: FG, maxWidth: 1200, marginInline: "auto" }}>
@@ -67,7 +67,7 @@ function AdminManuscripts() {
               <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: MUTED }}>
                 No manuscript submissions yet.
               </td></tr>
-            ) : rows.map((r) => (
+            ) : rows.map((r: Row) => (
               <tr key={r.id} style={{ borderBottom: `1px solid ${LINE}` }}>
                 <td style={{ padding: "12px 16px", color: FG }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

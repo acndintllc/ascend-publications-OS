@@ -73,7 +73,7 @@ function ManuscriptsIndex() {
           </div>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
-            {rows.map((r) => {
+            {rows.map((r: Row) => {
               const color = STATUS_COLOR[r.status] ?? MUTED;
               return (
                 <li key={r.id} style={{
