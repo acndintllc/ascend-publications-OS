@@ -1558,7 +1558,7 @@ export const listMyPackages = createServerFn({ method: "GET" })
       submission_status: string | null;
       current_version: number | null;
       last_activity_at: string | null;
-      filter_report: Record<string, unknown> | null;
+      filter_report: unknown;
       last_updated: string;
       owner_id: string | null;
     }>;
@@ -1582,8 +1582,8 @@ export const listPackageVersions = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (rows ?? []) as Array<{
       id: string; version: number;
-      snapshot: Record<string, unknown> | null;
-      filter_report: Record<string, unknown> | null;
+      snapshot: unknown;
+      filter_report: unknown;
       created_at: string;
     }>;
   });
