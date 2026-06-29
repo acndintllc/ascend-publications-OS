@@ -430,10 +430,11 @@ function SubmitPage() {
             {err && <div style={{ color: "#fca5a5", fontSize: 13 }}>{err}</div>}
             <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
               <button disabled={busy} onClick={() => handleSubmit(false)} style={btnGhost}>
-                {busy ? "Saving…" : "Save as draft"}
+                {busy ? "Saving…" : isUpdate ? "Save changes" : "Save as draft"}
               </button>
               <button disabled={busy} onClick={() => handleSubmit(true)} style={btnGold}>
-                {busy ? "Submitting…" : "Submit to ASCEND →"}
+                {busy ? "Submitting…" : isUpdate ? "Resubmit →" : "Submit to ASCEND →"}
+
               </button>
             </div>
           </div>
