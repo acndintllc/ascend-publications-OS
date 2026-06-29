@@ -220,11 +220,22 @@ function SubmitPage() {
           <div>
             <h2 style={h2Style}>1. Upload your manuscript</h2>
             <p style={{ color: MUTED, fontSize: 13 }}>Supported: .docx, .md, .pdf</p>
-            <input type="file" accept=".md,.markdown,.txt,.docx,.pdf"
-              onChange={(e) => setManuscript(e.target.files?.[0] ?? null)} style={inputStyle} />
-            {manuscript && (
-              <div style={{ color: TEAL, fontSize: 12, marginTop: 10 }}>
-                ✓ {manuscript.name} ({Math.round(manuscript.size / 1024)} KB)
+            {!manuscript ? (
+              <input type="file" accept=".md,.markdown,.txt,.docx,.pdf"
+                onChange={(e) => setManuscript(e.target.files?.[0] ?? null)} style={inputStyle} />
+            ) : (
+              <div style={{
+                marginTop: 4, padding: 12, border: `1px solid ${LINE}`, borderRadius: 6,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+              }}>
+                <span style={{ color: TEAL, fontSize: 12 }}>
+                  ✓ {manuscript.name} ({Math.round(manuscript.size / 1024)} KB)
+                </span>
+                <button type="button" onClick={() => setManuscript(null)}
+                  aria-label="Remove uploaded manuscript"
+                  style={{ ...btnGhost, padding: "8px 14px" }}>
+                  🗑 Remove
+                </button>
               </div>
             )}
           </div>
@@ -285,10 +296,21 @@ function SubmitPage() {
             <p style={{ color: MUTED, fontSize: 13 }}>
               JPG or PNG. This is the canonical front cover used everywhere downstream.
             </p>
-            <input type="file" accept="image/*"
-              onChange={(e) => setCover(e.target.files?.[0] ?? null)} style={inputStyle} />
-            {cover && (
-              <div style={{ color: TEAL, fontSize: 12, marginTop: 10 }}>✓ {cover.name}</div>
+            {!cover ? (
+              <input type="file" accept="image/*"
+                onChange={(e) => setCover(e.target.files?.[0] ?? null)} style={inputStyle} />
+            ) : (
+              <div style={{
+                marginTop: 4, padding: 12, border: `1px solid ${LINE}`, borderRadius: 6,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+              }}>
+                <span style={{ color: TEAL, fontSize: 12 }}>✓ {cover.name}</span>
+                <button type="button" onClick={() => setCover(null)}
+                  aria-label="Remove uploaded cover"
+                  style={{ ...btnGhost, padding: "8px 14px" }}>
+                  🗑 Remove
+                </button>
+              </div>
             )}
           </div>
         )}
