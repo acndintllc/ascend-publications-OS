@@ -1,9 +1,12 @@
 import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { submitCreatorPackage } from "@/lib/publication.functions";
+import { z } from "zod";
+import { submitCreatorPackage, getPublication } from "@/lib/publication.functions";
 
 export const Route = createFileRoute("/_authenticated/ascend/submit")({
+  validateSearch: (s) =>
+    z.object({ slug: z.string().optional() }).parse(s),
   head: () => ({
     meta: [
       { title: "Submit a Package — Ascend Publishing" },
@@ -12,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/ascend/submit")({
   }),
   component: SubmitPage,
 });
+
 
 const FG = "#e8e8e8";
 const MUTED = "#a0a0a0";
