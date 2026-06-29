@@ -62,8 +62,26 @@ function AdminQueue() {
   const { rows, error } = Route.useLoaderData();
   const router = useRouter();
   const review = useServerFn(reviewSubmission);
+  const loadVersions = useServerFn(listPackageVersions);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [msg, setMsg] = React.useState<string | null>(null);
+  const [expanded, setExpanded] = React.useState<Record<string, VersionRow[] | "loading" | "error">>({});
+
+  async function toggleHistory(slug: string) {
+    const cur = expanded[slug];
+    if (cur && cur !== "loading") {
+      setExpanded((p) => { const n = { ...p }; delete n[slug]; return n; });
+      return;
+    }
+    setExpanded((p) => ({ ...p, [slug]: "loading" }));
+    try {
+      const v = await loadVersions({ data: { slug } });
+      setExpanded((p) => ({ ...p, [slug]: v }));
+    } catch {
+      setExpanded((p) => ({ ...p, [slug]: "error" }));
+    }
+  }
+
 
   if (!isOwner) {
     return (
