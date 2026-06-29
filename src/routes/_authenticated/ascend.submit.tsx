@@ -219,23 +219,30 @@ function SubmitPage() {
   }
 
 
+  if (prefilling) {
+    return (
+      <main style={{ padding: "60px 24px", color: MUTED, maxWidth: 720, marginInline: "auto" }}>
+        Loading package…
+      </main>
+    );
+  }
+
   if (done) {
     return (
       <main style={{ padding: "60px 24px", color: FG, maxWidth: 720, marginInline: "auto" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL }}>
-          Submitted
+          {isUpdate ? `Updated · v${done.version ?? "?"}` : "Submitted"}
         </div>
         <h1 style={{ fontFamily: "Fraunces Variable, Fraunces, serif", color: GOLD, fontSize: 36 }}>
-          Package received
+          {isUpdate ? "Package updated" : "Package received"}
         </h1>
         <p style={{ color: MUTED }}>
-          Your package <code style={{ color: TEAL }}>{done.slug}</code> is in the ASCEND review queue.
-          You'll see status updates in your library.
+          Package <code style={{ color: TEAL }}>{done.slug}</code>{isUpdate ? "" : " is in the ASCEND review queue."} New filter report and snapshot are recorded against version {done.version}.
         </p>
-        <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+        <div style={{ display: "flex", gap: 12, marginTop: 24, flexWrap: "wrap" }}>
           <Link to="/dashboard" style={btnGold}>Back to Library</Link>
-          <Link to="/ascend/submit" style={btnGhost} reloadDocument>
-            Submit another
+          <Link to="/ascend/packages/$slug" params={{ slug: done.slug }} style={btnGhost}>
+            View package detail
           </Link>
         </div>
       </main>
@@ -245,14 +252,17 @@ function SubmitPage() {
   return (
     <main style={{ padding: "40px 24px", color: FG, maxWidth: 880, marginInline: "auto" }}>
       <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL, marginBottom: 6 }}>
-        Creator Submission Package
+        {isUpdate ? `Update Package · ${editingSlug}` : "Creator Submission Package"}
       </div>
       <h1 style={{ fontFamily: "Fraunces Variable, Fraunces, serif", color: GOLD, fontSize: 36, margin: 0 }}>
-        Submit your work to ASCEND
+        {isUpdate ? "Update your package" : "Submit your work to ASCEND"}
       </h1>
       <p style={{ color: MUTED, fontSize: 13, marginTop: 6 }}>
-        One package: manuscript + metadata + cover. Add optional assets to strengthen distribution.
+        {isUpdate
+          ? "Edit metadata, swap files, and resubmit. Each save bumps the version on the same record."
+          : "One package: manuscript + metadata + cover. Add optional assets to strengthen distribution."}
       </p>
+
 
       {/* Stepper */}
       <ol style={{ display: "flex", gap: 8, listStyle: "none", padding: 0, marginTop: 28, flexWrap: "wrap" }}>
