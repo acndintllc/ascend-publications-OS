@@ -106,8 +106,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { name: "description", content: "The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience." },
         { property: "og:description", content: "The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience." },
         { name: "twitter:description", content: "The ultimate publishing workspace for creators. Publish books, music, and more with ASCEND Publishing. Make the world your audience." },
-        { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/bZWRdPf2QMSLZRqGHUc4Icyykcv2/social-images/social-1781591754777-ChatGPT_Image_Jun_16,_2026,_02_31_56_AM.webp" },
-        { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/bZWRdPf2QMSLZRqGHUc4Icyykcv2/social-images/social-1781591754777-ChatGPT_Image_Jun_16,_2026,_02_31_56_AM.webp" },
+        { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/bZWRdPf2QMSLZRqGHUc4Icyykcv2/social-images/social-1782692021694-ascend_publishing_logo.webp" },
+        { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/bZWRdPf2QMSLZRqGHUc4Icyykcv2/social-images/social-1782692021694-ascend_publishing_logo.webp" },
       ],
     links: [
       { rel: "stylesheet", href: appCss },
