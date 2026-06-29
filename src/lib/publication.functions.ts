@@ -1540,3 +1540,51 @@ export const listSubmissionQueue = createServerFn({ method: "GET" })
     }));
     return enriched;
   });
+
+/** Creator: list own packages with version + activity for the dashboard. */
+export const listMyPackages = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin
+      .from("publication_records")
+      .select("slug,title,author,status,profile,submission_status,current_version,last_activity_at,filter_report,last_updated,owner_id")
+      .order("last_activity_at", { ascending: false, nullsFirst: false });
+    if (!context.isOwner) q = q.eq("owner_id", context.userId);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Array<{
+      slug: string; title: string; author: string; status: string; profile: string;
+      submission_status: string | null;
+      current_version: number | null;
+      last_activity_at: string | null;
+      filter_report: Record<string, unknown> | null;
+      last_updated: string;
+      owner_id: string | null;
+    }>;
+  });
+
+/** Owner or owning creator: list every persisted version snapshot for a slug. */
+export const listPackageVersions = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .inputValidator((d: { slug: string }) =>
+    z.object({ slug: z.string() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const p = await import("@/publication/persistence.server");
+    await p.assertOwns(data.slug, context.userId, context.isOwner);
+    const { data: rows, error } = await supabaseAdmin
+      .from("publication_record_versions")
+      .select("id,version,snapshot,filter_report,created_at")
+      .eq("slug", data.slug)
+      .order("version", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as Array<{
+      id: string; version: number;
+      snapshot: Record<string, unknown> | null;
+      filter_report: Record<string, unknown> | null;
+      created_at: string;
+    }>;
+  });
+
