@@ -140,27 +140,37 @@ function UserDashboard() {
               }}
             >
               Manuscript Tracking →
-              style={{
-                padding: "10px 16px", borderRadius: 8, border: `1px solid ${TEAL}`,
-                background: "transparent", color: TEAL, fontSize: 12, fontWeight: 600,
-                textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
-              }}
-            >
-              Submission Queue →
             </Link>
           </div>
         )}
 
-        <div style={{ marginTop: isOwner ? 24 : 16 }}>
-          <Link to="/ascend/submit" style={{
+        <div style={{ marginTop: isOwner ? 24 : 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link to="/ascend/manuscripts/new" style={{
             padding: "12px 22px", borderRadius: 8, border: "none",
             background: GOLD, color: "#111", fontSize: 12, fontWeight: 700,
             textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
             display: "inline-block",
           }}>
-            + Submit a Package
+            + Submit Manuscript
+          </Link>
+          <Link to="/ascend/manuscripts" style={{
+            padding: "12px 22px", borderRadius: 8, border: `1px solid ${TEAL}`,
+            background: "transparent", color: TEAL, fontSize: 12, fontWeight: 700,
+            textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
+            display: "inline-block",
+          }}>
+            My Manuscripts →
+          </Link>
+          <Link to="/ascend/submit" style={{
+            padding: "12px 22px", borderRadius: 8, border: `1px solid ${GOLD}`,
+            background: "transparent", color: GOLD, fontSize: 12, fontWeight: 700,
+            textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
+            display: "inline-block",
+          }}>
+            + Submit Package
           </Link>
         </div>
+
 
         {/* Upload card */}
         <section
