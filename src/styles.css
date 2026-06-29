@@ -353,6 +353,12 @@
 .ap-shell [data-mode="kindle"] [data-am="chapter"] {
   --am-chapter-bg: #f7f3ea;
   --am-chapter-ink: #111111;
+  --am-body-ink: #111111;
+  --am-dialogue-ink: #000000;
+  --am-sidebar-ink: #111111;
+  --am-appendix-ink: #111111;
+  --am-footnote-ink: #333333;
+  --am-sourcenote-ink: #4a4538;
   --am-color-ink-0: #ffffff;
   --am-color-ink-50: #fbf8f1;
   --am-color-ink-100: #efeadc;
