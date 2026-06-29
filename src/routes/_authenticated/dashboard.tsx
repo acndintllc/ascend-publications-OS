@@ -131,6 +131,23 @@ function UserDashboard() {
             >
               Submission Queue →
             </Link>
+            <Link
+              to="/ascend/admin/manuscripts"
+              style={{
+                padding: "10px 16px", borderRadius: 8, border: `1px solid ${TEAL}`,
+                background: "transparent", color: TEAL, fontSize: 12, fontWeight: 600,
+                textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
+            >
+              Manuscript Tracking →
+              style={{
+                padding: "10px 16px", borderRadius: 8, border: `1px solid ${TEAL}`,
+                background: "transparent", color: TEAL, fontSize: 12, fontWeight: 600,
+                textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
+            >
+              Submission Queue →
+            </Link>
           </div>
         )}
 
