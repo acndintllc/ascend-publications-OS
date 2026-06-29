@@ -72,11 +72,15 @@ const OPTIONAL_KINDS = [
 function SubmitPage() {
   const router = useRouter();
   const submit = useServerFn(submitCreatorPackage);
+  const loadPub = useServerFn(getPublication);
+  const { slug: editingSlug } = Route.useSearch();
+  const isUpdate = !!editingSlug;
 
   const [step, setStep] = React.useState(0);
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
-  const [done, setDone] = React.useState<{ slug: string } | null>(null);
+  const [done, setDone] = React.useState<{ slug: string; version?: number } | null>(null);
+  const [prefilling, setPrefilling] = React.useState(isUpdate);
 
   // step 1
   const [manuscript, setManuscript] = React.useState<File | null>(null);
@@ -100,12 +104,46 @@ function SubmitPage() {
   const [bibFile, setBibFile] = React.useState<File | null>(null);
   const [veraFile, setVeraFile] = React.useState<File | null>(null);
 
+  // Prefill from existing publication when ?slug= is present.
+  React.useEffect(() => {
+    if (!editingSlug) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await loadPub({ data: { slug: editingSlug } });
+        if (cancelled) return;
+        const r = d.record;
+        const m = d.metadata;
+        setTitle(r.title ?? "");
+        setSubtitle(r.subtitle ?? "");
+        setAuthor(r.author ?? "");
+        setSeries(r.series ?? "");
+        setVolume(r.volume != null ? String(r.volume) : "");
+        if (m) {
+          setDescription(m.description ?? "");
+          setKeywords((m.keywords ?? []).join(", "));
+          setCategories((m.categories ?? []).join(", "));
+          setRights(m.rights ?? "");
+          setPublisher(m.publisher ?? "ASCEND Publishing");
+          setIsbn(m.isbn ?? "");
+          setReadingLevel(m.reading_level ?? "");
+        }
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Failed to load package");
+      } finally {
+        if (!cancelled) setPrefilling(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editingSlug, loadPub]);
+
   const canAdvance = React.useMemo(() => {
-    if (step === 0) return !!manuscript;
+    if (step === 0) return isUpdate || !!manuscript;
     if (step === 1) return title.trim() && author.trim() && description.trim();
-    if (step === 2) return !!cover;
+    if (step === 2) return isUpdate || !!cover;
     return true;
-  }, [step, manuscript, title, author, description, cover]);
+  }, [step, manuscript, title, author, description, cover, isUpdate]);
+
 
   async function handleSubmit(finalize: boolean) {
     if (!manuscript || !cover) {
