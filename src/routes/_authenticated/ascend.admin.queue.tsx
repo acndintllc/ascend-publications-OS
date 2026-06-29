@@ -1,7 +1,10 @@
 import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { listSubmissionQueue, reviewSubmission } from "@/lib/publication.functions";
+import { listSubmissionQueue, reviewSubmission, listPackageVersions } from "@/lib/publication.functions";
+
+type VersionRow = Awaited<ReturnType<typeof listPackageVersions>>[number];
+
 
 interface QueueRow {
   record: {
@@ -59,8 +62,26 @@ function AdminQueue() {
   const { rows, error } = Route.useLoaderData();
   const router = useRouter();
   const review = useServerFn(reviewSubmission);
+  const loadVersions = useServerFn(listPackageVersions);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [msg, setMsg] = React.useState<string | null>(null);
+  const [expanded, setExpanded] = React.useState<Record<string, VersionRow[] | "loading" | "error">>({});
+
+  async function toggleHistory(slug: string) {
+    const cur = expanded[slug];
+    if (cur && cur !== "loading") {
+      setExpanded((p) => { const n = { ...p }; delete n[slug]; return n; });
+      return;
+    }
+    setExpanded((p) => ({ ...p, [slug]: "loading" }));
+    try {
+      const v = await loadVersions({ data: { slug } });
+      setExpanded((p) => ({ ...p, [slug]: v }));
+    } catch {
+      setExpanded((p) => ({ ...p, [slug]: "error" }));
+    }
+  }
+
 
   if (!isOwner) {
     return (
@@ -186,7 +207,50 @@ function AdminQueue() {
                       </button>
                     ))}
                   </div>
+
+                  <div style={{ marginTop: 12, borderTop: `1px solid ${LINE}`, paddingTop: 12 }}>
+                    <button onClick={() => toggleHistory(r.record.slug)}
+                      style={{ ...actionBtn, color: TEAL, borderColor: TEAL }}>
+                      {expanded[r.record.slug] ? "Hide history ▴" : "Version history ▾"}
+                    </button>
+                    {expanded[r.record.slug] === "loading" && (
+                      <div style={{ color: MUTED, fontSize: 12, marginTop: 8 }}>Loading…</div>
+                    )}
+                    {expanded[r.record.slug] === "error" && (
+                      <div style={{ color: "#fca5a5", fontSize: 12, marginTop: 8 }}>Failed to load versions.</div>
+                    )}
+                    {Array.isArray(expanded[r.record.slug]) && (
+                      <ul style={{ listStyle: "none", padding: 0, margin: "10px 0 0", display: "grid", gap: 6 }}>
+                        {(expanded[r.record.slug] as VersionRow[]).map((v) => {
+                          const fr = (v.filter_report ?? null) as null | { ready?: boolean; score?: number };
+                          return (
+                            <li key={v.id} style={{
+                              padding: "8px 12px", border: `1px solid ${LINE}`, borderRadius: 6,
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                              gap: 12, fontSize: 12,
+                            }}>
+                              <span>
+                                <span style={{ color: GOLD, fontWeight: 600 }}>v{v.version}</span>
+                                <span style={{ color: MUTED, marginLeft: 10 }}>
+                                  {new Date(v.created_at).toLocaleString()}
+                                </span>
+                              </span>
+                              {fr && (
+                                <span style={{ color: fr.ready ? "#86efac" : "#fca5a5", fontSize: 11 }}>
+                                  {fr.ready ? "ready" : "not ready"} · {Math.round((fr.score ?? 0) * 100)}%
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                        {(expanded[r.record.slug] as VersionRow[]).length === 0 && (
+                          <li style={{ color: MUTED, fontSize: 12 }}>No prior versions.</li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
                 </li>
+
               );
             })}
           </ul>

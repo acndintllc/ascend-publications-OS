@@ -1,9 +1,12 @@
 import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { submitCreatorPackage } from "@/lib/publication.functions";
+import { z } from "zod";
+import { submitCreatorPackage, getPublication } from "@/lib/publication.functions";
 
 export const Route = createFileRoute("/_authenticated/ascend/submit")({
+  validateSearch: (s) =>
+    z.object({ slug: z.string().optional() }).parse(s),
   head: () => ({
     meta: [
       { title: "Submit a Package — Ascend Publishing" },
@@ -12,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/ascend/submit")({
   }),
   component: SubmitPage,
 });
+
 
 const FG = "#e8e8e8";
 const MUTED = "#a0a0a0";
@@ -68,11 +72,15 @@ const OPTIONAL_KINDS = [
 function SubmitPage() {
   const router = useRouter();
   const submit = useServerFn(submitCreatorPackage);
+  const loadPub = useServerFn(getPublication);
+  const { slug: editingSlug } = Route.useSearch();
+  const isUpdate = !!editingSlug;
 
   const [step, setStep] = React.useState(0);
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
-  const [done, setDone] = React.useState<{ slug: string } | null>(null);
+  const [done, setDone] = React.useState<{ slug: string; version?: number } | null>(null);
+  const [prefilling, setPrefilling] = React.useState(isUpdate);
 
   // step 1
   const [manuscript, setManuscript] = React.useState<File | null>(null);
@@ -96,26 +104,76 @@ function SubmitPage() {
   const [bibFile, setBibFile] = React.useState<File | null>(null);
   const [veraFile, setVeraFile] = React.useState<File | null>(null);
 
+  // Prefill from existing publication when ?slug= is present.
+  React.useEffect(() => {
+    if (!editingSlug) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await loadPub({ data: { slug: editingSlug } });
+        if (cancelled) return;
+        const r = d.record;
+        const m = d.metadata;
+        setTitle(r.title ?? "");
+        setSubtitle(r.subtitle ?? "");
+        setAuthor(r.author ?? "");
+        setSeries(r.series ?? "");
+        setVolume(r.volume != null ? String(r.volume) : "");
+        if (m) {
+          setDescription(m.description ?? "");
+          setKeywords((m.keywords ?? []).join(", "));
+          setCategories((m.categories ?? []).join(", "));
+          setRights(m.rights ?? "");
+          setPublisher(m.publisher ?? "ASCEND Publishing");
+          setIsbn(m.isbn ?? "");
+          setReadingLevel(m.reading_level ?? "");
+        }
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Failed to load package");
+      } finally {
+        if (!cancelled) setPrefilling(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editingSlug, loadPub]);
+
   const canAdvance = React.useMemo(() => {
-    if (step === 0) return !!manuscript;
+    if (step === 0) return isUpdate || !!manuscript;
     if (step === 1) return title.trim() && author.trim() && description.trim();
-    if (step === 2) return !!cover;
+    if (step === 2) return isUpdate || !!cover;
     return true;
-  }, [step, manuscript, title, author, description, cover]);
+  }, [step, manuscript, title, author, description, cover, isUpdate]);
+
 
   async function handleSubmit(finalize: boolean) {
-    if (!manuscript || !cover) {
-      setErr("Manuscript and cover are required.");
+    if (!isUpdate && (!manuscript || !cover)) {
+      setErr("Manuscript and cover are required for a new package.");
       return;
     }
     setBusy(true);
     setErr(null);
     try {
-      const mFormat: "md" | "docx" | "pdf" =
-        /\.docx$/i.test(manuscript.name) ? "docx"
-        : /\.pdf$/i.test(manuscript.name) ? "pdf" : "md";
-      const coverB64 = await fileToBase64(cover);
-      const mB64 = await fileToBase64(manuscript);
+      let manuscriptPayload: { filename: string; format: "md" | "docx" | "pdf"; contentBase64: string } | undefined;
+      if (manuscript) {
+        const mFormat: "md" | "docx" | "pdf" =
+          /\.docx$/i.test(manuscript.name) ? "docx"
+          : /\.pdf$/i.test(manuscript.name) ? "pdf" : "md";
+        manuscriptPayload = {
+          filename: manuscript.name,
+          format: mFormat,
+          contentBase64: await fileToBase64(manuscript),
+        };
+      }
+      let coverPayload: { kind: string; filename: string; contentType: string; contentBase64: string; label: string } | undefined;
+      if (cover) {
+        coverPayload = {
+          kind: "front-cover",
+          filename: cover.name,
+          contentType: cover.type || "image/jpeg",
+          contentBase64: await fileToBase64(cover),
+          label: "Front Cover",
+        };
+      }
       const opt = await Promise.all(
         optional.map(async (o) => ({
           kind: o.kind,
@@ -128,6 +186,7 @@ function SubmitPage() {
       const veraJson = veraFile ? await veraFile.text() : undefined;
       const res = await submit({
         data: {
+          slug: editingSlug,
           metadata: {
             title: title.trim(),
             subtitle: subtitle.trim() || null,
@@ -143,20 +202,14 @@ function SubmitPage() {
             reading_level: readingLevel.trim() || null,
             language: "en",
           },
-          manuscript: { filename: manuscript.name, format: mFormat, contentBase64: mB64 },
-          cover: {
-            kind: "front-cover",
-            filename: cover.name,
-            contentType: cover.type || "image/jpeg",
-            contentBase64: coverB64,
-            label: "Front Cover",
-          },
+          manuscript: manuscriptPayload,
+          cover: coverPayload,
           optionalAssets: opt,
           bibText, veraJson,
           submit: finalize,
         },
       });
-      setDone({ slug: res.slug });
+      setDone({ slug: res.slug, version: res.version });
       router.invalidate();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Submission failed");
@@ -165,23 +218,31 @@ function SubmitPage() {
     }
   }
 
+
+  if (prefilling) {
+    return (
+      <main style={{ padding: "60px 24px", color: MUTED, maxWidth: 720, marginInline: "auto" }}>
+        Loading package…
+      </main>
+    );
+  }
+
   if (done) {
     return (
       <main style={{ padding: "60px 24px", color: FG, maxWidth: 720, marginInline: "auto" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL }}>
-          Submitted
+          {isUpdate ? `Updated · v${done.version ?? "?"}` : "Submitted"}
         </div>
         <h1 style={{ fontFamily: "Fraunces Variable, Fraunces, serif", color: GOLD, fontSize: 36 }}>
-          Package received
+          {isUpdate ? "Package updated" : "Package received"}
         </h1>
         <p style={{ color: MUTED }}>
-          Your package <code style={{ color: TEAL }}>{done.slug}</code> is in the ASCEND review queue.
-          You'll see status updates in your library.
+          Package <code style={{ color: TEAL }}>{done.slug}</code>{isUpdate ? "" : " is in the ASCEND review queue."} New filter report and snapshot are recorded against version {done.version}.
         </p>
-        <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+        <div style={{ display: "flex", gap: 12, marginTop: 24, flexWrap: "wrap" }}>
           <Link to="/dashboard" style={btnGold}>Back to Library</Link>
-          <Link to="/ascend/submit" style={btnGhost} reloadDocument>
-            Submit another
+          <Link to="/ascend/packages/$slug" params={{ slug: done.slug }} style={btnGhost}>
+            View package detail
           </Link>
         </div>
       </main>
@@ -191,14 +252,17 @@ function SubmitPage() {
   return (
     <main style={{ padding: "40px 24px", color: FG, maxWidth: 880, marginInline: "auto" }}>
       <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL, marginBottom: 6 }}>
-        Creator Submission Package
+        {isUpdate ? `Update Package · ${editingSlug}` : "Creator Submission Package"}
       </div>
       <h1 style={{ fontFamily: "Fraunces Variable, Fraunces, serif", color: GOLD, fontSize: 36, margin: 0 }}>
-        Submit your work to ASCEND
+        {isUpdate ? "Update your package" : "Submit your work to ASCEND"}
       </h1>
       <p style={{ color: MUTED, fontSize: 13, marginTop: 6 }}>
-        One package: manuscript + metadata + cover. Add optional assets to strengthen distribution.
+        {isUpdate
+          ? "Edit metadata, swap files, and resubmit. Each save bumps the version on the same record."
+          : "One package: manuscript + metadata + cover. Add optional assets to strengthen distribution."}
       </p>
+
 
       {/* Stepper */}
       <ol style={{ display: "flex", gap: 8, listStyle: "none", padding: 0, marginTop: 28, flexWrap: "wrap" }}>
@@ -366,10 +430,11 @@ function SubmitPage() {
             {err && <div style={{ color: "#fca5a5", fontSize: 13 }}>{err}</div>}
             <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
               <button disabled={busy} onClick={() => handleSubmit(false)} style={btnGhost}>
-                {busy ? "Saving…" : "Save as draft"}
+                {busy ? "Saving…" : isUpdate ? "Save changes" : "Save as draft"}
               </button>
               <button disabled={busy} onClick={() => handleSubmit(true)} style={btnGold}>
-                {busy ? "Submitting…" : "Submit to ASCEND →"}
+                {busy ? "Submitting…" : isUpdate ? "Resubmit →" : "Submit to ASCEND →"}
+
               </button>
             </div>
           </div>
