@@ -146,18 +146,34 @@ function SubmitPage() {
 
 
   async function handleSubmit(finalize: boolean) {
-    if (!manuscript || !cover) {
-      setErr("Manuscript and cover are required.");
+    if (!isUpdate && (!manuscript || !cover)) {
+      setErr("Manuscript and cover are required for a new package.");
       return;
     }
     setBusy(true);
     setErr(null);
     try {
-      const mFormat: "md" | "docx" | "pdf" =
-        /\.docx$/i.test(manuscript.name) ? "docx"
-        : /\.pdf$/i.test(manuscript.name) ? "pdf" : "md";
-      const coverB64 = await fileToBase64(cover);
-      const mB64 = await fileToBase64(manuscript);
+      let manuscriptPayload: { filename: string; format: "md" | "docx" | "pdf"; contentBase64: string } | undefined;
+      if (manuscript) {
+        const mFormat: "md" | "docx" | "pdf" =
+          /\.docx$/i.test(manuscript.name) ? "docx"
+          : /\.pdf$/i.test(manuscript.name) ? "pdf" : "md";
+        manuscriptPayload = {
+          filename: manuscript.name,
+          format: mFormat,
+          contentBase64: await fileToBase64(manuscript),
+        };
+      }
+      let coverPayload: { kind: string; filename: string; contentType: string; contentBase64: string; label: string } | undefined;
+      if (cover) {
+        coverPayload = {
+          kind: "front-cover",
+          filename: cover.name,
+          contentType: cover.type || "image/jpeg",
+          contentBase64: await fileToBase64(cover),
+          label: "Front Cover",
+        };
+      }
       const opt = await Promise.all(
         optional.map(async (o) => ({
           kind: o.kind,
@@ -170,6 +186,7 @@ function SubmitPage() {
       const veraJson = veraFile ? await veraFile.text() : undefined;
       const res = await submit({
         data: {
+          slug: editingSlug,
           metadata: {
             title: title.trim(),
             subtitle: subtitle.trim() || null,
@@ -185,20 +202,14 @@ function SubmitPage() {
             reading_level: readingLevel.trim() || null,
             language: "en",
           },
-          manuscript: { filename: manuscript.name, format: mFormat, contentBase64: mB64 },
-          cover: {
-            kind: "front-cover",
-            filename: cover.name,
-            contentType: cover.type || "image/jpeg",
-            contentBase64: coverB64,
-            label: "Front Cover",
-          },
+          manuscript: manuscriptPayload,
+          cover: coverPayload,
           optionalAssets: opt,
           bibText, veraJson,
           submit: finalize,
         },
       });
-      setDone({ slug: res.slug });
+      setDone({ slug: res.slug, version: res.version });
       router.invalidate();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Submission failed");
@@ -206,6 +217,7 @@ function SubmitPage() {
       setBusy(false);
     }
   }
+
 
   if (done) {
     return (
