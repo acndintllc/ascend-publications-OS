@@ -256,6 +256,83 @@ export type Database = {
         }
         Relationships: []
       }
+      publication_manuscript_versions: {
+        Row: {
+          created_at: string
+          filename: string
+          format: string
+          id: string
+          manuscript_id: string
+          owner_id: string
+          report: Json
+          status: string
+          storage_path: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          format: string
+          id?: string
+          manuscript_id: string
+          owner_id: string
+          report?: Json
+          status?: string
+          storage_path: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          format?: string
+          id?: string
+          manuscript_id?: string
+          owner_id?: string
+          report?: Json
+          status?: string
+          storage_path?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_manuscript_versions_manuscript_id_fkey"
+            columns: ["manuscript_id"]
+            isOneToOne: false
+            referencedRelation: "publication_manuscripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_manuscripts: {
+        Row: {
+          created_at: string
+          current_version: number
+          id: string
+          last_activity_at: string
+          owner_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          current_version?: number
+          id?: string
+          last_activity_at?: string
+          owner_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          current_version?: number
+          id?: string
+          last_activity_at?: string
+          owner_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       publication_metadata: {
         Row: {
           categories: string[]
@@ -306,12 +383,53 @@ export type Database = {
           },
         ]
       }
+      publication_record_versions: {
+        Row: {
+          created_at: string
+          filter_report: Json
+          id: string
+          owner_id: string | null
+          slug: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          filter_report?: Json
+          id?: string
+          owner_id?: string | null
+          slug: string
+          snapshot?: Json
+          version: number
+        }
+        Update: {
+          created_at?: string
+          filter_report?: Json
+          id?: string
+          owner_id?: string | null
+          slug?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_record_versions_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "publication_records"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       publication_records: {
         Row: {
           audience: string | null
           author: string
           created_at: string
+          current_version: number
+          filter_report: Json
           language: string
+          last_activity_at: string
           last_updated: string
           owner_id: string | null
           profile: string
@@ -331,7 +449,10 @@ export type Database = {
           audience?: string | null
           author: string
           created_at?: string
+          current_version?: number
+          filter_report?: Json
           language?: string
+          last_activity_at?: string
           last_updated?: string
           owner_id?: string | null
           profile?: string
@@ -351,7 +472,10 @@ export type Database = {
           audience?: string | null
           author?: string
           created_at?: string
+          current_version?: number
+          filter_report?: Json
           language?: string
+          last_activity_at?: string
           last_updated?: string
           owner_id?: string | null
           profile?: string
