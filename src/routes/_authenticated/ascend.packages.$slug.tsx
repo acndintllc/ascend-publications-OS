@@ -53,7 +53,8 @@ function PackageDetailRoute() {
   const filter = (r.filter_report ?? null) as null | {
     ready?: boolean; score?: number; scoreWithRecommended?: number;
     missingRequired?: string[]; missingRecommended?: string[];
-    missingMeta?: string[]; hasCover?: boolean; computed_at?: string;
+    missingMeta?: string[]; warningsMeta?: string[]; blockers?: string[];
+    hasCover?: boolean; computed_at?: string;
   };
 
   const [openId, setOpenId] = React.useState<string | null>(null);
