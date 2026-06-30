@@ -113,6 +113,8 @@ function AdminQueue() {
   }
 
   return (
+    <>
+    <AdminNav />
     <main style={{ padding: "40px 24px", color: FG }}>
       <div style={{ maxWidth: 1200, marginInline: "auto" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL }}>
