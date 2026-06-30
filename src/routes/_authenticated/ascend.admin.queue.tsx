@@ -260,6 +260,7 @@ function AdminQueue() {
         )}
       </div>
     </main>
+    </>
   );
 }
 
