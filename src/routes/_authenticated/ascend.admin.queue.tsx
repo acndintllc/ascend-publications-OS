@@ -2,6 +2,7 @@ import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { listSubmissionQueue, reviewSubmission, listPackageVersions } from "@/lib/publication.functions";
+import { AdminNav } from "@/components/ascend/admin-nav";
 
 type VersionRow = Awaited<ReturnType<typeof listPackageVersions>>[number];
 
@@ -112,6 +113,8 @@ function AdminQueue() {
   }
 
   return (
+    <>
+    <AdminNav />
     <main style={{ padding: "40px 24px", color: FG }}>
       <div style={{ maxWidth: 1200, marginInline: "auto" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL }}>
@@ -257,6 +260,7 @@ function AdminQueue() {
         )}
       </div>
     </main>
+    </>
   );
 }
 

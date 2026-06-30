@@ -1,6 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { listAllManuscripts } from "@/lib/manuscripts.functions";
+import { AdminNav } from "@/components/ascend/admin-nav";
 
 type Row = Awaited<ReturnType<typeof listAllManuscripts>>[number];
 
@@ -35,6 +36,8 @@ function AdminManuscripts() {
   const staleCount = rows.filter((r: Row) => r.stale).length;
 
   return (
+    <>
+    <AdminNav />
     <main style={{ padding: "40px 24px", color: FG, maxWidth: 1200, marginInline: "auto" }}>
       <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL }}>
         Ascend / Admin
@@ -101,5 +104,6 @@ function AdminManuscripts() {
         </table>
       </div>
     </main>
+    </>
   );
 }
