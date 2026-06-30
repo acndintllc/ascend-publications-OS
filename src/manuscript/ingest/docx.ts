@@ -33,6 +33,15 @@ const STYLE_MAP = {
   "AM-Citation": "citation",
   "AM-Report": "report",
   "AM-SceneBreak": "scene-break",
+  // Native Word heading fallbacks — AM-* styles above take priority when present.
+  Heading1: "chapter-opener",
+  heading1: "chapter-opener",
+  "Heading 1": "chapter-opener",
+  "heading 1": "chapter-opener",
+  Heading2: "section-title",
+  heading2: "section-title",
+  "Heading 2": "section-title",
+  "heading 2": "section-title",
 } as const;
 type StyleRole = (typeof STYLE_MAP)[keyof typeof STYLE_MAP] | "body";
 
