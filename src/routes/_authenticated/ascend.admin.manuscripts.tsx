@@ -1,6 +1,7 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { listAllManuscripts } from "@/lib/manuscripts.functions";
+import { AdminNav } from "@/components/ascend/admin-nav";
 
 type Row = Awaited<ReturnType<typeof listAllManuscripts>>[number];
 
