@@ -1376,19 +1376,33 @@ export const submitCreatorPackage = createServerFn({ method: "POST" })
       persistence.listAssets(slug),
     ]);
     const readiness = scoreAssets(profileId, freshAssets);
+    // KDP-minimum metadata gate: only fields KDP actually rejects on go as
+    // blockers. Everything else (rights, ISBN, subtitle, series, reading
+    // level, contributors, publisher override) is a warning at most.
     const missingMeta: string[] = [];
+    if (!freshRecord?.title?.trim()) missingMeta.push("title");
+    if (!freshRecord?.author?.trim()) missingMeta.push("author");
     if (!freshMeta?.description?.trim()) missingMeta.push("description");
     if (!freshMeta?.keywords?.length) missingMeta.push("keywords");
     if (!freshMeta?.categories?.length) missingMeta.push("categories");
-    if (!freshMeta?.rights) missingMeta.push("rights");
+    const warningsMeta: string[] = [];
+    if (!freshMeta?.rights) warningsMeta.push("rights");
+    if (!freshMeta?.isbn) warningsMeta.push("isbn");
+    if (!freshRecord?.language?.trim()) warningsMeta.push("language");
     const hasCover = freshAssets.some((a) => a.is_active && /cover/i.test(a.kind));
+    const blockers: string[] = [];
+    if (!hasCover) blockers.push("asset:front-cover");
+    for (const k of readiness.missingRequired) blockers.push(`asset:${k}`);
+    for (const f of missingMeta) blockers.push(`meta:${f}`);
     const filterReport = {
-      ready: readiness.ready && missingMeta.length === 0 && hasCover,
+      ready: blockers.length === 0,
       score: readiness.score,
       scoreWithRecommended: readiness.scoreWithRecommended,
       missingRequired: readiness.missingRequired,
       missingRecommended: readiness.missingRecommended,
       missingMeta,
+      warningsMeta,
+      blockers,
       hasCover,
       computed_at: new Date().toISOString(),
     };

@@ -30,22 +30,26 @@ export const ASSET_LABELS: Record<AssetKind, string> = {
   "supporting-media": "Supporting Media",
 };
 
-/** Required asset kinds per publication profile. Drives readiness scoring. */
+/** Required asset kinds per publication profile. Drives readiness scoring.
+   KDP minimum: only a front cover is strictly required. Everything else
+   (author image, interior illustrations, back cover, epub-specific cover,
+   marketing graphics) is recommended — missing recommended assets surface
+   as warnings in the filter report, not blockers. */
 export const PROFILE_ASSET_REQUIREMENTS: Record<string, AssetKind[]> = {
-  novel:       ["front-cover", "epub-cover", "author-image"],
-  research:    ["front-cover", "epub-cover", "author-image"],
-  documentary: ["front-cover", "marketing-graphic"],
-  educational: ["front-cover", "epub-cover", "author-image", "interior-illustration"],
-  childrens:   ["front-cover", "epub-cover", "interior-illustration"],
+  novel:       ["front-cover"],
+  research:    ["front-cover"],
+  documentary: ["front-cover"],
+  educational: ["front-cover"],
+  childrens:   ["front-cover"],
 };
 
 /** Recommended (non-blocking) asset kinds per profile. */
 export const PROFILE_ASSET_RECOMMENDED: Record<string, AssetKind[]> = {
-  novel:       ["back-cover", "paperback-cover", "marketing-graphic"],
-  research:    ["marketing-graphic", "supporting-media"],
-  documentary: ["author-image", "supporting-media"],
-  educational: ["marketing-graphic", "supporting-media"],
-  childrens:   ["author-image", "marketing-graphic"],
+  novel:       ["epub-cover", "author-image", "back-cover", "paperback-cover", "marketing-graphic"],
+  research:    ["epub-cover", "author-image", "marketing-graphic", "supporting-media"],
+  documentary: ["author-image", "marketing-graphic", "supporting-media"],
+  educational: ["epub-cover", "author-image", "interior-illustration", "marketing-graphic", "supporting-media"],
+  childrens:   ["epub-cover", "interior-illustration", "author-image", "marketing-graphic"],
 };
 
 export interface AssetRecord {

@@ -53,7 +53,8 @@ function PackageDetailRoute() {
   const filter = (r.filter_report ?? null) as null | {
     ready?: boolean; score?: number; scoreWithRecommended?: number;
     missingRequired?: string[]; missingRecommended?: string[];
-    missingMeta?: string[]; hasCover?: boolean; computed_at?: string;
+    missingMeta?: string[]; warningsMeta?: string[]; blockers?: string[];
+    hasCover?: boolean; computed_at?: string;
   };
 
   const [openId, setOpenId] = React.useState<string | null>(null);
@@ -95,11 +96,12 @@ function PackageDetailRoute() {
                 </span>
               )}
             </div>
-            <Issues label="Missing required assets" items={filter.missingRequired ?? []} tone="error" />
-            <Issues label="Missing recommended" items={filter.missingRecommended ?? []} tone="warn" />
-            <Issues label="Missing metadata" items={filter.missingMeta ?? []} tone="warn" />
+            <Issues label="Blocking — required assets missing" items={filter.missingRequired ?? []} tone="error" />
+            <Issues label="Blocking — required metadata missing" items={filter.missingMeta ?? []} tone="error" />
+            <Issues label="Optional — recommended assets" items={filter.missingRecommended ?? []} tone="warn" />
+            <Issues label="Optional — recommended metadata" items={filter.warningsMeta ?? []} tone="warn" />
             {!filter.hasCover && (
-              <div style={{ marginTop: 8, color: "#fca5a5", fontSize: 12 }}>· No active cover asset</div>
+              <div style={{ marginTop: 8, color: "#fca5a5", fontSize: 12 }}>· No active cover asset (blocking)</div>
             )}
           </>
         ) : (
