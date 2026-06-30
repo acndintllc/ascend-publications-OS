@@ -2,6 +2,7 @@ import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { listSubmissionQueue, reviewSubmission, listPackageVersions } from "@/lib/publication.functions";
+import { AdminNav } from "@/components/ascend/admin-nav";
 
 type VersionRow = Awaited<ReturnType<typeof listPackageVersions>>[number];
 
