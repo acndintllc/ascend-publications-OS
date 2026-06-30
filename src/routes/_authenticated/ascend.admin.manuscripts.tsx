@@ -36,6 +36,8 @@ function AdminManuscripts() {
   const staleCount = rows.filter((r: Row) => r.stale).length;
 
   return (
+    <>
+    <AdminNav />
     <main style={{ padding: "40px 24px", color: FG, maxWidth: 1200, marginInline: "auto" }}>
       <div style={{ fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase", color: TEAL }}>
         Ascend / Admin
