@@ -104,5 +104,6 @@ function AdminManuscripts() {
         </table>
       </div>
     </main>
+    </>
   );
 }
