@@ -96,11 +96,12 @@ function PackageDetailRoute() {
                 </span>
               )}
             </div>
-            <Issues label="Missing required assets" items={filter.missingRequired ?? []} tone="error" />
-            <Issues label="Missing recommended" items={filter.missingRecommended ?? []} tone="warn" />
-            <Issues label="Missing metadata" items={filter.missingMeta ?? []} tone="warn" />
+            <Issues label="Blocking — required assets missing" items={filter.missingRequired ?? []} tone="error" />
+            <Issues label="Blocking — required metadata missing" items={filter.missingMeta ?? []} tone="error" />
+            <Issues label="Optional — recommended assets" items={filter.missingRecommended ?? []} tone="warn" />
+            <Issues label="Optional — recommended metadata" items={filter.warningsMeta ?? []} tone="warn" />
             {!filter.hasCover && (
-              <div style={{ marginTop: 8, color: "#fca5a5", fontSize: 12 }}>· No active cover asset</div>
+              <div style={{ marginTop: 8, color: "#fca5a5", fontSize: 12 }}>· No active cover asset (blocking)</div>
             )}
           </>
         ) : (
