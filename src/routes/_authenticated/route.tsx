@@ -12,6 +12,7 @@ const OWNER_ONLY_PREFIXES = [
   "/ascend/library",
   "/ascend/live",
   "/ascend/proof",
+  "/ascend/admin",
 ];
 
 export const Route = createFileRoute("/_authenticated")({
