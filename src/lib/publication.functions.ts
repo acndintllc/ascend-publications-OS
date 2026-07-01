@@ -949,6 +949,24 @@ export const revalidateReadinessFn = createServerFn({ method: "POST" })
     return revalidateReadiness(data.slug, data.trigger ?? "manual");
   });
 
+/* ─── Phase 18 Revision — KDP Distribution Package — OWNER ────────── */
+
+export const generateKdpDistributionPackage = createServerFn({ method: "POST" })
+  .middleware([requireOwner])
+  .inputValidator((d: unknown) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { buildKdpDistributionPackage } = await import("@/publication/kdp-package.server");
+    return buildKdpDistributionPackage(data.slug);
+  });
+
+export const latestKdpPackageInfoFn = createServerFn({ method: "GET" })
+  .middleware([requireOwner])
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { getLatestKdpPackageInfo } = await import("@/publication/kdp-package.server");
+    return getLatestKdpPackageInfo(data.slug);
+  });
+
 
 
 

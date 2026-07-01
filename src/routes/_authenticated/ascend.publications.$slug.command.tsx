@@ -28,8 +28,9 @@ import {
   runKindleFailoverFn,
   kindleProviderHealthFn,
   evaluateGovernanceGateFn,
-  runLiveKdpSubmissionFn,
   revalidateReadinessFn,
+  generateKdpDistributionPackage,
+  latestKdpPackageInfoFn,
 } from "@/lib/publication.functions";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
@@ -44,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -53,8 +54,9 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
       listSubmissions({ data: { slug: params.slug } }),
       listVendors(),
       reportVendorSecretsFn(),
+      latestKdpPackageInfoFn({ data: { slug: params.slug } }),
     ]);
-    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug: params.slug };
+    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, slug: params.slug };
   },
   component: CommandCenter,
 });
@@ -100,7 +102,7 @@ function CommandCenter() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug } = ld;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
@@ -152,6 +154,17 @@ function CommandCenter() {
           </details>
         )}
       </section>
+
+      {/* Publish → KDP Distribution Package */}
+      <PublishKdpSection
+        slug={slug}
+        latest={kdpPackage}
+        busy={busy}
+        onPublish={() => wrap(async () => {
+          const r = await generateKdpDistributionPackage({ data: { slug } });
+          downloadBase64Zip(r.filename, r.contentBase64);
+        })}
+      />
 
       {/* Facts */}
       <section style={card}>
@@ -349,16 +362,10 @@ function CommandCenter() {
             Evaluate governance gate (KDP)
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            if (!confirm("Execute LIVE KDP submission? This will mark the submission row as submitted/rejected and persist a receipt.")) return;
-            const approver = prompt("Approver name (for audit log):") ?? undefined;
-            const r = await runLiveKdpSubmissionFn({ data: { slug, liveEnabled: true, approver } });
-            alert([
-              `Mode: ${r.mode}`,
-              r.receipt ? `Receipt: ${r.receipt.receipt_id} · accepted=${r.receipt.accepted}` : "(no receipt)",
-              r.message,
-            ].join("\n"));
+            const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
+            alert(`Readiness: ${r.score}% (ready=${r.ready}) · blockers=${r.blockers.length} · warnings=${r.warnings.length}`);
           })}>
-            Execute live KDP submission
+            Revalidate readiness
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
             const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
@@ -459,3 +466,54 @@ function SubmissionForm(props: {
     </form>
   );
 }
+
+function downloadBase64Zip(filename: string, base64: string) {
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const ab = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(ab).set(bytes);
+  const blob = new Blob([ab], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function PublishKdpSection(props: {
+  slug: string;
+  latest: { packageVersion: number; generatedAt: string } | null;
+  busy: boolean;
+  onPublish: () => void;
+}) {
+  const { latest, busy, onPublish } = props;
+  return (
+    <section style={{ ...card, borderColor: "#e8c07a" }}>
+      <div style={h}>Publish · Amazon KDP</div>
+      <div style={sub}>
+        Generates a complete KDP submission package: Interior, Cover, Metadata.txt,
+        Publication Summary.txt. Everything the Publishing OS already approved,
+        packaged for one-click upload to Amazon KDP.
+      </div>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <button
+          style={{ ...btn, background: "#e8c07a", color: "#111", fontWeight: 700, borderColor: "#e8c07a" }}
+          disabled={busy}
+          onClick={onPublish}
+        >
+          {latest ? "Regenerate & Download Package" : "Publish → Generate KDP Package"}
+        </button>
+        {latest && (
+          <div style={{ display: "flex", gap: 16, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+            <span style={{ color: "#86efac" }}>● Package Ready</span>
+            <span>Version v{latest.packageVersion}</span>
+            <span>Generated {new Date(latest.generatedAt).toLocaleString()}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
