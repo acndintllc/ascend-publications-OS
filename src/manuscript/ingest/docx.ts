@@ -303,10 +303,13 @@ export function parseDocx(bytes: Uint8Array): ACADocument {
   const customXml = unzipped["docProps/custom.xml"]
     ? strFromU8(unzipped["docProps/custom.xml"])
     : undefined;
+  const coreXml = unzipped["docProps/core.xml"]
+    ? strFromU8(unzipped["docProps/core.xml"])
+    : undefined;
 
   const numbering = parseNumbering(numberingXml);
   const paras = extractParagraphs(documentXml, numbering);
-  const { fm, rest } = readFrontmatter(customXml, paras);
+  const { fm, rest } = readFrontmatter(customXml, coreXml, paras);
   const blocks = paragraphsToBlocks(rest);
 
   return {
