@@ -136,11 +136,13 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 export async function buildKdpDistributionPackage(slug: string): Promise<KdpPackageResult> {
-  const [record, meta, assets, events] = await Promise.all([
+  const { listArtifacts } = await import("./runner.server");
+  const [record, meta, assets, events, artifacts] = await Promise.all([
     getRecord(slug),
     getMetadata(slug),
     listAssets(slug),
     listEvents(slug, 200),
+    listArtifacts(slug),
   ]);
   if (!record) throw new Error(`Unknown publication: ${slug}`);
 
