@@ -164,8 +164,21 @@ function extractParagraphs(documentXml: string, numbering: Map<string, NumMeta>)
   return out;
 }
 
+function readCoreTitle(coreXml: string | undefined): string | undefined {
+  if (!coreXml) return undefined;
+  const m = /<dc:title[^>]*>([\s\S]*?)<\/dc:title>/.exec(coreXml);
+  const val = m ? decode(m[1]).trim() : "";
+  return val || undefined;
+}
+
+function firstHeadingTitle(paras: RawPara[]): string | undefined {
+  const h = paras.find((p) => p.role === "h1" && p.text.length > 0);
+  return h?.text;
+}
+
 function readFrontmatter(
   customXml: string | undefined,
+  coreXml: string | undefined,
   paras: RawPara[],
 ): { fm: ACAFrontmatter; rest: RawPara[] } {
   const fields: Record<string, string> = {};
@@ -187,8 +200,18 @@ function readFrontmatter(
     }
     rest = paras.slice(i);
   }
+  // Title resolution order:
+  //   1. ASCEND:title custom property / ---frontmatter--- block
+  //   2. docProps/core.xml <dc:title>
+  //   3. First Heading 1 in the document body
+  //   4. "Untitled DOCX"
+  const title =
+    fields.title ||
+    readCoreTitle(coreXml) ||
+    firstHeadingTitle(rest) ||
+    "Untitled DOCX";
   const fm = acaFrontmatter.parse({
-    title: fields.title ?? "Untitled DOCX",
+    title,
     slug: fields.slug ?? "untitled-docx",
     mode: (fields.mode as ACAFrontmatter["mode"]) ?? "web-reader",
     authors: fields.authors ? fields.authors.split(/\s*,\s*/) : ["Unknown"],
@@ -280,10 +303,13 @@ export function parseDocx(bytes: Uint8Array): ACADocument {
   const customXml = unzipped["docProps/custom.xml"]
     ? strFromU8(unzipped["docProps/custom.xml"])
     : undefined;
+  const coreXml = unzipped["docProps/core.xml"]
+    ? strFromU8(unzipped["docProps/core.xml"])
+    : undefined;
 
   const numbering = parseNumbering(numberingXml);
   const paras = extractParagraphs(documentXml, numbering);
-  const { fm, rest } = readFrontmatter(customXml, paras);
+  const { fm, rest } = readFrontmatter(customXml, coreXml, paras);
   const blocks = paragraphsToBlocks(rest);
 
   return {
