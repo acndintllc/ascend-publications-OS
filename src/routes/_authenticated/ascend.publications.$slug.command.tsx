@@ -116,7 +116,7 @@ function CommandCenter() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, slug } = ld;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus, confirmation, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
@@ -169,16 +169,31 @@ function CommandCenter() {
         )}
       </section>
 
+      {/* Phase 18.1 — Publication lifecycle timeline */}
+      <PublicationTimeline current={currentStatus} />
+
       {/* Publish → KDP Distribution Package */}
       <PublishKdpSection
         slug={slug}
         latest={kdpPackage}
+        currentStatus={currentStatus}
         busy={busy}
         onPublish={() => wrap(async () => {
           const r = await generateKdpDistributionPackage({ data: { slug } });
           downloadBase64Zip(r.filename, r.contentBase64);
         })}
       />
+
+      {/* Phase 18.1 — Manual publication confirmation */}
+      {(currentStatus === "package_generated" || currentStatus === "published") && (
+        <MarkAsPublishedSection
+          slug={slug}
+          currentStatus={currentStatus}
+          confirmation={confirmation}
+          busy={busy}
+          onSubmit={(payload) => wrap(() => markAsPublishedFn({ data: { slug, ...payload } }))}
+        />
+      )}
 
       {/* Facts */}
       <section style={card}>
