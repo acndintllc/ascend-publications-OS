@@ -6,6 +6,7 @@ import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
   auditPublicationFn,
+  getPublication,
   listPublicationAssets,
   listPublicationArtifacts,
   listDistributionQueue,
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, publication, confirmation] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, pub, confirmation] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -62,11 +63,14 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
       listVendors(),
       reportVendorSecretsFn(),
       latestKdpPackageInfoFn({ data: { slug: params.slug } }),
-      // Fetch record via audit facts if possible — audit already carries status; but load fresh
-      auditPublicationFn({ data: { slug: params.slug } }).then((a) => a.facts?.status as PublicationStatus | undefined),
+      getPublication({ data: { slug: params.slug } }),
       latestPublicationConfirmationFn({ data: { slug: params.slug } }),
     ]);
-    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus: publication ?? "draft", confirmation, slug: params.slug };
+    return {
+      audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets,
+      kdpPackage, currentStatus: pub.record.status as PublicationStatus,
+      confirmation, slug: params.slug,
+    };
   },
   component: CommandCenter,
 });
