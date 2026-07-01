@@ -156,6 +156,17 @@ function CommandCenter() {
         )}
       </section>
 
+      {/* Publish → KDP Distribution Package */}
+      <PublishKdpSection
+        slug={slug}
+        latest={kdpPackage}
+        busy={busy}
+        onPublish={() => wrap(async () => {
+          const r = await generateKdpDistributionPackage({ data: { slug } });
+          downloadBase64Zip(r.filename, r.contentBase64);
+        })}
+      />
+
       {/* Facts */}
       <section style={card}>
         <div style={h}>Facts</div>
@@ -352,16 +363,10 @@ function CommandCenter() {
             Evaluate governance gate (KDP)
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            if (!confirm("Execute LIVE KDP submission? This will mark the submission row as submitted/rejected and persist a receipt.")) return;
-            const approver = prompt("Approver name (for audit log):") ?? undefined;
-            const r = await runLiveKdpSubmissionFn({ data: { slug, liveEnabled: true, approver } });
-            alert([
-              `Mode: ${r.mode}`,
-              r.receipt ? `Receipt: ${r.receipt.receipt_id} · accepted=${r.receipt.accepted}` : "(no receipt)",
-              r.message,
-            ].join("\n"));
+            const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
+            alert(`Readiness: ${r.score}% (ready=${r.ready}) · blockers=${r.blockers.length} · warnings=${r.warnings.length}`);
           })}>
-            Execute live KDP submission
+            Revalidate readiness
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
             const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
