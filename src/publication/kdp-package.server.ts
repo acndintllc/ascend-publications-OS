@@ -88,17 +88,32 @@ function formatSummaryTxt(input: {
   generatedAt: string;
   publicationStatus: string;
   packageStatus: string;
+  assetStatus: Array<{ kind: string; active: boolean; url: string }>;
+  artifactStatus: Array<{ kind: string; version: number; active: boolean; filename: string }>;
 }): string {
-  return [
+  const lines: string[] = [
     `Publication Name: ${input.title}`,
     `Slug: ${input.slug}`,
     `Version: ${input.version}`,
+    `Status: ${input.publicationStatus}`,
     `Approval Date: ${input.approvedAt ?? "—"}`,
     `Package Generated Date: ${input.generatedAt}`,
-    `Publication Status: ${input.publicationStatus}`,
-    `Package Status: ${input.packageStatus}`,
     `Package Version: v${input.packageVersion}`,
-  ].join("\n");
+    `Package Status: ${input.packageStatus}`,
+    "",
+    "Asset Status:",
+  ];
+  if (input.assetStatus.length === 0) lines.push("  (no assets)");
+  for (const a of input.assetStatus) {
+    lines.push(`  - ${a.kind}: ${a.active ? "active" : "inactive"} — ${a.url}`);
+  }
+  lines.push("");
+  lines.push("Artifact Status:");
+  if (input.artifactStatus.length === 0) lines.push("  (no artifacts)");
+  for (const a of input.artifactStatus) {
+    lines.push(`  - ${a.kind} v${a.version}: ${a.active ? "active" : "inactive"} — ${a.filename}`);
+  }
+  return lines.join("\n");
 }
 
 export interface KdpPackageResult {
