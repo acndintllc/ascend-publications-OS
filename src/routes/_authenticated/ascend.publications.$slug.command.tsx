@@ -31,7 +31,14 @@ import {
   revalidateReadinessFn,
   generateKdpDistributionPackage,
   latestKdpPackageInfoFn,
+  markAsPublishedFn,
+  latestPublicationConfirmationFn,
 } from "@/lib/publication.functions";
+import {
+  PUBLICATION_TIMELINE,
+  PUBLICATION_STATUS_LABELS,
+  type PublicationStatus,
+} from "@/publication/status";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
 import { SUBMISSION_STATES } from "@/publication/submissions";
@@ -45,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, publication, confirmation] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -55,8 +62,11 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
       listVendors(),
       reportVendorSecretsFn(),
       latestKdpPackageInfoFn({ data: { slug: params.slug } }),
+      // Fetch record via audit facts if possible — audit already carries status; but load fresh
+      auditPublicationFn({ data: { slug: params.slug } }).then((a) => a.facts?.status as PublicationStatus | undefined),
+      latestPublicationConfirmationFn({ data: { slug: params.slug } }),
     ]);
-    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, slug: params.slug };
+    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus: publication ?? "draft", confirmation, slug: params.slug };
   },
   component: CommandCenter,
 });
