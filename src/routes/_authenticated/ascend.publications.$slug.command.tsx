@@ -514,17 +514,22 @@ function downloadBase64Zip(filename: string, base64: string) {
 function PublishKdpSection(props: {
   slug: string;
   latest: { packageVersion: number; generatedAt: string } | null;
+  currentStatus: PublicationStatus;
   busy: boolean;
   onPublish: () => void;
 }) {
-  const { latest, busy, onPublish } = props;
+  const { latest, currentStatus, busy, onPublish } = props;
+  const alreadyPublished = currentStatus === "published";
+  const packaged = currentStatus === "package_generated" || alreadyPublished || !!latest;
+  const label = latest ? "Regenerate KDP Package" : "Generate KDP Package";
   return (
     <section style={{ ...card, borderColor: "#e8c07a" }}>
-      <div style={h}>Publish · Amazon KDP</div>
+      <div style={h}>Distribution Package · Amazon KDP</div>
       <div style={sub}>
-        Generates a complete KDP submission package: Interior, Cover, Metadata.txt,
-        Publication Summary.txt. Everything the Publishing OS already approved,
-        packaged for one-click upload to Amazon KDP.
+        Assembles a complete KDP-ready submission package: Interior, Cover,
+        Metadata.txt, Publication Summary.txt. This is an internal production
+        milestone — the publication is <strong>not</strong> considered
+        Published until the operator confirms it externally on KDP.
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <button
@@ -532,16 +537,153 @@ function PublishKdpSection(props: {
           disabled={busy}
           onClick={onPublish}
         >
-          {latest ? "Regenerate & Download Package" : "Publish → Generate KDP Package"}
+          {label}
         </button>
-        {latest && (
+        {packaged && latest && (
           <div style={{ display: "flex", gap: 16, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
-            <span style={{ color: "#86efac" }}>● Package Ready</span>
-            <span>Version v{latest.packageVersion}</span>
+            <span style={{ color: "#86efac" }}>● KDP Package Ready</span>
+            <span>Package Version v{latest.packageVersion}</span>
             <span>Generated {new Date(latest.generatedAt).toLocaleString()}</span>
+            <span>Publication Status: {PUBLICATION_STATUS_LABELS[currentStatus]}</span>
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+function PublicationTimeline(props: { current: PublicationStatus }) {
+  const { current } = props;
+  const idx = PUBLICATION_TIMELINE.indexOf(current);
+  return (
+    <section style={card}>
+      <div style={h}>Publication Lifecycle</div>
+      <ol style={{
+        listStyle: "none", padding: 0, margin: 0, display: "flex",
+        gap: 8, flexWrap: "wrap", alignItems: "center",
+        fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)",
+      }}>
+        {PUBLICATION_TIMELINE.map((s, i) => {
+          const isCurrent = s === current;
+          const passed = idx >= 0 && i < idx;
+          return (
+            <React.Fragment key={s}>
+              <li
+                aria-current={isCurrent ? "step" : undefined}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${isCurrent ? "#e8c07a" : "var(--am-color-ink-300)"}`,
+                  background: isCurrent ? "#e8c07a" : passed ? "var(--am-color-surface-2)" : "transparent",
+                  color: isCurrent ? "#111" : "inherit",
+                  fontWeight: isCurrent ? 700 : 400,
+                }}
+              >
+                {PUBLICATION_STATUS_LABELS[s]}
+              </li>
+              {i < PUBLICATION_TIMELINE.length - 1 && (
+                <span aria-hidden style={{ color: "var(--am-color-ink-500)" }}>→</span>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </ol>
+      {!PUBLICATION_TIMELINE.includes(current) && (
+        <div style={{ marginBlockStart: 8, color: "var(--am-color-ink-500)", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+          Current status: {PUBLICATION_STATUS_LABELS[current] ?? current}
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface MarkPublishedPayload {
+  asin?: string | null;
+  publication_url?: string | null;
+  publication_date?: string | null;
+  vendor_reference?: string | null;
+  notes?: string | null;
+}
+
+function MarkAsPublishedSection(props: {
+  slug: string;
+  currentStatus: PublicationStatus;
+  confirmation: { confirmedAt: string; payload: Record<string, string | null> } | null;
+  busy: boolean;
+  onSubmit: (payload: MarkPublishedPayload) => void;
+}) {
+  const { currentStatus, confirmation, busy, onSubmit } = props;
+  const [asin, setAsin] = React.useState("");
+  const [url, setUrl] = React.useState("");
+  const [date, setDate] = React.useState("");
+  const [ref, setRef] = React.useState("");
+  const [notes, setNotes] = React.useState("");
+  const isPublished = currentStatus === "published";
+
+  return (
+    <section style={{ ...card, borderColor: isPublished ? "#86efac" : "var(--am-color-ink-300)" }}>
+      <div style={h}>
+        {isPublished ? "✓ Published" : "Mark as Published"}
+      </div>
+      <div style={sub}>
+        {isPublished
+          ? "This publication is recorded as live with the external vendor. Update the record to log additional confirmation details."
+          : "After uploading the KDP package to Amazon KDP and confirming the listing is live, record the external publication details here. This is a manual step — ASCEND does not push to KDP automatically."}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit({
+            asin: asin.trim() || null,
+            publication_url: url.trim() || null,
+            publication_date: date || null,
+            vendor_reference: ref.trim() || null,
+            notes: notes.trim() || null,
+          });
+          setAsin(""); setUrl(""); setDate(""); setRef(""); setNotes("");
+        }}
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+      >
+        <label style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Amazon ASIN</span>
+          <input value={asin} onChange={(e) => setAsin(e.target.value)} placeholder="B0XXXXXXXX" />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Publication URL</span>
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.amazon.com/dp/..." />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Publication Date</span>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Vendor Reference</span>
+          <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="KDP confirmation #" />
+        </label>
+        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
+          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Internal Notes</span>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+        </label>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <button
+            type="submit"
+            style={{ ...btn, background: isPublished ? "transparent" : "#86efac", color: isPublished ? "inherit" : "#111", fontWeight: 700 }}
+            disabled={busy}
+          >
+            {isPublished ? "Update publication record" : "Mark as Published"}
+          </button>
+        </div>
+      </form>
+      {confirmation && (
+        <div style={{ marginBlockStart: 16, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+          <strong>Last confirmation</strong> · {new Date(confirmation.confirmedAt).toLocaleString()}
+          <ul>
+            {Object.entries(confirmation.payload).filter(([, v]) => v).map(([k, v]) => (
+              <li key={k}><code>{k}</code>: {v}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
