@@ -755,6 +755,8 @@ export type Database = {
         | "ready"
         | "published"
         | "archived"
+        | "approved"
+        | "package_generated"
       submission_state:
         | "draft"
         | "submitted"
@@ -914,6 +916,8 @@ export const Constants = {
         "ready",
         "published",
         "archived",
+        "approved",
+        "package_generated",
       ],
       submission_state: [
         "draft",
