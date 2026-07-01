@@ -218,6 +218,8 @@ export async function buildKdpDistributionPackage(slug: string): Promise<KdpPack
     generatedAt,
     publicationStatus: record.status,
     packageStatus: "ready",
+    assetStatus: assets.map((a) => ({ kind: a.kind, active: a.is_active, url: a.url })),
+    artifactStatus: artifacts.map((a) => ({ kind: a.kind, version: a.version, active: a.is_active, filename: a.filename })),
   });
   files[`${folderName}/Publication Summary.txt`] = strToU8(summary);
 
