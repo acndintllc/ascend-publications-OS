@@ -11,7 +11,7 @@ import { z } from "zod";
 import type { PublicationStatus } from "@/publication/status";
 
 const statusEnum = z.enum([
-  "draft","editing","review","formatting","ready","published","archived",
+  "draft","editing","review","formatting","approved","ready","package_generated","published","archived",
 ]);
 
 const recordPatch = z.object({
@@ -956,7 +956,25 @@ export const generateKdpDistributionPackage = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { buildKdpDistributionPackage } = await import("@/publication/kdp-package.server");
-    return buildKdpDistributionPackage(data.slug);
+    const p = await import("@/publication/persistence.server");
+    const result = await buildKdpDistributionPackage(data.slug);
+
+    // Auto-advance lifecycle to package_generated when legal.
+    const rec = await p.getRecord(data.slug);
+    if (rec && rec.status !== "package_generated" && rec.status !== "published") {
+      const { canTransition } = await import("@/publication/status");
+      if (canTransition(rec.status, "package_generated")) {
+        await p.transitionStatus(data.slug, "package_generated",
+          `KDP package v${result.packageVersion} generated`);
+        await p.recordEvent({
+          slug: data.slug,
+          event_type: "status.changed",
+          payload: { from: rec.status, to: "package_generated", trigger: "kdp.package.generated" },
+          ownerId: rec.owner_id,
+        });
+      }
+    }
+    return result;
   });
 
 export const latestKdpPackageInfoFn = createServerFn({ method: "GET" })
@@ -965,6 +983,63 @@ export const latestKdpPackageInfoFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { getLatestKdpPackageInfo } = await import("@/publication/kdp-package.server");
     return getLatestKdpPackageInfo(data.slug);
+  });
+
+/* ─── Phase 18.1 — Manual publication confirmation (external vendor) ─── */
+
+const markPublishedSchema = z.object({
+  slug: z.string(),
+  asin: z.string().max(80).optional().nullable(),
+  publication_url: z.string().url().optional().nullable(),
+  publication_date: z.string().optional().nullable(),
+  vendor_reference: z.string().max(160).optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+});
+
+export const markAsPublishedFn = createServerFn({ method: "POST" })
+  .middleware([requireOwner])
+  .inputValidator((d: unknown) => markPublishedSchema.parse(d))
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    const rec = await p.getRecord(data.slug);
+    if (!rec) throw new Error(`Unknown publication: ${data.slug}`);
+    if (rec.status !== "published") {
+      const { canTransition } = await import("@/publication/status");
+      if (!canTransition(rec.status, "published")) {
+        throw new Error(
+          `Cannot mark as published from status "${rec.status}". Generate the KDP package first.`,
+        );
+      }
+      await p.transitionStatus(data.slug, "published",
+        data.notes ?? "Marked as published by operator");
+    }
+    await p.recordEvent({
+      slug: data.slug,
+      event_type: "publication.confirmed",
+      payload: {
+        asin: data.asin ?? null,
+        publication_url: data.publication_url ?? null,
+        publication_date: data.publication_date ?? null,
+        vendor_reference: data.vendor_reference ?? null,
+        notes: data.notes ?? null,
+      },
+      ownerId: rec.owner_id,
+    });
+    return { ok: true };
+  });
+
+export const latestPublicationConfirmationFn = createServerFn({ method: "GET" })
+  .middleware([requireOwner])
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    const events = await p.listEvents(data.slug, 200);
+    const confirmed = events.find((e) => e.event_type === "publication.confirmed");
+    if (!confirmed) return null;
+    return {
+      confirmedAt: confirmed.created_at,
+      payload: (confirmed.payload ?? {}) as Record<string, string | null>,
+    };
   });
 
 

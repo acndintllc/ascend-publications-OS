@@ -151,7 +151,8 @@ export function computeReadiness(input: ReadinessInput): ReadinessReport {
   };
   const statusScores: Record<PublicationStatus, number> = {
     draft: 0.1, editing: 0.3, review: 0.5, formatting: 0.7,
-    ready: 0.9, published: 1, archived: 0.4,
+    approved: 0.85, ready: 0.9, package_generated: 0.97,
+    published: 1, archived: 0.4,
   };
   statusSignal.score = statusScores[input.status];
   if (input.status === "draft" || input.status === "editing") {
