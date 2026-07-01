@@ -11,7 +11,7 @@ import { z } from "zod";
 import type { PublicationStatus } from "@/publication/status";
 
 const statusEnum = z.enum([
-  "draft","editing","review","formatting","ready","published","archived",
+  "draft","editing","review","formatting","approved","ready","package_generated","published","archived",
 ]);
 
 const recordPatch = z.object({

@@ -6,24 +6,53 @@ export const PUBLICATION_STATUSES = [
   "editing",
   "review",
   "formatting",
+  "approved",
   "ready",
+  "package_generated",
   "published",
   "archived",
 ] as const;
 
 export type PublicationStatus = (typeof PUBLICATION_STATUSES)[number];
 
-/** Forward-only lifecycle, with `archived` reachable from any post-draft
- *  state and `editing` reachable from `review`/`ready` as a rework hop. */
+/** Phase 18.1 refined lifecycle:
+ *  draft → editing → review (validation) → formatting → approved
+ *        → ready → package_generated → published
+ *  `archived` reachable post-draft; rework hops preserved. */
 export const STATUS_TRANSITIONS: Record<PublicationStatus, PublicationStatus[]> = {
-  draft:       ["editing", "archived"],
-  editing:     ["review", "draft", "archived"],
-  review:      ["formatting", "editing", "archived"],
-  formatting:  ["ready", "editing", "archived"],
-  ready:       ["published", "formatting", "archived"],
-  published:   ["archived"],
-  archived:    ["draft"],
+  draft:              ["editing", "archived"],
+  editing:            ["review", "draft", "archived"],
+  review:             ["formatting", "approved", "editing", "archived"],
+  formatting:         ["approved", "ready", "editing", "archived"],
+  approved:           ["ready", "formatting", "archived"],
+  ready:              ["package_generated", "approved", "formatting", "archived"],
+  package_generated:  ["published", "ready", "archived"],
+  published:          ["archived"],
+  archived:           ["draft"],
 };
+
+/** Human-readable labels for the refined publication lifecycle. */
+export const PUBLICATION_STATUS_LABELS: Record<PublicationStatus, string> = {
+  draft: "Draft",
+  editing: "Editing",
+  review: "Validation",
+  formatting: "Formatting",
+  approved: "Approved",
+  ready: "Ready to Publish",
+  package_generated: "Package Generated",
+  published: "Published",
+  archived: "Archived",
+};
+
+/** Ordered stages surfaced in the Command Center timeline. */
+export const PUBLICATION_TIMELINE: PublicationStatus[] = [
+  "draft",
+  "review",
+  "approved",
+  "ready",
+  "package_generated",
+  "published",
+];
 
 export function canTransition(from: PublicationStatus, to: PublicationStatus): boolean {
   return STATUS_TRANSITIONS[from]?.includes(to) ?? false;
