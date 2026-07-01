@@ -30,6 +30,8 @@ import {
   evaluateGovernanceGateFn,
   runLiveKdpSubmissionFn,
   revalidateReadinessFn,
+  generateKdpDistributionPackage,
+  latestKdpPackageInfoFn,
 } from "@/lib/publication.functions";
 import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
@@ -44,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -53,8 +55,9 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
       listSubmissions({ data: { slug: params.slug } }),
       listVendors(),
       reportVendorSecretsFn(),
+      latestKdpPackageInfoFn({ data: { slug: params.slug } }),
     ]);
-    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug: params.slug };
+    return { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, slug: params.slug };
   },
   component: CommandCenter,
 });
@@ -100,7 +103,7 @@ function CommandCenter() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, slug } = ld;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
