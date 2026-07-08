@@ -28,11 +28,33 @@ function AuthPage() {
   const [mode, setMode] = useState<"sign-in" | "sign-up" | "verify-pending">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function handleForgotPassword() {
+    setErr(null);
+    setInfo(null);
+    if (!email) {
+      setErr("Enter your email address above, then click 'Forgot password?' again.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
+      if (error) throw error;
+      setInfo("Password reset email sent. Check your inbox (and spam).");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to send reset email");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // Handle email-confirmation redirect (hash contains tokens from Supabase)
   useEffect(() => {
@@ -224,16 +246,36 @@ function AuthPage() {
             style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid #262626", background: "#000000", color: "#e8e8e8", opacity: isVerifyPending ? 0.7 : 1, fontFamily: "inherit", fontSize: 14 }}
           />
           {!isVerifyPending && (
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-              style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid #262626", background: "#000000", color: "#e8e8e8", fontFamily: "inherit", fontSize: 14 }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                style={{ width: "100%", padding: "12px 52px 12px 14px", borderRadius: 10, border: "1px solid #262626", background: "#000000", color: "#e8e8e8", fontFamily: "inherit", fontSize: 14, boxSizing: "border-box" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#5cbdb9", fontSize: 12, cursor: "pointer", padding: "6px 8px", fontFamily: "inherit" }}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          )}
+          {mode === "sign-in" && (
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={busy}
+              style={{ alignSelf: "flex-end", background: "none", border: "none", color: "#5cbdb9", fontSize: 12, cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+            >
+              Forgot password?
+            </button>
           )}
           {err && <div style={{ color: "#fca5a5", background: "#1a0808", border: "1px solid #5a1a1a", padding: "10px 12px", borderRadius: 8, fontSize: 13 }}>{err}</div>}
           {info && <div style={{ color: "#86efac", background: "#081a0c", border: "1px solid #1a5a2a", padding: "10px 12px", borderRadius: 8, fontSize: 13 }}>{info}</div>}
