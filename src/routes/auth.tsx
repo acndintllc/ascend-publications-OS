@@ -28,11 +28,33 @@ function AuthPage() {
   const [mode, setMode] = useState<"sign-in" | "sign-up" | "verify-pending">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function handleForgotPassword() {
+    setErr(null);
+    setInfo(null);
+    if (!email) {
+      setErr("Enter your email address above, then click 'Forgot password?' again.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
+      if (error) throw error;
+      setInfo("Password reset email sent. Check your inbox (and spam).");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to send reset email");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // Handle email-confirmation redirect (hash contains tokens from Supabase)
   useEffect(() => {
