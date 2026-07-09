@@ -155,6 +155,8 @@ export async function buildKdpDistributionPackage(slug: string): Promise<KdpPack
 
   const priorPackages = events.filter((e) => e.event_type === "kdp.package.generated").length;
   const packageVersion = priorPackages + 1;
+  const recordVersion =
+    ((record as unknown as { current_version?: number | null }).current_version) ?? 1;
   const generatedAt = new Date().toISOString();
   const approvedEvent = events.find((e) => {
     const p = e.payload as unknown as Record<string, unknown> | null;
