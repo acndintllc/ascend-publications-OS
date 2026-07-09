@@ -34,6 +34,7 @@ import {
   latestKdpPackageInfoFn,
   markAsPublishedFn,
   latestPublicationConfirmationFn,
+  listPublicationHistoryFn,
 } from "@/lib/publication.functions";
 import {
   PUBLICATION_TIMELINE,
@@ -53,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, pub, confirmation] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, pub, confirmation, history] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -65,11 +66,14 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
       latestKdpPackageInfoFn({ data: { slug: params.slug } }),
       getPublication({ data: { slug: params.slug } }),
       latestPublicationConfirmationFn({ data: { slug: params.slug } }),
+      listPublicationHistoryFn({ data: { slug: params.slug } }),
     ]);
+    const currentRecordVersion =
+      ((pub.record as unknown as { current_version?: number | null }).current_version) ?? 1;
     return {
       audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets,
       kdpPackage, currentStatus: pub.record.status as PublicationStatus,
-      confirmation, slug: params.slug,
+      currentRecordVersion, confirmation, history, slug: params.slug,
     };
   },
   component: CommandCenter,
