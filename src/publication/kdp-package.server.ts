@@ -233,9 +233,11 @@ export async function buildKdpDistributionPackage(slug: string): Promise<KdpPack
     event_type: "kdp.package.generated",
     payload: {
       package_version: packageVersion,
+      record_version: recordVersion,
       generated_at: generatedAt,
       byte_length: zipBytes.byteLength,
       cover_included: !!cover,
+      previous_status: record.status,
     },
     ownerId: record.owner_id,
   });
@@ -246,6 +248,7 @@ export async function buildKdpDistributionPackage(slug: string): Promise<KdpPack
     contentBase64: bytesToBase64(zipBytes),
     byteLength: zipBytes.byteLength,
     packageVersion,
+    recordVersion,
     generatedAt,
     folderName,
   };
@@ -254,15 +257,21 @@ export async function buildKdpDistributionPackage(slug: string): Promise<KdpPack
 /** Report the most recent KDP package generation for a slug (no side effects). */
 export async function getLatestKdpPackageInfo(slug: string): Promise<{
   packageVersion: number;
+  recordVersion: number;
   generatedAt: string;
 } | null> {
   const events = await listEvents(slug, 200);
   const generated = events.filter((e) => e.event_type === "kdp.package.generated");
   if (generated.length === 0) return null;
   const latest = generated[0];
-  const payload = (latest.payload as unknown as { package_version?: number; generated_at?: string }) ?? {};
+  const payload = (latest.payload as unknown as {
+    package_version?: number;
+    record_version?: number;
+    generated_at?: string;
+  }) ?? {};
   return {
     packageVersion: payload.package_version ?? generated.length,
+    recordVersion: payload.record_version ?? 1,
     generatedAt: payload.generated_at ?? latest.created_at,
   };
 }
