@@ -27,7 +27,9 @@ export const STATUS_TRANSITIONS: Record<PublicationStatus, PublicationStatus[]> 
   approved:           ["ready", "formatting", "archived"],
   ready:              ["package_generated", "approved", "formatting", "archived"],
   package_generated:  ["published", "ready", "archived"],
-  published:          ["archived"],
+  // Republish path: a new manuscript version may require regenerating the
+  // KDP package after external publication. Rolls back to package_generated.
+  published:          ["package_generated", "archived"],
   archived:           ["draft"],
 };
 
