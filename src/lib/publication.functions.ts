@@ -957,22 +957,44 @@ export const generateKdpDistributionPackage = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { buildKdpDistributionPackage } = await import("@/publication/kdp-package.server");
     const p = await import("@/publication/persistence.server");
+    const before = await p.getRecord(data.slug);
+    const wasPublished = before?.status === "published";
     const result = await buildKdpDistributionPackage(data.slug);
 
-    // Auto-advance lifecycle to package_generated when legal.
+    // Auto-advance lifecycle to package_generated when legal. If the
+    // publication was already Published, roll back to package_generated so
+    // the operator can re-upload the new package and re-confirm — this is
+    // the republish path.
     const rec = await p.getRecord(data.slug);
-    if (rec && rec.status !== "package_generated" && rec.status !== "published") {
+    if (rec && rec.status !== "package_generated") {
       const { canTransition } = await import("@/publication/status");
       if (canTransition(rec.status, "package_generated")) {
         await p.transitionStatus(data.slug, "package_generated",
-          `KDP package v${result.packageVersion} generated`);
+          wasPublished
+            ? `Redistributing: KDP package v${result.packageVersion} regenerated`
+            : `KDP package v${result.packageVersion} generated`);
         await p.recordEvent({
           slug: data.slug,
           event_type: "status.changed",
-          payload: { from: rec.status, to: "package_generated", trigger: "kdp.package.generated" },
+          payload: {
+            from: rec.status, to: "package_generated",
+            trigger: wasPublished ? "kdp.package.redistributed" : "kdp.package.generated",
+          },
           ownerId: rec.owner_id,
         });
       }
+    }
+    if (wasPublished) {
+      await p.recordEvent({
+        slug: data.slug,
+        event_type: "publication.redistributed",
+        payload: {
+          package_version: result.packageVersion,
+          record_version: result.recordVersion,
+          generated_at: result.generatedAt,
+        },
+        ownerId: rec?.owner_id ?? before?.owner_id ?? null,
+      });
     }
     return result;
   });
