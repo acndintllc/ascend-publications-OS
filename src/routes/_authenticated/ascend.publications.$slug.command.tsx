@@ -34,6 +34,7 @@ import {
   latestKdpPackageInfoFn,
   markAsPublishedFn,
   latestPublicationConfirmationFn,
+  listPublicationHistoryFn,
 } from "@/lib/publication.functions";
 import {
   PUBLICATION_TIMELINE,
@@ -53,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, pub, confirmation] = await Promise.all([
+    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, pub, confirmation, history] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
@@ -65,11 +66,14 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
       latestKdpPackageInfoFn({ data: { slug: params.slug } }),
       getPublication({ data: { slug: params.slug } }),
       latestPublicationConfirmationFn({ data: { slug: params.slug } }),
+      listPublicationHistoryFn({ data: { slug: params.slug } }),
     ]);
+    const currentRecordVersion =
+      ((pub.record as unknown as { current_version?: number | null }).current_version) ?? 1;
     return {
       audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets,
       kdpPackage, currentStatus: pub.record.status as PublicationStatus,
-      confirmation, slug: params.slug,
+      currentRecordVersion, confirmation, history, slug: params.slug,
     };
   },
   component: CommandCenter,
@@ -116,7 +120,7 @@ function CommandCenter() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus, confirmation, slug } = ld;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus, currentRecordVersion, confirmation, history, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
@@ -172,11 +176,21 @@ function CommandCenter() {
       {/* Phase 18.1 — Publication lifecycle timeline */}
       <PublicationTimeline current={currentStatus} />
 
+      {/* New manuscript version — redistribution indicator. Visible whenever
+          the creator has submitted a newer manuscript version than the last
+          KDP package captures. */}
+      <NewVersionBanner
+        currentRecordVersion={currentRecordVersion}
+        kdpPackage={kdpPackage}
+        currentStatus={currentStatus}
+      />
+
       {/* Publish → KDP Distribution Package */}
       <PublishKdpSection
         slug={slug}
         latest={kdpPackage}
         currentStatus={currentStatus}
+        currentRecordVersion={currentRecordVersion}
         busy={busy}
         onPublish={() => wrap(async () => {
           const r = await generateKdpDistributionPackage({ data: { slug } });
@@ -194,6 +208,9 @@ function CommandCenter() {
           onSubmit={(payload) => wrap(() => markAsPublishedFn({ data: { slug, ...payload } }))}
         />
       )}
+
+      {/* Publication distribution history */}
+      <PublicationHistorySection history={history} />
 
       {/* Facts */}
       <section style={card}>
@@ -511,19 +528,27 @@ function downloadBase64Zip(filename: string, base64: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+type KdpPackageInfo = { packageVersion: number; recordVersion: number; generatedAt: string };
+
 function PublishKdpSection(props: {
   slug: string;
-  latest: { packageVersion: number; generatedAt: string } | null;
+  latest: KdpPackageInfo | null;
   currentStatus: PublicationStatus;
+  currentRecordVersion: number;
   busy: boolean;
   onPublish: () => void;
 }) {
-  const { latest, currentStatus, busy, onPublish } = props;
+  const { latest, currentStatus, currentRecordVersion, busy, onPublish } = props;
   const alreadyPublished = currentStatus === "published";
   const packaged = currentStatus === "package_generated" || alreadyPublished || !!latest;
-  const label = latest ? "Regenerate KDP Package" : "Generate KDP Package";
+  const stale = !!latest && latest.recordVersion < currentRecordVersion;
+  const label = !latest
+    ? "Generate KDP Package"
+    : stale || alreadyPublished
+      ? "Regenerate & Redistribute KDP Package"
+      : "Regenerate KDP Package";
   return (
-    <section style={{ ...card, borderColor: "#e8c07a" }}>
+    <section style={{ ...card, borderColor: stale ? "#f59e0b" : "#e8c07a" }}>
       <div style={h}>Distribution Package · Amazon KDP</div>
       <div style={sub}>
         Assembles a complete KDP-ready submission package: Interior, Cover,
@@ -533,21 +558,127 @@ function PublishKdpSection(props: {
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <button
-          style={{ ...btn, background: "#e8c07a", color: "#111", fontWeight: 700, borderColor: "#e8c07a" }}
+          style={{ ...btn, background: stale ? "#f59e0b" : "#e8c07a", color: "#111", fontWeight: 700, borderColor: stale ? "#f59e0b" : "#e8c07a" }}
           disabled={busy}
           onClick={onPublish}
         >
           {label}
         </button>
         {packaged && latest && (
-          <div style={{ display: "flex", gap: 16, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
-            <span style={{ color: "#86efac" }}>● KDP Package Ready</span>
-            <span>Package Version v{latest.packageVersion}</span>
+          <div style={{ display: "flex", gap: 16, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)", flexWrap: "wrap" }}>
+            <span style={{ color: stale ? "#f59e0b" : "#86efac" }}>
+              {stale ? "● Package Out of Date" : "● KDP Package Ready"}
+            </span>
+            <span>Package v{latest.packageVersion} · manuscript v{latest.recordVersion}</span>
+            <span>Current manuscript v{currentRecordVersion}</span>
             <span>Generated {new Date(latest.generatedAt).toLocaleString()}</span>
             <span>Publication Status: {PUBLICATION_STATUS_LABELS[currentStatus]}</span>
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+function NewVersionBanner(props: {
+  currentRecordVersion: number;
+  kdpPackage: KdpPackageInfo | null;
+  currentStatus: PublicationStatus;
+}) {
+  const { currentRecordVersion, kdpPackage, currentStatus } = props;
+  if (!kdpPackage) return null;
+  if (kdpPackage.recordVersion >= currentRecordVersion) return null;
+  const isPublished = currentStatus === "published";
+  return (
+    <section
+      role="alert"
+      style={{
+        ...card,
+        borderColor: "#f59e0b",
+        background: "rgba(245, 158, 11, 0.08)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span
+          aria-hidden
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 32, height: 32, borderRadius: 999, background: "#f59e0b",
+            color: "#111", fontWeight: 800,
+          }}
+        >
+          !
+        </span>
+        <div style={{ flex: 1, minWidth: 240, fontFamily: "var(--am-font-ui)" }}>
+          <div style={{ fontWeight: 700, fontSize: "var(--am-type-400)" }}>
+            New manuscript version submitted (v{currentRecordVersion})
+          </div>
+          <div style={{ fontSize: "var(--am-type-200)", color: "var(--am-color-ink-700)" }}>
+            The last KDP package captured manuscript v{kdpPackage.recordVersion}
+            {" "}on {new Date(kdpPackage.generatedAt).toLocaleString()}.
+            {isPublished
+              ? " This publication is live on KDP with the older version — regenerate the package and re-upload to Amazon to redistribute."
+              : " Regenerate the KDP package below to include the latest submission."}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+interface HistoryEntry {
+  id: string;
+  event_type: string;
+  created_at: string;
+  payload: Record<string, string | number | boolean | null>;
+}
+
+function PublicationHistorySection(props: { history: HistoryEntry[] }) {
+  const { history } = props;
+  return (
+    <section style={card}>
+      <div style={h}>Publication History</div>
+      <div style={sub}>
+        Every KDP package generation, redistribution, and external publication
+        confirmation for this title.
+      </div>
+      {history.length === 0 ? (
+        <div style={{ fontFamily: "var(--am-font-ui)", color: "var(--am-color-ink-700)" }}>
+          No distribution activity yet.
+        </div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+          <thead>
+            <tr>
+              <th align="left">When</th>
+              <th align="left">Event</th>
+              <th align="left">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((h2) => {
+              const label =
+                h2.event_type === "kdp.package.generated" ? "KDP Package Generated" :
+                h2.event_type === "publication.redistributed" ? "Redistributed" :
+                h2.event_type === "publication.confirmed" ? "Published (external confirmation)" :
+                h2.event_type;
+              const details = Object.entries(h2.payload)
+                .filter(([, v]) => v !== null && v !== "" && v !== undefined)
+                .map(([k, v]) => `${k}: ${String(v)}`)
+                .join(" · ");
+              return (
+                <tr key={h2.id} style={{ borderTop: "1px solid var(--am-color-ink-200)" }}>
+                  <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
+                    {new Date(h2.created_at).toLocaleString()}
+                  </td>
+                  <td style={{ padding: "6px 8px", fontWeight: 600 }}>{label}</td>
+                  <td style={{ padding: "6px 8px", color: "var(--am-color-ink-700)" }}>{details || "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }
