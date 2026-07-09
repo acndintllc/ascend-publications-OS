@@ -176,11 +176,21 @@ function CommandCenter() {
       {/* Phase 18.1 — Publication lifecycle timeline */}
       <PublicationTimeline current={currentStatus} />
 
+      {/* New manuscript version — redistribution indicator. Visible whenever
+          the creator has submitted a newer manuscript version than the last
+          KDP package captures. */}
+      <NewVersionBanner
+        currentRecordVersion={currentRecordVersion}
+        kdpPackage={kdpPackage}
+        currentStatus={currentStatus}
+      />
+
       {/* Publish → KDP Distribution Package */}
       <PublishKdpSection
         slug={slug}
         latest={kdpPackage}
         currentStatus={currentStatus}
+        currentRecordVersion={currentRecordVersion}
         busy={busy}
         onPublish={() => wrap(async () => {
           const r = await generateKdpDistributionPackage({ data: { slug } });
@@ -198,6 +208,9 @@ function CommandCenter() {
           onSubmit={(payload) => wrap(() => markAsPublishedFn({ data: { slug, ...payload } }))}
         />
       )}
+
+      {/* Publication distribution history */}
+      <PublicationHistorySection history={history} />
 
       {/* Facts */}
       <section style={card}>
