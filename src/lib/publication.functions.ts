@@ -1084,7 +1084,7 @@ export const listPublicationHistoryFn = createServerFn({ method: "GET" })
         id: e.id,
         event_type: e.event_type,
         created_at: e.created_at,
-        payload: (e.payload ?? {}) as Record<string, unknown>,
+        payload: (e.payload ?? {}) as Record<string, string | number | boolean | null>,
       }));
   });
 
