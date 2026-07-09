@@ -180,8 +180,12 @@ function AuthPage() {
 
   async function handleGoogle() {
     setErr(null);
+    // Always show Google account chooser so shared computers / account
+    // switching between USER and OWNER accounts works. Without this, Google
+    // silently re-uses the last signed-in account and users get locked in.
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/",
+      extraParams: { prompt: "select_account" },
     });
     if (result.error) {
       setErr(result.error.message);
