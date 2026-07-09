@@ -122,6 +122,7 @@ export interface KdpPackageResult {
   contentBase64: string;
   byteLength: number;
   packageVersion: number;
+  recordVersion: number;
   generatedAt: string;
   folderName: string;
 }
