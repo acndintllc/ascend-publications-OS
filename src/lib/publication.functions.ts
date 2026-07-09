@@ -1064,6 +1064,30 @@ export const latestPublicationConfirmationFn = createServerFn({ method: "GET" })
     };
   });
 
+/** Publication distribution history — package generations + confirmations +
+ *  redistributions. Newest first. Used by the Command Center to show a
+ *  visible audit trail after Publish. */
+export const listPublicationHistoryFn = createServerFn({ method: "GET" })
+  .middleware([requireOwner])
+  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const p = await import("@/publication/persistence.server");
+    const events = await p.listEvents(data.slug, 400);
+    const kinds = new Set([
+      "kdp.package.generated",
+      "publication.confirmed",
+      "publication.redistributed",
+    ]);
+    return events
+      .filter((e) => kinds.has(e.event_type))
+      .map((e) => ({
+        id: e.id,
+        event_type: e.event_type,
+        created_at: e.created_at,
+        payload: (e.payload ?? {}) as Record<string, unknown>,
+      }));
+  });
+
 
 
 
