@@ -120,7 +120,7 @@ function CommandCenter() {
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus, confirmation, slug } = ld;
+  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus, currentRecordVersion, confirmation, history, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
