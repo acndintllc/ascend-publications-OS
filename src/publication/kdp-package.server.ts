@@ -257,21 +257,14 @@ export async function buildKdpDistributionPackage(slug: string): Promise<KdpPack
 /** Report the most recent KDP package generation for a slug (no side effects). */
 export async function getLatestKdpPackageInfo(slug: string): Promise<{
   packageVersion: number;
-  recordVersion: number;
+  /** Null when the generating event predates record-version stamping — treat as unknown, never stale. */
+  recordVersion: number | null;
   generatedAt: string;
 } | null> {
-  const events = await listEvents(slug, 200);
-  const generated = events.filter((e) => e.event_type === "kdp.package.generated");
-  if (generated.length === 0) return null;
-  const latest = generated[0];
-  const payload = (latest.payload as unknown as {
-    package_version?: number;
-    record_version?: number;
-    generated_at?: string;
-  }) ?? {};
+...
   return {
     packageVersion: payload.package_version ?? generated.length,
-    recordVersion: payload.record_version ?? 1,
+    recordVersion: payload.record_version ?? null,
     generatedAt: payload.generated_at ?? latest.created_at,
   };
 }
