@@ -261,7 +261,15 @@ export async function getLatestKdpPackageInfo(slug: string): Promise<{
   recordVersion: number | null;
   generatedAt: string;
 } | null> {
-...
+  const events = await listEvents(slug, 200);
+  const generated = events.filter((e) => e.event_type === "kdp.package.generated");
+  if (generated.length === 0) return null;
+  const latest = generated[0];
+  const payload = (latest.payload as unknown as {
+    package_version?: number;
+    record_version?: number;
+    generated_at?: string;
+  }) ?? {};
   return {
     packageVersion: payload.package_version ?? generated.length,
     recordVersion: payload.record_version ?? null,
