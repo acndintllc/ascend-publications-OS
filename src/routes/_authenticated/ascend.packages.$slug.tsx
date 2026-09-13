@@ -43,7 +43,11 @@ const GOLD = "#e8c07a";
 const TEAL = "#5cbdb9";
 
 function PackageDetailRoute() {
-  const { detail, versions, slug } = Route.useLoaderData();
+  const { detail, versions, slug } = Route.useLoaderData() as {
+    detail: Awaited<ReturnType<typeof getPublication>>;
+    versions: Awaited<ReturnType<typeof listPackageVersions>>;
+    slug: string;
+  };
   const r = detail.record as typeof detail.record & {
     current_version?: number | null;
     last_activity_at?: string | null;
