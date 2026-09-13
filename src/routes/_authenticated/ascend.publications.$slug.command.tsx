@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* PTL-025 Phase 14E — Publication Command Center.
    Unified single-pane view: readiness, assets, exports, artifacts,
-   ISBN registry, queue state, submissions, vendors, blockers. */
+   ISBN registry, export packaging, blockers. The OS ends at the export
+   file — no vendor registry, submission lifecycle, or external runner. */
 import * as React from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import {
@@ -9,31 +10,13 @@ import {
   getPublication,
   listPublicationAssets,
   listPublicationArtifacts,
-  listDistributionQueue,
   listIsbns,
-  listSubmissions,
-  listVendors,
   assignIsbn,
-  upsertVendor,
-  createSubmission,
-  updateSubmission,
   generatePublicationArtifacts,
-  runReferencePdfRunner,
-  runReferenceKfxRunner,
-  runExternalKindlegenRunner,
-  runKdpAdapterFn,
-  runPublicationDryRunFn,
-  buildPublicationSubmissionPackage,
-  reportVendorSecretsFn,
   transitionIsbn,
-  runKindleFailoverFn,
-  kindleProviderHealthFn,
-  evaluateGovernanceGateFn,
   revalidateReadinessFn,
   generateKdpDistributionPackage,
   latestKdpPackageInfoFn,
-  markAsPublishedFn,
-  latestPublicationConfirmationFn,
   listPublicationHistoryFn,
 } from "@/lib/publication.functions";
 import {
@@ -41,9 +24,7 @@ import {
   PUBLICATION_STATUS_LABELS,
   type PublicationStatus,
 } from "@/publication/status";
-import { SUPPORTED_VENDOR_PLATFORMS } from "@/publication/vendors";
 import { ISBN_FORMATS } from "@/publication/isbn";
-import { SUBMISSION_STATES } from "@/publication/submissions";
 import { nextIsbnStates } from "@/publication/isbn-workflow";
 
 export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/command")({
@@ -54,26 +35,21 @@ export const Route = createFileRoute("/_authenticated/ascend/publications/$slug/
     ],
   }),
   loader: async ({ params }) => {
-    const [audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, pub, confirmation, history] = await Promise.all([
+    const [audit, assets, artifacts, isbns, kdpPackage, pub, history] = await Promise.all([
       auditPublicationFn({ data: { slug: params.slug } }),
       listPublicationAssets({ data: { slug: params.slug } }),
       listPublicationArtifacts({ data: { slug: params.slug } }),
-      listDistributionQueue({ data: { slug: params.slug } }),
       listIsbns({ data: { slug: params.slug } }),
-      listSubmissions({ data: { slug: params.slug } }),
-      listVendors(),
-      reportVendorSecretsFn(),
       latestKdpPackageInfoFn({ data: { slug: params.slug } }),
       getPublication({ data: { slug: params.slug } }),
-      latestPublicationConfirmationFn({ data: { slug: params.slug } }),
       listPublicationHistoryFn({ data: { slug: params.slug } }),
     ]);
     const currentRecordVersion =
       ((pub.record as unknown as { current_version?: number | null }).current_version) ?? 1;
     return {
-      audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets,
+      audit, assets, artifacts, isbns,
       kdpPackage, currentStatus: pub.record.status as PublicationStatus,
-      currentRecordVersion, confirmation, history, slug: params.slug,
+      currentRecordVersion, history, slug: params.slug,
     };
   },
   component: CommandCenter,
@@ -118,9 +94,8 @@ const btn: React.CSSProperties = {
 
 function CommandCenter() {
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ld = Route.useLoaderData() as any;
-  const { audit, assets, artifacts, queue, isbns, submissions, vendors, vendorSecrets, kdpPackage, currentStatus, currentRecordVersion, confirmation, history, slug } = ld;
+  const { audit, assets, artifacts, isbns, kdpPackage, currentStatus, currentRecordVersion, history, slug } = ld;
   const refresh = () => router.invalidate();
 
   const [busy, setBusy] = React.useState(false);
@@ -142,8 +117,6 @@ function CommandCenter() {
       </h1>
       <div style={sub}>
         <Link to="/ascend/publications/$slug" params={{ slug }}>Authoring</Link>
-        {" · "}
-        <Link to="/ascend/publications/$slug/distribute" params={{ slug }}>Distribute</Link>
       </div>
 
       {/* Readiness */}
@@ -182,7 +155,6 @@ function CommandCenter() {
       <NewVersionBanner
         currentRecordVersion={currentRecordVersion}
         kdpPackage={kdpPackage}
-        currentStatus={currentStatus}
       />
 
       {/* Publish → KDP Distribution Package */}
@@ -198,18 +170,7 @@ function CommandCenter() {
         })}
       />
 
-      {/* Phase 18.1 — Manual publication confirmation */}
-      {(currentStatus === "package_generated" || currentStatus === "published") && (
-        <MarkAsPublishedSection
-          slug={slug}
-          currentStatus={currentStatus}
-          confirmation={confirmation}
-          busy={busy}
-          onSubmit={(payload) => wrap(() => markAsPublishedFn({ data: { slug, ...payload } }))}
-        />
-      )}
-
-      {/* Publication distribution history */}
+      {/* Export package history */}
       <PublicationHistorySection history={history} />
 
       {/* Facts */}
@@ -255,165 +216,14 @@ function CommandCenter() {
       </section>
 
 
-      {/* Vendors */}
+      {/* Artifacts */}
       <section style={card}>
-        <div style={h}>Vendors</div>
-        <VendorForm busy={busy} onSave={(d) => wrap(() => upsertVendor({ data: d }))} />
-        <table style={{ width: "100%", borderCollapse: "collapse", marginBlockStart: "var(--am-space-3)" }}>
-          <thead><tr><th align="left">Platform</th><th align="left">Label</th><th align="left">Account</th><th align="left">Credential Ref</th><th align="left">Enabled</th></tr></thead>
-          <tbody>
-            {vendors.length === 0 && <tr><td colSpan={5} style={{ padding: 8 }}>No vendors configured.</td></tr>}
-            {vendors.map((v: any) => (
-              <tr key={v.id}><td>{v.platform}</td><td>{v.label}</td><td>{v.account_id ?? "—"}</td><td>{v.credential_ref ?? "—"}</td><td>{v.enabled ? "✓" : "—"}</td></tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ marginBlockStart: "var(--am-space-4)" }}>
-          <strong style={{ fontFamily: "var(--am-font-ui)" }}>Credential Secrets</strong>
-          <ul style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
-            {vendorSecrets.length === 0 && <li style={{ color: "var(--am-color-ink-700)" }}>No vendors to validate.</li>}
-            {vendorSecrets.map((s: any) => (
-              <li key={s.vendor_id}>
-                <code>{s.rotation_target}</code> — {s.platform}/{s.label}: {s.configured ? "✓ configured" : "✗ MISSING"}
-                {!s.conventional && <> · expected <code>{s.expected_credential_ref}</code></>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-
-      {/* Submissions */}
-      <section style={card}>
-        <div style={h}>Storefront Submissions</div>
-        <SubmissionForm slug={slug} busy={busy} vendors={vendors} onCreate={(d) => wrap(() => createSubmission({ data: d }))} />
-        <table style={{ width: "100%", borderCollapse: "collapse", marginBlockStart: "var(--am-space-3)" }}>
-          <thead><tr><th align="left">Platform</th><th align="left">Status</th><th align="left">ISBN</th><th align="left">Submitted</th><th></th></tr></thead>
-          <tbody>
-            {submissions.length === 0 && <tr><td colSpan={5} style={{ padding: 8 }}>No submissions.</td></tr>}
-            {submissions.map((s: any) => (
-              <tr key={s.id}>
-                <td>{s.platform}</td>
-                <td>
-                  <select value={s.status} onChange={(e) =>
-                    wrap(() => updateSubmission({ data: { id: s.id, slug, status: e.target.value as typeof SUBMISSION_STATES[number] } }))
-                  }>
-                    {SUBMISSION_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
-                  </select>
-                </td>
-                <td>{s.isbn ?? "—"}</td>
-                <td>{s.submitted_at ? new Date(s.submitted_at).toISOString().slice(0,10) : "—"}</td>
-                <td></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      {/* Artifacts + Queue */}
-      <section style={card}>
-        <div style={h}>Artifacts & Queue</div>
+        <div style={h}>Artifacts</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button style={btn} disabled={busy} onClick={() => wrap(() => generatePublicationArtifacts({ data: { slug } }))}>
             Generate artifacts
           </button>
           <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await runReferencePdfRunner({ data: { slug, mode: "ok" } });
-            alert(`PDF runner: ${r.ok ? "OK" : "FAIL"} (status ${r.callback_status})\n${r.signed_url ?? ""}`);
-          })}>
-            Run reference PDF runner
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await runReferenceKfxRunner({ data: { slug, mode: "ok" } });
-            alert(`KFX runner: ${r.ok ? "OK" : "FAIL"} (status ${r.callback_status})\n${r.signed_url ?? ""}`);
-          })}>
-            Run reference KFX runner
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const modes = ["invalid_signature", "missing_artifact", "failed_generation"] as const;
-            const results: string[] = [];
-            for (const m of modes) {
-              const r = await runReferencePdfRunner({ data: { slug, mode: m } });
-              results.push(`pdf/${m}: status ${r.callback_status} ok=${r.ok}`);
-            }
-            for (const m of modes) {
-              const r = await runReferenceKfxRunner({ data: { slug, mode: m } });
-              results.push(`kfx/${m}: status ${r.callback_status} ok=${r.ok}`);
-            }
-            alert("Failure paths:\n" + results.join("\n"));
-          })}>
-            Run failure simulations
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const targets = SUPPORTED_VENDOR_PLATFORMS;
-            const results: string[] = [];
-            for (const t of targets) {
-              const pkg = await buildPublicationSubmissionPackage({ data: { slug, platform: t } });
-              results.push(`${t}: ${pkg.ready ? "READY" : "BLOCKED"} (${pkg.issues.filter((i: any) => i.level === "error").length} errors)`);
-            }
-            alert("Submission packages:\n" + results.join("\n"));
-          })}>
-            Validate submission packages
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await runExternalKindlegenRunner({ data: { slug } });
-            alert(`External KindleGen: ${r.ok ? "OK" : "FAIL"} (${r.failure ?? "—"})\n${r.errors.join("\n") || r.signed_url || ""}`);
-          })}>
-            Run external KindleGen
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await runKdpAdapterFn({ data: { slug } });
-            alert(`KDP adapter (${r.mode}) → ${r.state}\nresponse: ${r.response.status} — ${r.response.message}\nerrors: ${r.issues.filter((i: any) => i.level === "error").length}`);
-          })}>
-            Run KDP dry-run
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await runPublicationDryRunFn({ data: { slug } });
-            const lines = [
-              `Verdict: ${r.verdict} (${r.readinessScore}%)`,
-              `Artifacts: epub=${r.artifactSummary.epub} kindle=${r.artifactSummary.kindle} pdf=${r.artifactSummary.pdf} (${r.artifactSummary.activeCount} active)`,
-              `KDP state: ${r.kdp.state} · package ready: ${r.kdp.package.ready}`,
-              r.blockers.length ? `Blockers:\n - ${r.blockers.slice(0, 8).join("\n - ")}` : "Blockers: none",
-              r.warnings.length ? `Warnings: ${r.warnings.length}` : "",
-            ].filter(Boolean);
-            alert(lines.join("\n"));
-          })}>
-            Run full publication dry-run
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const h = await kindleProviderHealthFn();
-            const r = await runKindleFailoverFn({ data: { slug } });
-            alert([
-              `Kindle providers — primary: ${h.primary?.id} (available=${h.primary?.available}); fallback: ${h.fallback?.id}`,
-              `Attempts: ${r.attempted.length} · failover used: ${r.failoverUsed}`,
-              `Final: ${r.final.provider} ok=${r.final.ok}${r.final.failure ? ` failure=${r.final.failure}` : ""}`,
-            ].join("\n"));
-          })}>
-            Run Kindle (primary → fallback)
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await runKindleFailoverFn({ data: { slug, forceFallback: true } });
-            alert(`Forced fallback: provider=${r.final.provider} ok=${r.final.ok} failover_used=${r.failoverUsed}`);
-          })}>
-            Force fallback (proof)
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const g = await evaluateGovernanceGateFn({ data: { slug, platform: "kdp" } });
-            alert([
-              `Governance gate (kdp): ${g.approved ? "APPROVED" : "BLOCKED"}`,
-              ...Object.entries(g.checks).map(([k, v]) => ` - ${k}: ${v ? "✓" : "✗"}`),
-              g.blockers.length ? `Blockers:\n - ${g.blockers.join("\n - ")}` : "",
-            ].filter(Boolean).join("\n"));
-          })}>
-            Evaluate governance gate (KDP)
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
-            const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
-            alert(`Readiness: ${r.score}% (ready=${r.ready}) · blockers=${r.blockers.length} · warnings=${r.warnings.length}`);
-          })}>
-            Revalidate readiness
-          </button>
-          <button style={btn} disabled={busy} onClick={() => wrap(async () => {
             const r = await revalidateReadinessFn({ data: { slug, trigger: "manual" } });
             alert(`Readiness: ${r.score}% (ready=${r.ready}) · blockers=${r.blockers.length} · warnings=${r.warnings.length}`);
           })}>
@@ -421,7 +231,7 @@ function CommandCenter() {
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--am-space-5)", marginBlockStart: "var(--am-space-4)" }}>
+        <div style={{ marginBlockStart: "var(--am-space-4)" }}>
           <div>
             <strong>Active artifacts ({artifacts.rows.filter((r: any) => r.is_active).length})</strong>
             <ul style={{ fontFamily: "var(--am-font-ui)" }}>
@@ -431,12 +241,6 @@ function CommandCenter() {
                   {artifacts.signed[a.id] && <> · <a href={artifacts.signed[a.id]} target="_blank" rel="noreferrer">download</a></>}
                 </li>
               ))}
-            </ul>
-          </div>
-          <div>
-            <strong>Distribution queue ({queue.length})</strong>
-            <ul style={{ fontFamily: "var(--am-font-ui)" }}>
-              {queue.map((q: any) => <li key={q.id}>{q.target} · {q.state}{q.artifact_url ? " · ✓ artifact" : ""}</li>)}
             </ul>
           </div>
         </div>
@@ -461,54 +265,6 @@ function IsbnForm(props: { slug: string; busy: boolean; onAdd: (d: { slug: strin
       </select>
       <input style={{ width: 60 }} value={edition} onChange={(e) => setEdition(e.target.value)} />
       <button style={btn} disabled={props.busy}>Assign ISBN</button>
-    </form>
-  );
-}
-
-function VendorForm(props: { busy: boolean; onSave: (d: { platform: string; label: string; account_id?: string; credential_ref?: string }) => void }) {
-  const [platform, setPlatform] = React.useState<string>(SUPPORTED_VENDOR_PLATFORMS[0]);
-  const [label, setLabel] = React.useState("");
-  const [account, setAccount] = React.useState("");
-  const [cred, setCred] = React.useState("");
-  return (
-    <form onSubmit={(e) => { e.preventDefault();
-      props.onSave({ platform, label, account_id: account || undefined, credential_ref: cred || undefined });
-      setLabel(""); setAccount(""); setCred("");
-    }} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
-        {SUPPORTED_VENDOR_PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
-      </select>
-      <input placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} required />
-      <input placeholder="Account ID" value={account} onChange={(e) => setAccount(e.target.value)} />
-      <input placeholder="Credential ref (secret name)" value={cred} onChange={(e) => setCred(e.target.value)} />
-      <button style={btn} disabled={props.busy}>Save vendor</button>
-    </form>
-  );
-}
-
-function SubmissionForm(props: {
-  slug: string; busy: boolean;
-  vendors: Array<{ id: string; platform: string; label: string }>;
-  onCreate: (d: { slug: string; platform: string; vendor_id?: string | null; isbn?: string | null }) => void;
-}) {
-  const [platform, setPlatform] = React.useState<string>(SUPPORTED_VENDOR_PLATFORMS[0]);
-  const [vendorId, setVendorId] = React.useState<string>("");
-  const [isbn, setIsbn] = React.useState<string>("");
-  const matching = props.vendors.filter((v) => v.platform === platform);
-  return (
-    <form onSubmit={(e) => { e.preventDefault();
-      props.onCreate({ slug: props.slug, platform, vendor_id: vendorId || null, isbn: isbn || null });
-      setIsbn("");
-    }} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <select value={platform} onChange={(e) => { setPlatform(e.target.value); setVendorId(""); }}>
-        {SUPPORTED_VENDOR_PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
-      </select>
-      <select value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
-        <option value="">— vendor (optional) —</option>
-        {matching.map((v: any) => <option key={v.id} value={v.id}>{v.label}</option>)}
-      </select>
-      <input placeholder="ISBN (optional)" value={isbn} onChange={(e) => setIsbn(e.target.value)} />
-      <button style={btn} disabled={props.busy}>Create submission</button>
     </form>
   );
 }
@@ -583,13 +339,11 @@ function PublishKdpSection(props: {
 function NewVersionBanner(props: {
   currentRecordVersion: number;
   kdpPackage: KdpPackageInfo | null;
-  currentStatus: PublicationStatus;
 }) {
-  const { currentRecordVersion, kdpPackage, currentStatus } = props;
+  const { currentRecordVersion, kdpPackage } = props;
   if (!kdpPackage) return null;
   if (kdpPackage.recordVersion == null) return null;
   if (kdpPackage.recordVersion >= currentRecordVersion) return null;
-  const isPublished = currentStatus === "published";
   return (
     <section
       role="alert"
@@ -615,11 +369,9 @@ function NewVersionBanner(props: {
             New manuscript version submitted (v{currentRecordVersion})
           </div>
           <div style={{ fontSize: "var(--am-type-200)", color: "var(--am-color-ink-700)" }}>
-            The last KDP package captured manuscript v{kdpPackage.recordVersion}
+            The last export package captured manuscript v{kdpPackage.recordVersion}
             {" "}on {new Date(kdpPackage.generatedAt).toLocaleString()}.
-            {isPublished
-              ? " This publication is live on KDP with the older version — regenerate the package and re-upload to Amazon to redistribute."
-              : " Regenerate the KDP package below to include the latest submission."}
+            {" "}Regenerate the package below to include the latest submission.
           </div>
         </div>
       </div>
@@ -638,14 +390,13 @@ function PublicationHistorySection(props: { history: HistoryEntry[] }) {
   const { history } = props;
   return (
     <section style={card}>
-      <div style={h}>Publication History</div>
+      <div style={h}>Export History</div>
       <div style={sub}>
-        Every KDP package generation, redistribution, and external publication
-        confirmation for this title.
+        Every export package generated for this title.
       </div>
       {history.length === 0 ? (
         <div style={{ fontFamily: "var(--am-font-ui)", color: "var(--am-color-ink-700)" }}>
-          No distribution activity yet.
+          No export packages generated yet.
         </div>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
@@ -659,9 +410,7 @@ function PublicationHistorySection(props: { history: HistoryEntry[] }) {
           <tbody>
             {history.map((h2) => {
               const label =
-                h2.event_type === "kdp.package.generated" ? "KDP Package Generated" :
-                h2.event_type === "publication.redistributed" ? "Redistributed" :
-                h2.event_type === "publication.confirmed" ? "Published (external confirmation)" :
+                h2.event_type === "kdp.package.generated" ? "Export Package Generated" :
                 h2.event_type;
               const details = Object.entries(h2.payload)
                 .filter(([, v]) => v !== null && v !== "" && v !== undefined)
@@ -736,87 +485,3 @@ interface MarkPublishedPayload {
   vendor_reference?: string | null;
   notes?: string | null;
 }
-
-function MarkAsPublishedSection(props: {
-  slug: string;
-  currentStatus: PublicationStatus;
-  confirmation: { confirmedAt: string; payload: Record<string, string | null> } | null;
-  busy: boolean;
-  onSubmit: (payload: MarkPublishedPayload) => void;
-}) {
-  const { currentStatus, confirmation, busy, onSubmit } = props;
-  const [asin, setAsin] = React.useState("");
-  const [url, setUrl] = React.useState("");
-  const [date, setDate] = React.useState("");
-  const [ref, setRef] = React.useState("");
-  const [notes, setNotes] = React.useState("");
-  const isPublished = currentStatus === "published";
-
-  return (
-    <section style={{ ...card, borderColor: isPublished ? "#86efac" : "var(--am-color-ink-300)" }}>
-      <div style={h}>
-        {isPublished ? "✓ Published" : "Mark as Published"}
-      </div>
-      <div style={sub}>
-        {isPublished
-          ? "This publication is recorded as live with the external vendor. Update the record to log additional confirmation details."
-          : "After uploading the KDP package to Amazon KDP and confirming the listing is live, record the external publication details here. This is a manual step — ASCEND does not push to KDP automatically."}
-      </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSubmit({
-            asin: asin.trim() || null,
-            publication_url: url.trim() || null,
-            publication_date: date || null,
-            vendor_reference: ref.trim() || null,
-            notes: notes.trim() || null,
-          });
-          setAsin(""); setUrl(""); setDate(""); setRef(""); setNotes("");
-        }}
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
-      >
-        <label style={{ display: "grid", gap: 4 }}>
-          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Amazon ASIN</span>
-          <input value={asin} onChange={(e) => setAsin(e.target.value)} placeholder="B0XXXXXXXX" />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Publication URL</span>
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.amazon.com/dp/..." />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Publication Date</span>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Vendor Reference</span>
-          <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="KDP confirmation #" />
-        </label>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span style={{ fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-100)" }}>Internal Notes</span>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-        </label>
-        <div style={{ gridColumn: "1 / -1" }}>
-          <button
-            type="submit"
-            style={{ ...btn, background: isPublished ? "transparent" : "#86efac", color: isPublished ? "inherit" : "#111", fontWeight: 700 }}
-            disabled={busy}
-          >
-            {isPublished ? "Update publication record" : "Mark as Published"}
-          </button>
-        </div>
-      </form>
-      {confirmation && (
-        <div style={{ marginBlockStart: 16, fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
-          <strong>Last confirmation</strong> · {new Date(confirmation.confirmedAt).toLocaleString()}
-          <ul>
-            {Object.entries(confirmation.payload).filter(([, v]) => v).map(([k, v]) => (
-              <li key={k}><code>{k}</code>: {v}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </section>
-  );
-}
-

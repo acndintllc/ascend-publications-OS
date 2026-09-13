@@ -2,8 +2,8 @@
    OWNER/USER access model:
    - requireUser  → any authenticated user. Per-handler ownership check via
                     assertOwns() before mutating or reading per-slug data.
-   - requireOwner → owner-only admin surfaces (vendors / ISBNs / KDP /
-                    governance / distribution queue / system reports). */
+   - requireOwner → owner-only admin surfaces (ISBNs / export packaging /
+                    system reports). */
 import { createServerFn } from "@tanstack/react-start";
 import { requireUser, requireOwner } from "@/integrations/supabase/role-middleware";
 import { scopeSlugForUser } from "@/lib/owner";
@@ -371,121 +371,6 @@ const queueState = z.enum([
   "queued","processing","blocked","ready","submitted","failed",
 ]);
 
-export const listDistributionQueue = createServerFn({ method: "GET" })
-  .middleware([requireOwner])
-  .inputValidator((d: { slug?: string }) =>
-    z.object({ slug: z.string().optional() }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const q = await import("@/publication/queue.server");
-    return q.listQueue(data.slug);
-  });
-
-export const enqueueDistribution = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      target: z.string(),
-      blockers: z.array(z.string()).optional(),
-      notes: z.string().nullable().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const q = await import("@/publication/queue.server");
-    const p = await import("@/publication/persistence.server");
-    const row = await q.enqueue({
-      slug: data.slug,
-      target: data.target,
-      state: (data.blockers?.length ?? 0) > 0 ? "blocked" : "queued",
-      blockers: data.blockers ?? [],
-      notes: data.notes ?? null,
-    });
-    await p.recordEvent({
-      slug: data.slug,
-      event_type: "export.requested",
-      payload: { target: data.target, queue_id: row.id, state: row.state },
-    });
-    return row;
-  });
-
-export const updateDistributionEntry = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      slug: z.string(),
-      state: queueState.optional(),
-      blockers: z.array(z.string()).optional(),
-      artifact_url: z.string().url().nullable().optional(),
-      notes: z.string().nullable().optional(),
-      submitted: z.boolean().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const q = await import("@/publication/queue.server");
-    const p = await import("@/publication/persistence.server");
-    const patch: Record<string, unknown> = {};
-    if (data.state) patch.state = data.state;
-    if (data.blockers) patch.blockers = data.blockers;
-    if (data.artifact_url !== undefined) patch.artifact_url = data.artifact_url;
-    if (data.notes !== undefined) patch.notes = data.notes;
-    if (data.submitted) {
-      patch.state = "submitted";
-      patch.submitted_at = new Date().toISOString();
-    }
-    const row = await q.updateQueue(data.id, patch as never);
-    await p.recordEvent({
-      slug: data.slug,
-      event_type: "export.requested",
-      payload: { queue_id: row.id, state: row.state, transition: true },
-    });
-
-    if (row.state === "ready" && !row.artifact_url) {
-      try {
-        const { runArtifactGenerationForSlug } = await import("@/publication/runner-orchestrator.server");
-        const result = await runArtifactGenerationForSlug({
-          slug: data.slug,
-          storeTargets: [row.target as never],
-          sourceQueueId: row.id,
-          actor: "auto-prepare",
-        });
-        if (result.packageUrl) {
-          const updated = await q.updateQueue(row.id, { artifact_url: result.packageUrl } as never);
-          await p.recordEvent({
-            slug: data.slug,
-            event_type: "export.requested",
-            payload: {
-              queue_id: row.id,
-              auto_prepared: true,
-              artifact_count: result.artifacts.length,
-              package_url: result.packageUrl,
-            },
-          });
-          return updated;
-        }
-      } catch (e) {
-        await p.recordEvent({
-          slug: data.slug,
-          event_type: "export.requested",
-          payload: { queue_id: row.id, auto_prepare_failed: true, error: String(e) },
-        });
-      }
-    }
-    return row;
-  });
-
-export const removeDistributionEntry = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const q = await import("@/publication/queue.server");
-    await q.deleteQueueEntry(data.id);
-    return { ok: true };
-  });
-
 /* ─── Phase 13A/B — Artifact generation + registry ─────────────────── */
 
 export const generatePublicationArtifacts = createServerFn({ method: "POST" })
@@ -537,32 +422,6 @@ export const signArtifactUrl = createServerFn({ method: "POST" })
 /* ─── PTL-026 Phase 15A — Reference external PDF runner ───────────── */
 
 const runnerModeEnum = z.enum(["ok", "invalid_signature", "missing_artifact", "failed_generation"]);
-
-export const runReferencePdfRunner = createServerFn({ method: "POST" })
-  .middleware([requireUser])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      sourceQueueId: z.string().uuid().nullable().optional(),
-      mode: runnerModeEnum.optional(),
-      actor: z.string().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const p = await import("@/publication/persistence.server");
-    await p.assertOwns(data.slug, context.userId, context.isOwner);
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const req = getRequest();
-    const origin = new URL(req.url).origin;
-    const { runReferencePdf } = await import("@/publication/reference-runner.server");
-    return runReferencePdf({
-      slug: data.slug,
-      origin,
-      sourceQueueId: data.sourceQueueId ?? null,
-      mode: data.mode ?? "ok",
-      actor: data.actor,
-    });
-  });
 
 /* ─── PTL-025 Phase 14B — ISBN registry — OWNER-only ──────────────── */
 
@@ -624,100 +483,6 @@ export const deleteIsbn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/* ─── PTL-025 Phase 14D — Vendor server fns — OWNER-only ─────────── */
-
-export const listVendors = createServerFn({ method: "GET" })
-  .middleware([requireOwner]).handler(async () => {
-  const r = await import("@/publication/registry-extra.server");
-  return r.listVendors();
-});
-
-export const upsertVendor = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid().optional(),
-      platform: z.string(),
-      account_id: z.string().nullable().optional(),
-      label: z.string().min(1),
-      settings: z.record(z.string(), z.any()).optional(),
-      credential_ref: z.string().nullable().optional(),
-      submission_prefs: z.record(z.string(), z.any()).optional(),
-      enabled: z.boolean().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const r = await import("@/publication/registry-extra.server");
-    return r.upsertVendor(data as never);
-  });
-
-export const deleteVendor = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
-    const r = await import("@/publication/registry-extra.server");
-    await r.deleteVendor(data.id);
-    return { ok: true };
-  });
-
-/* ─── PTL-025 Phase 14C — Submission server fns — OWNER-only ─────── */
-
-export const listSubmissions = createServerFn({ method: "GET" })
-  .middleware([requireOwner])
-  .inputValidator((d: { slug?: string }) => z.object({ slug: z.string().optional() }).parse(d))
-  .handler(async ({ data }) => {
-    const r = await import("@/publication/registry-extra.server");
-    return r.listSubmissions(data.slug);
-  });
-
-export const createSubmission = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      platform: z.string(),
-      vendor_id: z.string().uuid().nullable().optional(),
-      queue_id: z.string().uuid().nullable().optional(),
-      isbn: z.string().nullable().optional(),
-      notes: z.string().nullable().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const r = await import("@/publication/registry-extra.server");
-    const row = await r.createSubmission(data);
-    const p = await import("@/publication/persistence.server");
-    await p.recordEvent({
-      slug: data.slug,
-      event_type: "export.requested",
-      payload: { submission_id: row.id, platform: data.platform, state: "pending" },
-    });
-    return row;
-  });
-
-export const updateSubmission = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      slug: z.string(),
-      status: z.enum(["pending","submitted","accepted","rejected","published","withdrawn"]).optional(),
-      notes: z.string().nullable().optional(),
-      response_payload: z.record(z.string(), z.any()).optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const r = await import("@/publication/registry-extra.server");
-    const { id, slug, ...patch } = data;
-    const row = await r.updateSubmission(id, patch as never);
-    const p = await import("@/publication/persistence.server");
-    await p.recordEvent({
-      slug,
-      event_type: "export.requested",
-      payload: { submission_id: row.id, state: row.status, transition: true },
-    });
-    return row;
-  });
-
 /* ─── PTL-025 Phase 14F — Publication audit ───────────────────────── */
 
 export const auditPublicationFn = createServerFn({ method: "GET" })
@@ -729,56 +494,6 @@ export const auditPublicationFn = createServerFn({ method: "GET" })
     const { auditPublication } = await import("@/publication/audit.server");
     return auditPublication(data.slug);
   });
-
-/* ─── PTL-027 Phase 16A — Reference external KFX runner ───────────── */
-
-export const runReferenceKfxRunner = createServerFn({ method: "POST" })
-  .middleware([requireUser])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      sourceQueueId: z.string().uuid().nullable().optional(),
-      mode: runnerModeEnum.optional(),
-      actor: z.string().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const p = await import("@/publication/persistence.server");
-    await p.assertOwns(data.slug, context.userId, context.isOwner);
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const req = getRequest();
-    const origin = new URL(req.url).origin;
-    const { runReferenceKfx } = await import("@/publication/reference-runner-kfx.server");
-    return runReferenceKfx({
-      slug: data.slug,
-      origin,
-      sourceQueueId: data.sourceQueueId ?? null,
-      mode: data.mode ?? "ok",
-      actor: data.actor,
-    });
-  });
-
-/* ─── PTL-027 Phase 16B — Submission package builder — OWNER ──────── */
-
-export const buildPublicationSubmissionPackage = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({ slug: z.string(), platform: z.string() }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const { buildSubmissionPackage } = await import("@/publication/submission-package.server");
-    return buildSubmissionPackage(data.slug, data.platform as never);
-  });
-
-/* ─── PTL-027 Phase 16C — Vendor secret report — OWNER ────────────── */
-
-export const reportVendorSecretsFn = createServerFn({ method: "GET" })
-  .middleware([requireOwner]).handler(async () => {
-  const r = await import("@/publication/registry-extra.server");
-  const { reportVendorSecrets } = await import("@/publication/vendor-secrets.server");
-  const vendors = await r.listVendors();
-  return reportVendorSecrets(vendors);
-});
 
 /* ─── PTL-027 Phase 16D — ISBN lifecycle transition — OWNER ───────── */
 
@@ -810,131 +525,6 @@ export const transitionIsbn = createServerFn({ method: "POST" })
     return row;
   });
 
-/* ─── PTL-028 Phase 17A — External KindleGen runner ───────────────── */
-
-export const runExternalKindlegenRunner = createServerFn({ method: "POST" })
-  .middleware([requireUser])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      sourceQueueId: z.string().uuid().nullable().optional(),
-      actor: z.string().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const p = await import("@/publication/persistence.server");
-    await p.assertOwns(data.slug, context.userId, context.isOwner);
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const req = getRequest();
-    const origin = new URL(req.url).origin;
-    const { runExternalKindlegen } = await import("@/publication/runner-external-kindlegen.server");
-    return runExternalKindlegen({
-      slug: data.slug,
-      origin,
-      sourceQueueId: data.sourceQueueId ?? null,
-      actor: data.actor,
-    });
-  });
-
-export const listRunnerProvidersFn = createServerFn({ method: "GET" })
-  .middleware([requireOwner]).handler(async () => {
-  const { listProviders } = await import("@/publication/runner-provider");
-  return listProviders().map((p) => ({
-    id: p.id, kind: p.kind, label: p.label,
-    available: p.available(), fallback: p.fallback,
-  }));
-});
-
-/* ─── PTL-028 Phase 17B — KDP submission adapter — OWNER ──────────── */
-
-export const runKdpAdapterFn = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({ slug: z.string(), live: z.boolean().optional() }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const { runKdpAdapter } = await import("@/publication/kdp-adapter.server");
-    return runKdpAdapter({ slug: data.slug, live: data.live ?? false });
-  });
-
-/* ─── PTL-028 Phase 17C — Publication dry-run ─────────────────────── */
-
-export const runPublicationDryRunFn = createServerFn({ method: "POST" })
-  .middleware([requireUser])
-  .inputValidator((d: unknown) =>
-    z.object({ slug: z.string(), forceRegenerate: z.boolean().optional() }).parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const p = await import("@/publication/persistence.server");
-    await p.assertOwns(data.slug, context.userId, context.isOwner);
-    const { runPublicationDryRun } = await import("@/publication/dry-run.server");
-    return runPublicationDryRun({ slug: data.slug, forceRegenerate: data.forceRegenerate });
-  });
-
-/* ─── PTL-029 Phase 18B — Kindle provider failover ────────────────── */
-
-export const runKindleFailoverFn = createServerFn({ method: "POST" })
-  .middleware([requireUser])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      forceFallback: z.boolean().optional(),
-      sourceQueueId: z.string().uuid().nullable().optional(),
-      actor: z.string().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const p = await import("@/publication/persistence.server");
-    await p.assertOwns(data.slug, context.userId, context.isOwner);
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const origin = new URL(getRequest().url).origin;
-    const { runKindleWithFailover } = await import("@/publication/kindle-orchestrator.server");
-    return runKindleWithFailover({
-      slug: data.slug, origin,
-      sourceQueueId: data.sourceQueueId ?? null,
-      actor: data.actor, forceFallback: data.forceFallback,
-    });
-  });
-
-export const kindleProviderHealthFn = createServerFn({ method: "GET" })
-  .middleware([requireOwner]).handler(async () => {
-  const { kindleProviderHealth } = await import("@/publication/kindle-orchestrator.server");
-  return kindleProviderHealth();
-});
-
-/* ─── PTL-029 Phase 18F — Governance gate — OWNER ─────────────────── */
-
-export const evaluateGovernanceGateFn = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(), platform: z.string(),
-      liveRequested: z.boolean().optional(),
-      approver: z.string().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const { evaluateGovernanceGate } = await import("@/publication/governance.server");
-    return evaluateGovernanceGate(data);
-  });
-
-/* ─── PTL-029 Phase 18A — Live KDP submission — OWNER ─────────────── */
-
-export const runLiveKdpSubmissionFn = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) =>
-    z.object({
-      slug: z.string(),
-      liveEnabled: z.boolean(),
-      approver: z.string().optional(),
-      submissionId: z.string().uuid().optional(),
-    }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const { runLiveKdpSubmission } = await import("@/publication/kdp-live.server");
-    return runLiveKdpSubmission(data);
-  });
-
 /* ─── PTL-029 Phase 18C — Readiness automation ────────────────────── */
 
 export const revalidateReadinessFn = createServerFn({ method: "POST" })
@@ -957,44 +547,25 @@ export const generateKdpDistributionPackage = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { buildKdpDistributionPackage } = await import("@/publication/kdp-package.server");
     const p = await import("@/publication/persistence.server");
-    const before = await p.getRecord(data.slug);
-    const wasPublished = before?.status === "published";
     const result = await buildKdpDistributionPackage(data.slug);
 
-    // Auto-advance lifecycle to package_generated when legal. If the
-    // publication was already Published, roll back to package_generated so
-    // the operator can re-upload the new package and re-confirm — this is
-    // the republish path.
+    // Auto-advance lifecycle to package_generated when legal.
     const rec = await p.getRecord(data.slug);
     if (rec && rec.status !== "package_generated") {
       const { canTransition } = await import("@/publication/status");
       if (canTransition(rec.status, "package_generated")) {
         await p.transitionStatus(data.slug, "package_generated",
-          wasPublished
-            ? `Redistributing: KDP package v${result.packageVersion} regenerated`
-            : `KDP package v${result.packageVersion} generated`);
+          `KDP package v${result.packageVersion} generated`);
         await p.recordEvent({
           slug: data.slug,
           event_type: "status.changed",
           payload: {
             from: rec.status, to: "package_generated",
-            trigger: wasPublished ? "kdp.package.redistributed" : "kdp.package.generated",
+            trigger: "kdp.package.generated",
           },
           ownerId: rec.owner_id,
         });
       }
-    }
-    if (wasPublished) {
-      await p.recordEvent({
-        slug: data.slug,
-        event_type: "publication.redistributed",
-        payload: {
-          package_version: result.packageVersion,
-          record_version: result.recordVersion,
-          generated_at: result.generatedAt,
-        },
-        ownerId: rec?.owner_id ?? before?.owner_id ?? null,
-      });
     }
     return result;
   });
@@ -1018,66 +589,15 @@ const markPublishedSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
 });
 
-export const markAsPublishedFn = createServerFn({ method: "POST" })
-  .middleware([requireOwner])
-  .inputValidator((d: unknown) => markPublishedSchema.parse(d))
-  .handler(async ({ data }) => {
-    const p = await import("@/publication/persistence.server");
-    const rec = await p.getRecord(data.slug);
-    if (!rec) throw new Error(`Unknown publication: ${data.slug}`);
-    if (rec.status !== "published") {
-      const { canTransition } = await import("@/publication/status");
-      if (!canTransition(rec.status, "published")) {
-        throw new Error(
-          `Cannot mark as published from status "${rec.status}". Generate the KDP package first.`,
-        );
-      }
-      await p.transitionStatus(data.slug, "published",
-        data.notes ?? "Marked as published by operator");
-    }
-    await p.recordEvent({
-      slug: data.slug,
-      event_type: "publication.confirmed",
-      payload: {
-        asin: data.asin ?? null,
-        publication_url: data.publication_url ?? null,
-        publication_date: data.publication_date ?? null,
-        vendor_reference: data.vendor_reference ?? null,
-        notes: data.notes ?? null,
-      },
-      ownerId: rec.owner_id,
-    });
-    return { ok: true };
-  });
-
-export const latestPublicationConfirmationFn = createServerFn({ method: "GET" })
-  .middleware([requireOwner])
-  .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const p = await import("@/publication/persistence.server");
-    const events = await p.listEvents(data.slug, 200);
-    const confirmed = events.find((e) => e.event_type === "publication.confirmed");
-    if (!confirmed) return null;
-    return {
-      confirmedAt: confirmed.created_at,
-      payload: (confirmed.payload ?? {}) as Record<string, string | null>,
-    };
-  });
-
-/** Publication distribution history — package generations + confirmations +
- *  redistributions. Newest first. Used by the Command Center to show a
- *  visible audit trail after Publish. */
+/** Export-package history — package generations, newest first. Used by the
+ *  Command Center to show a visible audit trail of produced export files. */
 export const listPublicationHistoryFn = createServerFn({ method: "GET" })
   .middleware([requireOwner])
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const p = await import("@/publication/persistence.server");
     const events = await p.listEvents(data.slug, 400);
-    const kinds = new Set([
-      "kdp.package.generated",
-      "publication.confirmed",
-      "publication.redistributed",
-    ]);
+    const kinds = new Set(["kdp.package.generated"]);
     return events
       .filter((e) => kinds.has(e.event_type))
       .map((e) => ({

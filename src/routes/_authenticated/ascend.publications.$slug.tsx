@@ -292,7 +292,6 @@ function PublicationDetailRoute() {
           <Link to="/ascend/publications">← Operations</Link>
           <Link to="/ascend/reader/$slug" params={{ slug }}>open reader →</Link>
           <Link to="/ascend/validate/$slug" params={{ slug }}>audit →</Link>
-          <Link to="/ascend/publications/$slug/distribute" params={{ slug }}>distribute →</Link>
           <Link to="/ascend/publications/$slug/command" params={{ slug }}>command center →</Link>
         </nav>
         <h1

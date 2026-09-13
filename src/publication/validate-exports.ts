@@ -1,6 +1,7 @@
 /* PTL-025 Phase 11D — Export validation surface.
    Lightweight pure-JS checks on the artifacts that buildEpub/buildPackage
-   produce. Real EPUBCheck / kindlegen validation runs off-Worker. */
+   produce. Validation is in-Worker only — the OS ends at the export file
+   and hands nothing to an external service. */
 import type { EpubProfile } from "@/manuscript/package/epub-zip";
 import { buildEpub } from "@/manuscript/package/epub-zip";
 import type { ACADocument } from "@/manuscript/schema/aca";

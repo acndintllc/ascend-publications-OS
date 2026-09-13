@@ -1,4 +1,5 @@
-/* PTL-025 Phase 14F — First-publication readiness audit. Server-only. */
+/* PTL-025 Phase 14F — First-publication readiness audit. Server-only.
+   Scope ends at the export file: no vendor, submission, or queue facts. */
 import { resolveManuscriptForSlug } from "@/manuscript/resolver.server";
 import { enrich } from "@/manuscript/pipeline";
 import { getProfile } from "./profiles";
@@ -9,17 +10,14 @@ import { evaluateIsbnCoverage, ISBN_REQUIRED_TARGETS } from "./isbn";
 import {
   getRecord, getMetadata, listAssets,
 } from "./persistence.server";
-import { listIsbns, listSubmissions, listVendors } from "./registry-extra.server";
-import { listQueue } from "./queue.server";
+import { listIsbns } from "./registry-extra.server";
 import { listArtifacts } from "./runner.server";
-import { reportVendorSecrets, type VendorSecretReport } from "./vendor-secrets.server";
 
 export interface PublicationAudit {
   slug: string;
   readiness: ReadinessReport | null;
   blockers: string[];
   warnings: string[];
-  vendorSecrets: VendorSecretReport[];
   facts: {
     hasRecord: boolean;
     hasMetadata: boolean;
@@ -30,11 +28,7 @@ export interface PublicationAudit {
     hasEpubArtifact: boolean;
     hasKindleArtifact: boolean;
     hasPdfArtifact: boolean;
-    queueRows: number;
-    submissionRows: number;
     isbnCount: number;
-    vendorCount: number;
-    vendorsConfigured: number;
     targetsMissingIsbn: string[];
   };
 }
@@ -44,14 +38,11 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
   const blockers: string[] = [];
   const warnings: string[] = [];
 
-  const [record, metaRow, assets, isbns, queue, submissions, vendors, artifacts] = await Promise.all([
+  const [record, metaRow, assets, isbns, artifacts] = await Promise.all([
     getRecord(slug),
     getMetadata(slug),
     listAssets(slug),
     listIsbns(slug),
-    listQueue(slug),
-    listSubmissions(slug),
-    listVendors(),
     listArtifacts(slug),
   ]);
 
@@ -59,13 +50,11 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
     blockers.push("No publication record");
     return {
       slug, readiness: null, blockers, warnings,
-      vendorSecrets: [],
       facts: {
         hasRecord: false, hasMetadata: false, assetCount: 0, activeAssetCount: 0,
         artifactCount: 0, activeArtifactCount: 0,
         hasEpubArtifact: false, hasKindleArtifact: false, hasPdfArtifact: false,
-        queueRows: 0, submissionRows: 0,
-        isbnCount: 0, vendorCount: 0, vendorsConfigured: 0, targetsMissingIsbn: [],
+        isbnCount: 0, targetsMissingIsbn: [],
       },
     };
   }
@@ -145,22 +134,6 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
     if (targets.includes("kindle") && !haveKindle) blockers.push("Missing active Kindle artifact");
   }
 
-  // Vendor presence per platform with submissions
-  const vendorSecrets = reportVendorSecrets(vendors);
-  if (submissions.length > 0) {
-    const platforms = new Set(submissions.map((s) => s.platform));
-    for (const p of platforms) {
-      const v = vendors.find((v) => v.platform === p && v.enabled);
-      if (!v) warnings.push(`No enabled vendor configured for ${p}`);
-      else {
-        const sec = vendorSecrets.find((s) => s.vendor_id === v.id);
-        if (!sec?.configured) blockers.push(`Vendor "${v.label}" (${p}) credential secret missing: set ${sec?.rotation_target ?? "credential_ref"}`);
-      }
-    }
-  } else {
-    warnings.push("No submissions queued — create at least one per target platform");
-  }
-
   // Lifecycle gate
   if (record.status !== "ready" && record.status !== "published") {
     blockers.push(`Publication status "${record.status}" not at ready/published`);
@@ -175,7 +148,6 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
     readiness,
     blockers: Array.from(new Set([...(readiness?.blockers ?? []), ...blockers])),
     warnings: Array.from(new Set([...(readiness?.recommendations ?? []), ...warnings])),
-    vendorSecrets,
     facts: {
       hasRecord: true,
       hasMetadata: !!metaRow,
@@ -186,11 +158,7 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
       hasEpubArtifact: haveEpub,
       hasKindleArtifact: haveKindle,
       hasPdfArtifact: havePdf,
-      queueRows: queue.length,
-      submissionRows: submissions.length,
       isbnCount: isbns.length,
-      vendorCount: vendors.length,
-      vendorsConfigured: vendorSecrets.filter((s) => s.configured).length,
       targetsMissingIsbn,
     },
   };

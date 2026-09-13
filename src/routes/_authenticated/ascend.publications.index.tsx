@@ -233,7 +233,6 @@ function PublicationsRoute() {
                     </div>
                     <div style={{ marginBlockStart: 4, display: "flex", gap: 12 }}>
                       <Link to="/ascend/reader/$slug" params={{ slug: row.slug }}>read →</Link>
-                      <Link to="/ascend/publications/$slug/distribute" params={{ slug: row.slug }}>distribute →</Link>
                     </div>
                   </td>
                   <td style={cell}>

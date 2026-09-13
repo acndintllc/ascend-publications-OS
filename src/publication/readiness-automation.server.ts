@@ -13,7 +13,6 @@ export interface ReadinessAutomationResult {
   summary: {
     activeArtifactCount: number;
     activeAssetCount: number;
-    vendorsConfigured: number;
     isbnCount: number;
     targetsMissingIsbn: string[];
   };
@@ -30,7 +29,6 @@ export async function revalidateReadiness(slug: string, trigger = "status.change
     summary: {
       activeArtifactCount: audit.facts.activeArtifactCount,
       activeAssetCount: audit.facts.activeAssetCount,
-      vendorsConfigured: audit.facts.vendorsConfigured,
       isbnCount: audit.facts.isbnCount,
       targetsMissingIsbn: audit.facts.targetsMissingIsbn,
     },
@@ -43,7 +41,6 @@ export async function revalidateReadiness(slug: string, trigger = "status.change
       blockerCount: audit.blockers.length,
       warningCount: audit.warnings.length,
       activeArtifactCount: audit.facts.activeArtifactCount,
-      vendorsConfigured: audit.facts.vendorsConfigured,
       isbnCount: audit.facts.isbnCount,
     },
   });

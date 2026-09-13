@@ -9,35 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedAscendSubmitRouteImport } from './routes/_authenticated/ascend.submit'
-import { Route as AuthenticatedAscendProofRouteImport } from './routes/_authenticated/ascend.proof'
-import { Route as AuthenticatedAscendLiveRouteImport } from './routes/_authenticated/ascend.live'
 import { Route as AuthenticatedAscendLibraryRouteImport } from './routes/_authenticated/ascend.library'
-import { Route as AuthenticatedAscendPublicationsIndexRouteImport } from './routes/_authenticated/ascend.publications.index'
-import { Route as AuthenticatedAscendManuscriptsIndexRouteImport } from './routes/_authenticated/ascend.manuscripts.index'
+import { Route as AuthenticatedAscendLiveRouteImport } from './routes/_authenticated/ascend.live'
+import { Route as AuthenticatedAscendProofRouteImport } from './routes/_authenticated/ascend.proof'
+import { Route as AuthenticatedAscendSubmitRouteImport } from './routes/_authenticated/ascend.submit'
 import { Route as AuthenticatedAscendAdminIndexRouteImport } from './routes/_authenticated/ascend.admin.index'
-import { Route as ApiPublicRenderPdfRouteImport } from './routes/api/public/render.pdf'
-import { Route as ApiPublicRenderKindleRouteImport } from './routes/api/public/render.kindle'
-import { Route as ApiPublicRenderCallbackRouteImport } from './routes/api/public/render.callback'
-import { Route as AuthenticatedAscendValidateSlugRouteImport } from './routes/_authenticated/ascend.validate.$slug'
-import { Route as AuthenticatedAscendReaderSlugRouteImport } from './routes/_authenticated/ascend.reader.$slug'
-import { Route as AuthenticatedAscendPublicationsSlugRouteImport } from './routes/_authenticated/ascend.publications.$slug'
-import { Route as AuthenticatedAscendPackagesSlugRouteImport } from './routes/_authenticated/ascend.packages.$slug'
-import { Route as AuthenticatedAscendManuscriptsNewRouteImport } from './routes/_authenticated/ascend.manuscripts.new'
-import { Route as AuthenticatedAscendManuscriptsIdRouteImport } from './routes/_authenticated/ascend.manuscripts.$id'
-import { Route as AuthenticatedAscendAdminQueueRouteImport } from './routes/_authenticated/ascend.admin.queue'
 import { Route as AuthenticatedAscendAdminManuscriptsRouteImport } from './routes/_authenticated/ascend.admin.manuscripts'
-import { Route as AuthenticatedAscendPublicationsSlugDistributeRouteImport } from './routes/_authenticated/ascend.publications.$slug.distribute'
+import { Route as AuthenticatedAscendAdminQueueRouteImport } from './routes/_authenticated/ascend.admin.queue'
+import { Route as AuthenticatedAscendManuscriptsIndexRouteImport } from './routes/_authenticated/ascend.manuscripts.index'
+import { Route as AuthenticatedAscendManuscriptsIdRouteImport } from './routes/_authenticated/ascend.manuscripts.$id'
+import { Route as AuthenticatedAscendManuscriptsNewRouteImport } from './routes/_authenticated/ascend.manuscripts.new'
+import { Route as AuthenticatedAscendPackagesSlugRouteImport } from './routes/_authenticated/ascend.packages.$slug'
+import { Route as AuthenticatedAscendPublicationsIndexRouteImport } from './routes/_authenticated/ascend.publications.index'
+import { Route as AuthenticatedAscendPublicationsSlugRouteImport } from './routes/_authenticated/ascend.publications.$slug'
+import { Route as AuthenticatedAscendReaderSlugRouteImport } from './routes/_authenticated/ascend.reader.$slug'
+import { Route as AuthenticatedAscendValidateSlugRouteImport } from './routes/_authenticated/ascend.validate.$slug'
 import { Route as AuthenticatedAscendPublicationsSlugCommandRouteImport } from './routes/_authenticated/ascend.publications.$slug.command'
 
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -45,35 +45,14 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAscendSubmitRoute =
-  AuthenticatedAscendSubmitRouteImport.update({
-    id: '/ascend/submit',
-    path: '/ascend/submit',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendProofRoute =
-  AuthenticatedAscendProofRouteImport.update({
-    id: '/ascend/proof',
-    path: '/ascend/proof',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendLiveRoute = AuthenticatedAscendLiveRouteImport.update({
-  id: '/ascend/live',
-  path: '/ascend/live',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAscendLibraryRoute =
@@ -82,16 +61,21 @@ const AuthenticatedAscendLibraryRoute =
     path: '/ascend/library',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAscendPublicationsIndexRoute =
-  AuthenticatedAscendPublicationsIndexRouteImport.update({
-    id: '/ascend/publications/',
-    path: '/ascend/publications/',
+const AuthenticatedAscendLiveRoute = AuthenticatedAscendLiveRouteImport.update({
+  id: '/ascend/live',
+  path: '/ascend/live',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAscendProofRoute =
+  AuthenticatedAscendProofRouteImport.update({
+    id: '/ascend/proof',
+    path: '/ascend/proof',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAscendManuscriptsIndexRoute =
-  AuthenticatedAscendManuscriptsIndexRouteImport.update({
-    id: '/ascend/manuscripts/',
-    path: '/ascend/manuscripts/',
+const AuthenticatedAscendSubmitRoute =
+  AuthenticatedAscendSubmitRouteImport.update({
+    id: '/ascend/submit',
+    path: '/ascend/submit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAscendAdminIndexRoute =
@@ -100,55 +84,10 @@ const AuthenticatedAscendAdminIndexRoute =
     path: '/ascend/admin/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicRenderPdfRoute = ApiPublicRenderPdfRouteImport.update({
-  id: '/api/public/render/pdf',
-  path: '/api/public/render/pdf',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicRenderKindleRoute = ApiPublicRenderKindleRouteImport.update({
-  id: '/api/public/render/kindle',
-  path: '/api/public/render/kindle',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicRenderCallbackRoute = ApiPublicRenderCallbackRouteImport.update({
-  id: '/api/public/render/callback',
-  path: '/api/public/render/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAscendValidateSlugRoute =
-  AuthenticatedAscendValidateSlugRouteImport.update({
-    id: '/ascend/validate/$slug',
-    path: '/ascend/validate/$slug',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendReaderSlugRoute =
-  AuthenticatedAscendReaderSlugRouteImport.update({
-    id: '/ascend/reader/$slug',
-    path: '/ascend/reader/$slug',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendPublicationsSlugRoute =
-  AuthenticatedAscendPublicationsSlugRouteImport.update({
-    id: '/ascend/publications/$slug',
-    path: '/ascend/publications/$slug',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendPackagesSlugRoute =
-  AuthenticatedAscendPackagesSlugRouteImport.update({
-    id: '/ascend/packages/$slug',
-    path: '/ascend/packages/$slug',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendManuscriptsNewRoute =
-  AuthenticatedAscendManuscriptsNewRouteImport.update({
-    id: '/ascend/manuscripts/new',
-    path: '/ascend/manuscripts/new',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAscendManuscriptsIdRoute =
-  AuthenticatedAscendManuscriptsIdRouteImport.update({
-    id: '/ascend/manuscripts/$id',
-    path: '/ascend/manuscripts/$id',
+const AuthenticatedAscendAdminManuscriptsRoute =
+  AuthenticatedAscendAdminManuscriptsRouteImport.update({
+    id: '/ascend/admin/manuscripts',
+    path: '/ascend/admin/manuscripts',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAscendAdminQueueRoute =
@@ -157,17 +96,53 @@ const AuthenticatedAscendAdminQueueRoute =
     path: '/ascend/admin/queue',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAscendAdminManuscriptsRoute =
-  AuthenticatedAscendAdminManuscriptsRouteImport.update({
-    id: '/ascend/admin/manuscripts',
-    path: '/ascend/admin/manuscripts',
+const AuthenticatedAscendManuscriptsIndexRoute =
+  AuthenticatedAscendManuscriptsIndexRouteImport.update({
+    id: '/ascend/manuscripts/',
+    path: '/ascend/manuscripts/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAscendPublicationsSlugDistributeRoute =
-  AuthenticatedAscendPublicationsSlugDistributeRouteImport.update({
-    id: '/distribute',
-    path: '/distribute',
-    getParentRoute: () => AuthenticatedAscendPublicationsSlugRoute,
+const AuthenticatedAscendManuscriptsIdRoute =
+  AuthenticatedAscendManuscriptsIdRouteImport.update({
+    id: '/ascend/manuscripts/$id',
+    path: '/ascend/manuscripts/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAscendManuscriptsNewRoute =
+  AuthenticatedAscendManuscriptsNewRouteImport.update({
+    id: '/ascend/manuscripts/new',
+    path: '/ascend/manuscripts/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAscendPackagesSlugRoute =
+  AuthenticatedAscendPackagesSlugRouteImport.update({
+    id: '/ascend/packages/$slug',
+    path: '/ascend/packages/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAscendPublicationsIndexRoute =
+  AuthenticatedAscendPublicationsIndexRouteImport.update({
+    id: '/ascend/publications/',
+    path: '/ascend/publications/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAscendPublicationsSlugRoute =
+  AuthenticatedAscendPublicationsSlugRouteImport.update({
+    id: '/ascend/publications/$slug',
+    path: '/ascend/publications/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAscendReaderSlugRoute =
+  AuthenticatedAscendReaderSlugRouteImport.update({
+    id: '/ascend/reader/$slug',
+    path: '/ascend/reader/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAscendValidateSlugRoute =
+  AuthenticatedAscendValidateSlugRouteImport.update({
+    id: '/ascend/validate/$slug',
+    path: '/ascend/validate/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAscendPublicationsSlugCommandRoute =
   AuthenticatedAscendPublicationsSlugCommandRouteImport.update({
@@ -193,14 +168,10 @@ export interface FileRoutesByFullPath {
   '/ascend/publications/$slug': typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   '/ascend/reader/$slug': typeof AuthenticatedAscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AuthenticatedAscendValidateSlugRoute
-  '/api/public/render/callback': typeof ApiPublicRenderCallbackRoute
-  '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
-  '/api/public/render/pdf': typeof ApiPublicRenderPdfRoute
   '/ascend/admin/': typeof AuthenticatedAscendAdminIndexRoute
   '/ascend/manuscripts/': typeof AuthenticatedAscendManuscriptsIndexRoute
   '/ascend/publications/': typeof AuthenticatedAscendPublicationsIndexRoute
   '/ascend/publications/$slug/command': typeof AuthenticatedAscendPublicationsSlugCommandRoute
-  '/ascend/publications/$slug/distribute': typeof AuthenticatedAscendPublicationsSlugDistributeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -219,14 +190,10 @@ export interface FileRoutesByTo {
   '/ascend/publications/$slug': typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   '/ascend/reader/$slug': typeof AuthenticatedAscendReaderSlugRoute
   '/ascend/validate/$slug': typeof AuthenticatedAscendValidateSlugRoute
-  '/api/public/render/callback': typeof ApiPublicRenderCallbackRoute
-  '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
-  '/api/public/render/pdf': typeof ApiPublicRenderPdfRoute
   '/ascend/admin': typeof AuthenticatedAscendAdminIndexRoute
   '/ascend/manuscripts': typeof AuthenticatedAscendManuscriptsIndexRoute
   '/ascend/publications': typeof AuthenticatedAscendPublicationsIndexRoute
   '/ascend/publications/$slug/command': typeof AuthenticatedAscendPublicationsSlugCommandRoute
-  '/ascend/publications/$slug/distribute': typeof AuthenticatedAscendPublicationsSlugDistributeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -247,14 +214,10 @@ export interface FileRoutesById {
   '/_authenticated/ascend/publications/$slug': typeof AuthenticatedAscendPublicationsSlugRouteWithChildren
   '/_authenticated/ascend/reader/$slug': typeof AuthenticatedAscendReaderSlugRoute
   '/_authenticated/ascend/validate/$slug': typeof AuthenticatedAscendValidateSlugRoute
-  '/api/public/render/callback': typeof ApiPublicRenderCallbackRoute
-  '/api/public/render/kindle': typeof ApiPublicRenderKindleRoute
-  '/api/public/render/pdf': typeof ApiPublicRenderPdfRoute
   '/_authenticated/ascend/admin/': typeof AuthenticatedAscendAdminIndexRoute
   '/_authenticated/ascend/manuscripts/': typeof AuthenticatedAscendManuscriptsIndexRoute
   '/_authenticated/ascend/publications/': typeof AuthenticatedAscendPublicationsIndexRoute
   '/_authenticated/ascend/publications/$slug/command': typeof AuthenticatedAscendPublicationsSlugCommandRoute
-  '/_authenticated/ascend/publications/$slug/distribute': typeof AuthenticatedAscendPublicationsSlugDistributeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -275,14 +238,10 @@ export interface FileRouteTypes {
     | '/ascend/publications/$slug'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
-    | '/api/public/render/callback'
-    | '/api/public/render/kindle'
-    | '/api/public/render/pdf'
     | '/ascend/admin/'
     | '/ascend/manuscripts/'
     | '/ascend/publications/'
     | '/ascend/publications/$slug/command'
-    | '/ascend/publications/$slug/distribute'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -301,14 +260,10 @@ export interface FileRouteTypes {
     | '/ascend/publications/$slug'
     | '/ascend/reader/$slug'
     | '/ascend/validate/$slug'
-    | '/api/public/render/callback'
-    | '/api/public/render/kindle'
-    | '/api/public/render/pdf'
     | '/ascend/admin'
     | '/ascend/manuscripts'
     | '/ascend/publications'
     | '/ascend/publications/$slug/command'
-    | '/ascend/publications/$slug/distribute'
   id:
     | '__root__'
     | '/'
@@ -328,14 +283,10 @@ export interface FileRouteTypes {
     | '/_authenticated/ascend/publications/$slug'
     | '/_authenticated/ascend/reader/$slug'
     | '/_authenticated/ascend/validate/$slug'
-    | '/api/public/render/callback'
-    | '/api/public/render/kindle'
-    | '/api/public/render/pdf'
     | '/_authenticated/ascend/admin/'
     | '/_authenticated/ascend/manuscripts/'
     | '/_authenticated/ascend/publications/'
     | '/_authenticated/ascend/publications/$slug/command'
-    | '/_authenticated/ascend/publications/$slug/distribute'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -343,25 +294,15 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  ApiPublicRenderCallbackRoute: typeof ApiPublicRenderCallbackRoute
-  ApiPublicRenderKindleRoute: typeof ApiPublicRenderKindleRoute
-  ApiPublicRenderPdfRoute: typeof ApiPublicRenderPdfRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -371,11 +312,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -385,18 +333,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ascend/submit': {
-      id: '/_authenticated/ascend/submit'
-      path: '/ascend/submit'
-      fullPath: '/ascend/submit'
-      preLoaderRoute: typeof AuthenticatedAscendSubmitRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/proof': {
-      id: '/_authenticated/ascend/proof'
-      path: '/ascend/proof'
-      fullPath: '/ascend/proof'
-      preLoaderRoute: typeof AuthenticatedAscendProofRouteImport
+    '/_authenticated/ascend/library': {
+      id: '/_authenticated/ascend/library'
+      path: '/ascend/library'
+      fullPath: '/ascend/library'
+      preLoaderRoute: typeof AuthenticatedAscendLibraryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ascend/live': {
@@ -406,25 +347,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAscendLiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ascend/library': {
-      id: '/_authenticated/ascend/library'
-      path: '/ascend/library'
-      fullPath: '/ascend/library'
-      preLoaderRoute: typeof AuthenticatedAscendLibraryRouteImport
+    '/_authenticated/ascend/proof': {
+      id: '/_authenticated/ascend/proof'
+      path: '/ascend/proof'
+      fullPath: '/ascend/proof'
+      preLoaderRoute: typeof AuthenticatedAscendProofRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ascend/publications/': {
-      id: '/_authenticated/ascend/publications/'
-      path: '/ascend/publications'
-      fullPath: '/ascend/publications/'
-      preLoaderRoute: typeof AuthenticatedAscendPublicationsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/manuscripts/': {
-      id: '/_authenticated/ascend/manuscripts/'
-      path: '/ascend/manuscripts'
-      fullPath: '/ascend/manuscripts/'
-      preLoaderRoute: typeof AuthenticatedAscendManuscriptsIndexRouteImport
+    '/_authenticated/ascend/submit': {
+      id: '/_authenticated/ascend/submit'
+      path: '/ascend/submit'
+      fullPath: '/ascend/submit'
+      preLoaderRoute: typeof AuthenticatedAscendSubmitRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ascend/admin/': {
@@ -434,67 +368,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAscendAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/render/pdf': {
-      id: '/api/public/render/pdf'
-      path: '/api/public/render/pdf'
-      fullPath: '/api/public/render/pdf'
-      preLoaderRoute: typeof ApiPublicRenderPdfRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/render/kindle': {
-      id: '/api/public/render/kindle'
-      path: '/api/public/render/kindle'
-      fullPath: '/api/public/render/kindle'
-      preLoaderRoute: typeof ApiPublicRenderKindleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/render/callback': {
-      id: '/api/public/render/callback'
-      path: '/api/public/render/callback'
-      fullPath: '/api/public/render/callback'
-      preLoaderRoute: typeof ApiPublicRenderCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/ascend/validate/$slug': {
-      id: '/_authenticated/ascend/validate/$slug'
-      path: '/ascend/validate/$slug'
-      fullPath: '/ascend/validate/$slug'
-      preLoaderRoute: typeof AuthenticatedAscendValidateSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/reader/$slug': {
-      id: '/_authenticated/ascend/reader/$slug'
-      path: '/ascend/reader/$slug'
-      fullPath: '/ascend/reader/$slug'
-      preLoaderRoute: typeof AuthenticatedAscendReaderSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/publications/$slug': {
-      id: '/_authenticated/ascend/publications/$slug'
-      path: '/ascend/publications/$slug'
-      fullPath: '/ascend/publications/$slug'
-      preLoaderRoute: typeof AuthenticatedAscendPublicationsSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/packages/$slug': {
-      id: '/_authenticated/ascend/packages/$slug'
-      path: '/ascend/packages/$slug'
-      fullPath: '/ascend/packages/$slug'
-      preLoaderRoute: typeof AuthenticatedAscendPackagesSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/manuscripts/new': {
-      id: '/_authenticated/ascend/manuscripts/new'
-      path: '/ascend/manuscripts/new'
-      fullPath: '/ascend/manuscripts/new'
-      preLoaderRoute: typeof AuthenticatedAscendManuscriptsNewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ascend/manuscripts/$id': {
-      id: '/_authenticated/ascend/manuscripts/$id'
-      path: '/ascend/manuscripts/$id'
-      fullPath: '/ascend/manuscripts/$id'
-      preLoaderRoute: typeof AuthenticatedAscendManuscriptsIdRouteImport
+    '/_authenticated/ascend/admin/manuscripts': {
+      id: '/_authenticated/ascend/admin/manuscripts'
+      path: '/ascend/admin/manuscripts'
+      fullPath: '/ascend/admin/manuscripts'
+      preLoaderRoute: typeof AuthenticatedAscendAdminManuscriptsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ascend/admin/queue': {
@@ -504,19 +382,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAscendAdminQueueRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ascend/admin/manuscripts': {
-      id: '/_authenticated/ascend/admin/manuscripts'
-      path: '/ascend/admin/manuscripts'
-      fullPath: '/ascend/admin/manuscripts'
-      preLoaderRoute: typeof AuthenticatedAscendAdminManuscriptsRouteImport
+    '/_authenticated/ascend/manuscripts/': {
+      id: '/_authenticated/ascend/manuscripts/'
+      path: '/ascend/manuscripts'
+      fullPath: '/ascend/manuscripts/'
+      preLoaderRoute: typeof AuthenticatedAscendManuscriptsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ascend/publications/$slug/distribute': {
-      id: '/_authenticated/ascend/publications/$slug/distribute'
-      path: '/distribute'
-      fullPath: '/ascend/publications/$slug/distribute'
-      preLoaderRoute: typeof AuthenticatedAscendPublicationsSlugDistributeRouteImport
-      parentRoute: typeof AuthenticatedAscendPublicationsSlugRoute
+    '/_authenticated/ascend/manuscripts/$id': {
+      id: '/_authenticated/ascend/manuscripts/$id'
+      path: '/ascend/manuscripts/$id'
+      fullPath: '/ascend/manuscripts/$id'
+      preLoaderRoute: typeof AuthenticatedAscendManuscriptsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ascend/manuscripts/new': {
+      id: '/_authenticated/ascend/manuscripts/new'
+      path: '/ascend/manuscripts/new'
+      fullPath: '/ascend/manuscripts/new'
+      preLoaderRoute: typeof AuthenticatedAscendManuscriptsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ascend/packages/$slug': {
+      id: '/_authenticated/ascend/packages/$slug'
+      path: '/ascend/packages/$slug'
+      fullPath: '/ascend/packages/$slug'
+      preLoaderRoute: typeof AuthenticatedAscendPackagesSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ascend/publications/': {
+      id: '/_authenticated/ascend/publications/'
+      path: '/ascend/publications'
+      fullPath: '/ascend/publications/'
+      preLoaderRoute: typeof AuthenticatedAscendPublicationsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ascend/publications/$slug': {
+      id: '/_authenticated/ascend/publications/$slug'
+      path: '/ascend/publications/$slug'
+      fullPath: '/ascend/publications/$slug'
+      preLoaderRoute: typeof AuthenticatedAscendPublicationsSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ascend/reader/$slug': {
+      id: '/_authenticated/ascend/reader/$slug'
+      path: '/ascend/reader/$slug'
+      fullPath: '/ascend/reader/$slug'
+      preLoaderRoute: typeof AuthenticatedAscendReaderSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ascend/validate/$slug': {
+      id: '/_authenticated/ascend/validate/$slug'
+      path: '/ascend/validate/$slug'
+      fullPath: '/ascend/validate/$slug'
+      preLoaderRoute: typeof AuthenticatedAscendValidateSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ascend/publications/$slug/command': {
       id: '/_authenticated/ascend/publications/$slug/command'
@@ -530,15 +450,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAscendPublicationsSlugRouteChildren {
   AuthenticatedAscendPublicationsSlugCommandRoute: typeof AuthenticatedAscendPublicationsSlugCommandRoute
-  AuthenticatedAscendPublicationsSlugDistributeRoute: typeof AuthenticatedAscendPublicationsSlugDistributeRoute
 }
 
 const AuthenticatedAscendPublicationsSlugRouteChildren: AuthenticatedAscendPublicationsSlugRouteChildren =
   {
     AuthenticatedAscendPublicationsSlugCommandRoute:
       AuthenticatedAscendPublicationsSlugCommandRoute,
-    AuthenticatedAscendPublicationsSlugDistributeRoute:
-      AuthenticatedAscendPublicationsSlugDistributeRoute,
   }
 
 const AuthenticatedAscendPublicationsSlugRouteWithChildren =
@@ -597,9 +514,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  ApiPublicRenderCallbackRoute: ApiPublicRenderCallbackRoute,
-  ApiPublicRenderKindleRoute: ApiPublicRenderKindleRoute,
-  ApiPublicRenderPdfRoute: ApiPublicRenderPdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
