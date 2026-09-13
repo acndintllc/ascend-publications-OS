@@ -146,6 +146,9 @@ function CommandCenter() {
         )}
       </section>
 
+      {/* PTL-030 Phase 19B — per-destination acceptance verdicts */}
+      <DestinationMatrix readiness={audit.readiness} />
+
       {/* Phase 18.1 — Publication lifecycle timeline */}
       <PublicationTimeline current={currentStatus} />
 
@@ -484,4 +487,86 @@ interface MarkPublishedPayload {
   publication_date?: string | null;
   vendor_reference?: string | null;
   notes?: string | null;
+}
+
+/* PTL-030 Phase 19B — the answer a publication readiness platform exists to
+   give: not one percentage, but which storefronts will accept this book. */
+function DestinationMatrix(props: { readiness: any }) {
+  const [open, setOpen] = React.useState<string | null>(null);
+  const r = props.readiness;
+  if (!r?.byDestination?.length) return null;
+  return (
+    <section style={card}>
+      <div style={h}>Destination Readiness</div>
+      <div style={sub}>
+        Acceptance is evaluated per storefront — their requirements differ.
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {r.byDestination.map((d: any) => {
+          const counts = [
+            d.blockerCount ? `${d.blockerCount} blocker${d.blockerCount > 1 ? "s" : ""}` : "",
+            d.warningCount ? `${d.warningCount} warning${d.warningCount > 1 ? "s" : ""}` : "",
+            d.unconfirmedCount ? `${d.unconfirmedCount} to confirm` : "",
+          ].filter(Boolean).join(" · ") || "nothing outstanding";
+          return (
+            <div key={d.destination} style={{ border: "1px solid var(--am-color-ink-200)", borderRadius: "var(--am-radius-md, 8px)" }}>
+              <button
+                type="button"
+                onClick={() => setOpen(open === d.destination ? null : d.destination)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12, width: "100%",
+                  padding: "10px 12px", background: "transparent", border: "none",
+                  cursor: "pointer", fontFamily: "var(--am-font-ui)", textAlign: "left",
+                }}
+              >
+                <span style={{
+                  ...pill, marginInlineEnd: 0, minWidth: 76, textAlign: "center",
+                  background: d.ready ? "var(--am-color-surface-2)" : "rgba(176,0,32,0.10)",
+                  borderColor: d.ready ? "var(--am-color-ink-300)" : "#b00020",
+                  color: d.ready ? "inherit" : "#b00020",
+                }}>
+                  {d.ready ? "READY" : "BLOCKED"}
+                </span>
+                <strong style={{ flex: 1 }}>{d.destination}</strong>
+                <span style={{ color: "var(--am-color-ink-700)", fontSize: "var(--am-type-200)" }}>{counts}</span>
+                <span aria-hidden style={{ color: "var(--am-color-ink-700)" }}>
+                  {open === d.destination ? "\u25B4" : "\u25BE"}
+                </span>
+              </button>
+              {open === d.destination && d.findings.length > 0 && (
+                <ul style={{ margin: 0, padding: "0 16px 12px 32px", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+                  {d.findings.map((f: any, i: number) => (
+                    <li key={`${f.ruleId}-${i}`} style={{ marginBlockEnd: 8 }}>
+                      <code style={{ fontSize: "var(--am-type-100)", color: "var(--am-color-ink-700)" }}>
+                        {f.requiresHumanConfirmation ? "confirm" : f.severity} · {f.ruleId}
+                      </code>
+                      <div>{f.message}</div>
+                      {f.remediation && (
+                        <div style={{ color: "var(--am-color-ink-700)" }}>Fix: {f.remediation}</div>
+                      )}
+                      {f.source && (
+                        <div style={{ color: "var(--am-color-ink-700)", fontSize: "var(--am-type-100)" }}>
+                          <a href={f.source.url} target="_blank" rel="noreferrer">{f.source.level} source</a>
+                          {" · verified "}{f.source.verifiedOn}
+                          {f.source.caveat ? ` · ${f.source.caveat}` : ""}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {r.notEvaluated?.length > 0 && (
+        <details style={{ marginBlockStart: "var(--am-space-4)", fontFamily: "var(--am-font-ui)", fontSize: "var(--am-type-200)" }}>
+          <summary style={{ color: "var(--am-color-ink-700)" }}>
+            Not checked yet ({r.notEvaluated.length}) — these rules need the artifact bytes
+          </summary>
+          <ul>{r.notEvaluated.map((id: string) => <li key={id}><code>{id}</code></li>)}</ul>
+        </details>
+      )}
+    </section>
+  );
 }

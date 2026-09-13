@@ -6,7 +6,9 @@ import { requireFields } from "./_shared";
 
 export function googlePlaySerializer(meta: PublicationMetadata, slug: string): SerializedPayload {
   const issues = requireFields(meta,
-    ["title","author","description","categories","language","isbn"], "google-play-books");
+    // ISBN deliberately absent: google-play-books does not require one (see
+    // preflight/catalogue.ts, rule `isbn.not-required-for-retail`).
+    ["title","author","description","categories","language"], "google-play-books");
   const body = {
     platform: "google-play-books",
     slug,

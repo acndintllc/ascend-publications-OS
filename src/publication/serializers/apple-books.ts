@@ -5,7 +5,9 @@ import { requireFields, xmlEsc } from "./_shared";
 
 export function appleBooksSerializer(meta: PublicationMetadata, slug: string): SerializedPayload {
   const issues = requireFields(meta,
-    ["title","author","description","categories","language","isbn"], "apple-books");
+    // ISBN deliberately absent: apple-books does not require one (see
+    // preflight/catalogue.ts, rule `isbn.not-required-for-retail`).
+    ["title","author","description","categories","language"], "apple-books");
   const contribs = [
     `<contributor role="author"><name>${xmlEsc(meta.author)}</name></contributor>`,
     ...meta.contributors.map((c) => `<contributor role="contributor"><name>${xmlEsc(c)}</name></contributor>`),

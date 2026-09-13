@@ -1,6 +1,11 @@
 /* PTL-024 Phase 10D — Composite Readiness Engine.
+   PTL-030 Phase 19B — readiness is now per-destination.
+
    Aggregates metadata completeness, asset readiness, profile rules,
-   export validation, and publication status into a single score. */
+   export validation and publication status into a score, AND runs the
+   acceptance catalogue to answer the question the score cannot:
+   which storefronts will accept this book. A title can be ready for
+   Kobo and blocked on Apple; one global boolean cannot say so. */
 import type { PublicationMetadata } from "./metadata";
 import { adaptForAllTargets } from "./metadata";
 import type { AssetRecord } from "./assets";
@@ -8,6 +13,11 @@ import { scoreAssets, PROFILE_ASSET_REQUIREMENTS } from "./assets";
 import { getProfile } from "./profiles";
 import type { PublicationStatus } from "./status";
 import type { ExportPlan } from "./export";
+import type { DistributionTarget } from "./metadata";
+import type { IsbnRow } from "./isbn";
+import type { SerializedPayload } from "./serializers";
+import { runPreflight } from "./preflight/evaluate";
+import type { DestinationVerdict, ReadinessFinding } from "./preflight/types";
 
 export interface ReadinessSignal {
   id: string;
@@ -22,11 +32,21 @@ export interface ReadinessReport {
   slug: string;
   overall: number;            // 0..1 weighted
   percent: number;            // 0..100 integer
-  ready: boolean;             // every blocker empty
+  /** Composite gate: no signal blockers AND every evaluated destination ready. */
+  ready: boolean;
   status: PublicationStatus;
   signals: ReadinessSignal[];
+  /** Flat projections of `findings`, kept for existing consumers. The typed
+   *  findings are the source of truth; these are a view over them. */
   blockers: string[];
   recommendations: string[];
+  /** Typed acceptance findings — the report as a record, not prose. */
+  findings: ReadinessFinding[];
+  /** One verdict per destination. The answer the product exists to give. */
+  byDestination: DestinationVerdict[];
+  /** Catalogue rules in scope that need artifact bytes (Phase 19C) and were
+   *  therefore NOT checked. Never let a verdict imply otherwise. */
+  notEvaluated: string[];
 }
 
 export interface ReadinessInput {
@@ -38,6 +58,13 @@ export interface ReadinessInput {
   exportPlan?: ExportPlan;
   validationErrorCount?: number;
   validationWarnCount?: number;
+  /** Storefronts to evaluate. Defaults to every supported destination. */
+  destinations?: DistributionTarget[];
+  /** ISBNs on file. Optional everywhere, but checksums are still validated. */
+  isbns?: IsbnRow[];
+  /** Serializer output, so its per-destination issues reach the verdict
+   *  instead of being computed and discarded. */
+  serialized?: SerializedPayload[];
 }
 
 const METADATA_REQUIRED: (keyof PublicationMetadata)[] = [
@@ -172,18 +199,66 @@ export function computeReadiness(input: ReadinessInput): ReadinessReport {
     }
   }
 
+  // 7. Acceptance preflight, per destination.
+  const destinations = input.destinations ?? DEFAULT_DESTINATIONS;
+  const preflight = runPreflight({
+    metadata: input.metadata,
+    isbns: input.isbns ?? [],
+    destinations,
+    serialized: input.serialized,
+  });
+  const byDestination = destinations.map((destination) =>
+    verdictFor(destination, preflight.findings),
+  );
+
   const totalWeight = signals.reduce((s, x) => s + x.weight, 0);
   const overall = signals.reduce((s, x) => s + x.weight * x.score, 0) / totalWeight;
-  const blockers = signals.flatMap((s) => s.blockers);
+  const signalBlockers = signals.flatMap((s) => s.blockers);
   const recommendations = signals.flatMap((s) => s.recommendations);
+  const blockers = [
+    ...signalBlockers,
+    ...preflight.findings
+      .filter((f) => f.severity === "blocker" && !f.requiresHumanConfirmation)
+      .map((f) => `${f.destination}: ${f.message}`),
+  ];
   return {
     slug: input.slug,
     overall,
     percent: Math.round(overall * 100),
-    ready: blockers.length === 0,
+    ready: signalBlockers.length === 0 && byDestination.every((d) => d.ready),
     status: input.status,
     signals,
     blockers,
     recommendations,
+    findings: preflight.findings,
+    byDestination,
+    notEvaluated: preflight.notEvaluated,
+  };
+}
+
+const DEFAULT_DESTINATIONS: DistributionTarget[] = [
+  "kdp", "apple-books", "kobo", "google-play-books",
+];
+
+/** A destination is ready when nothing blocking fired against it. Advisories
+ *  never gate. Findings awaiting human confirmation are counted separately so
+ *  "ready" is never claimed on an unchecked assumption. */
+function verdictFor(
+  destination: DistributionTarget,
+  all: ReadinessFinding[],
+): DestinationVerdict {
+  const findings = all.filter((f) => f.destination === destination);
+  const blockerCount = findings.filter(
+    (f) => f.severity === "blocker" && !f.requiresHumanConfirmation,
+  ).length;
+  const warningCount = findings.filter((f) => f.severity === "warning").length;
+  const unconfirmedCount = findings.filter((f) => f.requiresHumanConfirmation).length;
+  return {
+    destination,
+    ready: blockerCount === 0 && unconfirmedCount === 0,
+    findings,
+    blockerCount,
+    warningCount,
+    unconfirmedCount,
   };
 }

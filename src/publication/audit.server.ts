@@ -7,6 +7,7 @@ import { planExports } from "./export";
 import { computeReadiness, type ReadinessReport } from "./readiness";
 import { publicationMetadataSchema, type PublicationMetadata } from "./metadata";
 import { evaluateIsbnCoverage, ISBN_REQUIRED_TARGETS } from "./isbn";
+import { serializeAll } from "./serializers";
 import {
   getRecord, getMetadata, listAssets,
 } from "./persistence.server";
@@ -99,6 +100,11 @@ export async function auditPublication(slug: string): Promise<PublicationAudit> 
         slug, status: record.status, profileId: record.profile,
         metadata: parsed, assets, exportPlan,
         validationErrorCount: errs, validationWarnCount: warns,
+        // Per-destination inputs. The serializers already compute storefront
+        // issues and evaluateIsbnCoverage already knows the ISBN rules; both
+        // used to stop at the audit and never reach the verdict.
+        isbns,
+        serialized: serializeAll(parsed, slug),
       });
     } else {
       blockers.push(`Metadata invalid: ${p.error.issues[0]?.message ?? "schema failure"}`);
