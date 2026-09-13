@@ -19,16 +19,24 @@ export interface IsbnRow {
   notes: string | null;
 }
 
-/** Platforms that require an ISBN to publish. */
-export const ISBN_REQUIRED_TARGETS: DistributionTarget[] = [
-  "apple-books",
-  "google-play-books",
-];
+/** Platforms that require an ISBN to publish.
+ *
+ *  Empty, and verified so on 2026-09-13 (see preflight/catalogue.ts,
+ *  rule `isbn.not-required-for-retail`). None of the supported retail
+ *  destinations require an ISBN — each assigns its own identifier when
+ *  none is supplied: Amazon an ASIN, Kobo its own number, Google a GGKEY.
+ *  Apple accepts an ISBN-13 but does not require one for direct
+ *  publishing. This list previously named apple-books and
+ *  google-play-books, which raised a readiness blocker against authors
+ *  who could in fact publish. */
+export const ISBN_REQUIRED_TARGETS: DistributionTarget[] = [];
 
 /** Platforms that accept but don't require ISBN. */
 export const ISBN_OPTIONAL_TARGETS: DistributionTarget[] = [
   "kdp",
+  "apple-books",
   "kobo",
+  "google-play-books",
   "draft2digital",
 ];
 
