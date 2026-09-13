@@ -528,7 +528,7 @@ function downloadBase64Zip(filename: string, base64: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-type KdpPackageInfo = { packageVersion: number; recordVersion: number; generatedAt: string };
+type KdpPackageInfo = { packageVersion: number; recordVersion: number | null; generatedAt: string };
 
 function PublishKdpSection(props: {
   slug: string;
@@ -541,7 +541,7 @@ function PublishKdpSection(props: {
   const { latest, currentStatus, currentRecordVersion, busy, onPublish } = props;
   const alreadyPublished = currentStatus === "published";
   const packaged = currentStatus === "package_generated" || alreadyPublished || !!latest;
-  const stale = !!latest && latest.recordVersion < currentRecordVersion;
+  const stale = !!latest && latest.recordVersion != null && latest.recordVersion < currentRecordVersion;
   const label = !latest
     ? "Generate KDP Package"
     : stale || alreadyPublished
@@ -569,7 +569,7 @@ function PublishKdpSection(props: {
             <span style={{ color: stale ? "#f59e0b" : "#86efac" }}>
               {stale ? "● Package Out of Date" : "● KDP Package Ready"}
             </span>
-            <span>Package v{latest.packageVersion} · manuscript v{latest.recordVersion}</span>
+            <span>Package v{latest.packageVersion}{latest.recordVersion != null ? ` · manuscript v${latest.recordVersion}` : ""}</span>
             <span>Current manuscript v{currentRecordVersion}</span>
             <span>Generated {new Date(latest.generatedAt).toLocaleString()}</span>
             <span>Publication Status: {PUBLICATION_STATUS_LABELS[currentStatus]}</span>
@@ -587,6 +587,7 @@ function NewVersionBanner(props: {
 }) {
   const { currentRecordVersion, kdpPackage, currentStatus } = props;
   if (!kdpPackage) return null;
+  if (kdpPackage.recordVersion == null) return null;
   if (kdpPackage.recordVersion >= currentRecordVersion) return null;
   const isPublished = currentStatus === "published";
   return (
